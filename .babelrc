@@ -1,0 +1,6 @@
+{
+	"comments": false,
+	"minified": true,
+	"plugins": ["transform-remove-console"],
+	"presets": ["@babel/preset-env"]
+}

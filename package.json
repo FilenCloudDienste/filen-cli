@@ -1,0 +1,22 @@
+{
+  "name": "filen-cli",
+  "version": "0.0.1",
+  "description": "Filen CLI",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "tsc && node dist/index.js"
+  },
+  "keywords": [
+    "filen"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FilenCloudDienste/filen-cli.git"
+  },
+  "author": "Filen",
+  "license": "AGPLv3",
+  "dependencies": {
+    "@types/node": "^20.12.7",
+    "typescript": "^5.4.5"
+  }
+}
