@@ -1,12 +1,14 @@
 import { err, out } from "./interface"
 import FilenSDK from "@filen/sdk"
 import pathModule from "path"
+import { formatTimestamp } from "./util"
 
 export function navigateCloudPath(cloudWorkingPath: string[], path: string) {
 	if (path.startsWith("/")) return path.substring(1).split("/")
 	else {
 		let cwp = [...cloudWorkingPath]
-		for (const segment of path.split("/")) {
+		for (let segment of path.split("/")) {
+			if (segment.startsWith("\"") && segment.endsWith("\"")) segment = segment.substring(1, segment.length - 1)
 			if (segment.length == 0) continue
 			if (segment == ".") continue
 			if (segment == "..") cwp = cwp.slice(0, cwp.length - 1)
@@ -127,6 +129,34 @@ export async function executeCommand(filen: FilenSDK, cloudWorkingPath: string[]
 		const rawPath = args[1] == undefined || args[1] == "." ? process.cwd() + "/" : args[1]
 		const path = rawPath.endsWith("/") || rawPath.endsWith("\\") ? pathModule.join(rawPath, source[source.length-1]) : rawPath
 		await filen.fs().download({path: resolveCloudPath(source), destination: path})
+		return {}
+
+	}
+	if (["stat", "stats"].includes(cmd)) {
+
+		if (args.length < 1) {
+			err("Need to provide arg 1: path")
+			return {}
+		}
+		const path = navigateCloudPath(cloudWorkingPath, args[0])
+		const stat = await filen.fs().stat({path: resolveCloudPath(path)})
+
+		let size = stat.size
+		if (!stat.isFile()) {
+			const files = await filen.fs().readdir({path: resolveCloudPath(path), recursive: true})
+			//TODO could be parallelized
+			for (const file of files) {
+				if (file == "") continue
+				const fileStat = await filen.fs().stat({path: path + "/" + file})
+				size += fileStat.size
+			}
+		}
+
+		out(`  File: ${stat.name}`)
+		out(`  Type: ${stat.type}`)
+		out(`  Size: ${size}`)
+		out(`Modify: ${formatTimestamp(stat.mtimeMs)}`)
+		out(` Birth: ${formatTimestamp(stat.birthtimeMs)}`)
 		return {}
 
 	}
