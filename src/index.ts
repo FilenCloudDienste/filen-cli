@@ -5,15 +5,19 @@ import os from "os"
 import { err, errExit, out, prompt } from "./interface"
 import { executeCommand, navigateCloudPath, resolveCloudPath } from "./fs"
 import * as fs from "node:fs"
+import keytar from "keytar"
 
 const args = arg({
     // arguments
     "--help": Boolean,
     "--root": String,
+    "--delete-credentials": Boolean,
+    "--verbose": Boolean,
 
     // aliases
     "-h": "--help",
     "-r": "--root",
+    "-v": "--verbose",
 })
 
 if (args["--help"]) {
@@ -23,21 +27,42 @@ if (args["--help"]) {
 
 (async () => {
 
+    if (args["--delete-credentials"]) {
+        const credentials = await keytar.findCredentials("filen-cli")
+        for (const credential of credentials) {
+            await keytar.deletePassword("filen-cli", credential.account)
+        }
+        out("Credentials deleted")
+    }
+
     const filen = new FilenSDK({
         metadataCache: true,
         tmpPath: path.join(os.tmpdir(), "filen-cli")
     })
 
-    if (fs.existsSync(".filen-cli-credentials")) {
+    const storedCredentials = await keytar.findCredentials("filen-cli")
+    if (storedCredentials.length > 0) {
+        const credentials = storedCredentials[0]
+        await filen.login({email: credentials.account, password: credentials.password})
+        if (args["--verbose"]) out(`Logged in as ${credentials.account} (using saved credentials)`)
+    } else if (fs.existsSync(".filen-cli-credentials")) {
         const lines = fs.readFileSync(".filen-cli-credentials").toString().split("\n")
         if (lines.length < 2) errExit("Invalid .filen-cli-credentials!")
         await filen.login({email: lines[0], password: lines[1]})
+        if (args["--verbose"]) out(`Logged in as ${lines[0]} (using .filen-cli-credentials)`)
     } else {
         out("Please enter your Filen credentials:")
         const email = await prompt("Email: ")
         const password = await prompt("Password: ")
         if (!email || !password) errExit("Please provide your credentials!")
         await filen.login({ email, password })
+
+        const saveCredentials = (await prompt("Save credentials locally for future invocations? [y/N] ")).toLowerCase() == "y"
+        if (saveCredentials) {
+            await keytar.setPassword("filen-cli", email, password)
+            out("You can delete these credentials using `filen --delete-credentials`")
+        }
+
         out("")
     }
 

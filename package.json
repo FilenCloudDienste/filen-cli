@@ -5,7 +5,10 @@
   "main": "build/index.js",
   "scripts": {
     "start-dev": "tsc && node build/index.js",
-    "package": "tsc && esbuild build/index.js --bundle --outfile=dist/bundle.js --format=cjs --platform=node && pkg -t node18 -o dist/filen.exe dist/bundle.js"
+    "package": "tsc && esbuild build/index.js --bundle --outfile=dist/bundle.js --format=cjs --platform=node --external:keytar && pkg -t node18 -o dist/filen.exe dist/bundle.js"
+  },
+  "engines": {
+    "node": "18"
   },
   "keywords": [
     "filen"
@@ -21,6 +24,8 @@
     "@types/node": "^20.12.7",
     "@yao-pkg/pkg": "^5.11.5",
     "arg": "^5.0.2",
+    "esbuild": "^0.20.2",
+    "keytar": "^7.9.0",
     "typescript": "^5.4.5"
   }
 }
