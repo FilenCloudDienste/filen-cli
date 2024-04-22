@@ -3,15 +3,17 @@ import FilenSDK from "@filen/sdk"
 import path from "path"
 import os from "os"
 import { err, errExit, out, prompt } from "./interface"
-import { executeCommand, resolveCloudPath } from "./fs"
+import { executeCommand, navigateCloudPath, resolveCloudPath } from "./fs"
 import * as fs from "node:fs"
 
 const args = arg({
     // arguments
     "--help": Boolean,
+    "--root": String,
 
     // aliases
-    "-h": "--help"
+    "-h": "--help",
+    "-r": "--root",
 })
 
 if (args["--help"]) {
@@ -39,10 +41,12 @@ if (args["--help"]) {
         out("")
     }
 
+    const cloudRootPath = args["--root"] != undefined ? navigateCloudPath([], args["--root"]) : []
     if (args["_"].length == 0) {
-        let cloudWorkingPath: string[] = []
+        let cloudWorkingPath: string[] = cloudRootPath
         while (true) {
             const command = await prompt(`${resolveCloudPath(cloudWorkingPath)} > `)
+            if (command == "") continue
             const cmd = command.split(" ")[0].toLowerCase()
             const args = command.split(" ").splice(1)
             const result = await executeCommand(filen, cloudWorkingPath, cmd, args)
@@ -50,7 +54,7 @@ if (args["--help"]) {
             if (result.cloudWorkingPath != undefined) cloudWorkingPath = result.cloudWorkingPath
         }
     } else {
-        const result = await executeCommand(filen, [], args["_"][0], args["_"].slice(1))
+        const result = await executeCommand(filen, cloudRootPath, args["_"][0], args["_"].slice(1))
         if (result.cloudWorkingPath != undefined) err("To navigate in a stateful environment, please invoke the CLI without any arguments.")
     }
     process.exit()

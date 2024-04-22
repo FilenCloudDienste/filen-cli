@@ -1,2 +1,2 @@
 @echo off
-node dist/bundle.js %*
+node %~dp0\dist\bundle.js %*
