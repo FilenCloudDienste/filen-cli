@@ -158,6 +158,20 @@ export async function executeCommand(filen: FilenSDK, cloudWorkingPath: string[]
 		return {}
 	}
 
+	// not a UNIX command; write text into a file
+	if (["write"].includes(cmd)) {
+
+		if (args.length < 1) {
+			err("Need to provide arg 1: file")
+			return {}
+		}
+		const path = navigateCloudPath(cloudWorkingPath, args[0])
+		const content = args.slice(1).join(" ")
+		await filen.fs().writeFile({path: resolveCloudPath(path), content: Buffer.from(content)})
+		return {}
+
+	}
+
 	if (cmd == "exit") return {exit: true}
 
 	err(`Unknown command: ${cmd}`)
