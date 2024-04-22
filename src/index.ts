@@ -2,8 +2,9 @@ import arg from "arg"
 import FilenSDK from "@filen/sdk"
 import path from "path"
 import os from "os"
-import interactive from "./interactive"
 import { err, errExit, out, prompt } from "./interface"
+import { executeCommand, resolveCloudPath } from "./fs"
+import * as fs from "node:fs"
 
 const args = arg({
     // arguments
@@ -13,7 +14,7 @@ const args = arg({
     "-h": "--help"
 })
 
-if (args["--help"] || args["_"].length == 0) {
+if (args["--help"]) {
     console.log("Filen CLI v0.0.1")
     process.exit()
 }
@@ -38,11 +39,20 @@ if (args["--help"] || args["_"].length == 0) {
         out("")
     }
 
-    if (args["_"][0] == "interactive") {
-        out("Interactive console:")
-        await interactive(filen)
+    if (args["_"].length == 0) {
+        let cloudWorkingPath: string[] = []
+        while (true) {
+            const command = await prompt(`${resolveCloudPath(cloudWorkingPath)} > `)
+            const cmd = command.split(" ")[0].toLowerCase()
+            const args = command.split(" ").splice(1)
+            const result = await executeCommand(filen, cloudWorkingPath, cmd, args)
+            if (result.exit) break
+            if (result.cloudWorkingPath != undefined) cloudWorkingPath = result.cloudWorkingPath
+        }
     } else {
-        err(`Invalid command: ${args["_"][0]}}`)
+        const result = await executeCommand(filen, [], args["_"][0], args["_"].slice(1))
+        if (result.cloudWorkingPath != undefined) err("To navigate in a stateful environment, please invoke the CLI without any arguments.")
     }
+    process.exit()
 
 })()
