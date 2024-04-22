@@ -170,9 +170,6 @@ export async function executeCommand(filen: FilenSDK, cloudWorkingPath: string[]
 		try {
 			const from = navigateCloudPath(cloudWorkingPath, args[0])
 			const to = await cloudPathNavigateAndAppendFileNameIfNecessary(filen, cloudWorkingPath, args[1], from[from.length-1])
-			console.log(args[1])
-			console.log(navigateCloudPath(cloudWorkingPath, args[1]))
-			console.log(to)
 			const parameters = {from: resolveCloudPath(from), to: resolveCloudPath(to)}
 			await (copy ? filen.fs().copy(parameters) : filen.fs().rename(parameters))
 		} catch (e) {
