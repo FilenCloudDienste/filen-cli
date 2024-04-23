@@ -11,6 +11,14 @@ export function out(message: string) {
 }
 
 /**
+ * Global output method for JSON
+ */
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function outJson(json: any) {
+    console.log(json)
+}
+
+/**
  * Global error output method
  * @param message
  */

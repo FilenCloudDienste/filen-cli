@@ -1,4 +1,4 @@
-import { err, out } from "./interface"
+import { err, out, outJson } from "./interface"
 import FilenSDK from "@filen/sdk"
 import pathModule from "path"
 import { formatTimestamp } from "./util"
@@ -16,9 +16,10 @@ export class FS {
 	 * @param cloudWorkingPath Where the command is executed (in a stateless environment, this is [])
 	 * @param cmd
 	 * @param args
+	 * @param formatJson Whether to format the output as JSON.
 	 * @returns Whether to exit the interactive environment, and where to navigate (via `cd` command)
 	 */
-	public async executeCommand(cloudWorkingPath: CloudPath, cmd: string, args: string[]): Promise<{
+	public async executeCommand(cloudWorkingPath: CloudPath, cmd: string, args: string[], formatJson: boolean): Promise<{
 		exit?: boolean,
 		cloudWorkingPath?: CloudPath
 	}> {
@@ -43,7 +44,8 @@ export class FS {
 
 			const path = args.length > 0 ? cloudWorkingPath.navigate(args[0]) : cloudWorkingPath
 			const output = await this.filen.fs().readdir({ path: path.toString() })
-			out(output.join("  "))
+			if (formatJson) outJson(output)
+			else out(output.join("  "))
 			return {}
 
 		}
@@ -55,7 +57,9 @@ export class FS {
 			}
 			const path = cloudWorkingPath.navigate(args[0])
 			try {
-				out((await this.filen.fs().readFile({ path: path.toString() })).toString())
+				const content = (await this.filen.fs().readFile({ path: path.toString() })).toString()
+				if (formatJson) outJson({ text: content })
+				else out(content)
 			} catch (e) {
 				err("No such file")
 			}
@@ -133,11 +137,21 @@ export class FS {
 				}
 			}
 
-			out(`  File: ${stat.name}`)
-			out(`  Type: ${stat.type}`)
-			out(`  Size: ${size}`)
-			out(`Modify: ${formatTimestamp(stat.mtimeMs)}`)
-			out(` Birth: ${formatTimestamp(stat.birthtimeMs)}`)
+			if (formatJson) {
+				outJson({
+					file: stat.name,
+					type: stat.type,
+					size: size,
+					mtimeMs: stat.mtimeMs,
+					birthtimeMs: stat.birthtimeMs
+				})
+			} else {
+				out(`  File: ${stat.name}`)
+				out(`  Type: ${stat.type}`)
+				out(`  Size: ${size}`)
+				out(`Modify: ${formatTimestamp(stat.mtimeMs)}`)
+				out(` Birth: ${formatTimestamp(stat.birthtimeMs)}`)
+			}
 			return {}
 
 		}

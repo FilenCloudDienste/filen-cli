@@ -17,8 +17,9 @@ $ filen [options...] <cmd...>
 
 Options:
 - `--help`, `-h`: display usage information
-- `--root <path>`, `-r <path`: execute a stateless command from a different working directory
 - `--verbose`, `-v`: display additional information
+- `--root <path>`, `-r <path`: execute a stateless command from a different working directory
+- `--json`: format output as JSON
 
 ### Available commands
 

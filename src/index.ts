@@ -14,6 +14,7 @@ const args = arg({
 	"--root": String,
 	"--delete-credentials": Boolean,
 	"--verbose": Boolean,
+	"--json": Boolean,
 
 	// aliases
 	"-h": "--help",
@@ -69,6 +70,7 @@ if (args["--help"]) {
 
 	const fs = new FS(filen)
 	const cloudRootPath = args["--root"] !== undefined ? new CloudPath(filen, []).navigate(args["--root"]) : new CloudPath(filen, [])
+	const formatJson = args["--json"]!
 	if (args["_"].length === 0) {
 		let cloudWorkingPath: CloudPath = cloudRootPath
 		// eslint-disable-next-line no-constant-condition
@@ -77,12 +79,12 @@ if (args["--help"]) {
 			if (command === "") continue
 			const cmd = command.split(" ")[0].toLowerCase()
 			const args = command.split(" ").splice(1)
-			const result = await fs.executeCommand(cloudWorkingPath, cmd, args)
+			const result = await fs.executeCommand(cloudWorkingPath, cmd, args, formatJson)
 			if (result.exit) break
 			if (result.cloudWorkingPath !== undefined) cloudWorkingPath = result.cloudWorkingPath
 		}
 	} else {
-		const result = await fs.executeCommand(cloudRootPath, args["_"][0], args["_"].slice(1))
+		const result = await fs.executeCommand(cloudRootPath, args["_"][0], args["_"].slice(1), formatJson)
 		if (result.cloudWorkingPath !== undefined) err("To navigate in a stateful environment, please invoke the CLI without any arguments.")
 	}
 	process.exit()
