@@ -9,25 +9,29 @@ export function navigateCloudPath(cloudWorkingPath: string[], path: string) {
 		let cwp = [...cloudWorkingPath]
 		for (let segment of path.split("/")) {
 			if (segment.startsWith("\"") && segment.endsWith("\"")) segment = segment.substring(1, segment.length - 1)
-			if (segment.length == 0) continue
-			if (segment == ".") continue
-			if (segment == "..") cwp = cwp.slice(0, cwp.length - 1)
+			if (segment.length === 0) continue
+			if (segment === ".") continue
+			if (segment === "..") cwp = cwp.slice(0, cwp.length - 1)
 			else cwp = [...cwp, segment]
 		}
 		return cwp
 	}
 }
+
 async function cloudPathNavigateAndAppendFileNameIfNecessary(filen: FilenSDK, cloudWorkingPath: string[], path: string, fileName: string) {
 	let appendFileName = false
 	const cloudPath = navigateCloudPath(cloudWorkingPath, path)
 	if (path.endsWith("/")) appendFileName = true
 	else {
 		try {
-			appendFileName = (await filen.fs().stat({path: resolveCloudPath(cloudPath)})).isDirectory()
-		} catch (e) {}
+			appendFileName = (await filen.fs().stat({ path: resolveCloudPath(cloudPath) })).isDirectory()
+		} catch (e) {
+			appendFileName = false
+		}
 	}
 	return appendFileName ? [...cloudPath, fileName] : cloudPath
 }
+
 export function resolveCloudPath(cloudWorkingPath: string[]) {
 	return "/" + cloudWorkingPath.join("/")
 }
@@ -44,11 +48,11 @@ export async function executeCommand(filen: FilenSDK, cloudWorkingPath: string[]
 			err("Need to provide arg 1: directory")
 			return {}
 		}
-		let path = navigateCloudPath(cloudWorkingPath, args[0])
+		const path = navigateCloudPath(cloudWorkingPath, args[0])
 		try {
-			const directory = await filen.fs().stat({path: resolveCloudPath(path)})
+			const directory = await filen.fs().stat({ path: resolveCloudPath(path) })
 			if (!directory.isDirectory()) err("Not a directory")
-			else return {cloudWorkingPath: path}
+			else return { cloudWorkingPath: path }
 		} catch (e) {
 			err("No such directory")
 		}
@@ -58,7 +62,7 @@ export async function executeCommand(filen: FilenSDK, cloudWorkingPath: string[]
 	if (["ls", "list"].includes(cmd)) {
 
 		const path = args.length > 0 ? navigateCloudPath(cloudWorkingPath, args[0]) : cloudWorkingPath
-		const output = await filen.fs().readdir({path: resolveCloudPath(path)})
+		const output = await filen.fs().readdir({ path: resolveCloudPath(path) })
 		out(output.join("  "))
 		return {}
 
@@ -71,7 +75,7 @@ export async function executeCommand(filen: FilenSDK, cloudWorkingPath: string[]
 		}
 		const path = navigateCloudPath(cloudWorkingPath, args[0])
 		try {
-			out((await filen.fs().readFile({path: resolveCloudPath(path)})).toString())
+			out((await filen.fs().readFile({ path: resolveCloudPath(path) })).toString())
 		} catch (e) {
 			err("No such file")
 		}
@@ -84,7 +88,7 @@ export async function executeCommand(filen: FilenSDK, cloudWorkingPath: string[]
 			err("Need to provide arg 1: directory name")
 			return {}
 		}
-		await filen.fs().mkdir({path: resolveCloudPath(navigateCloudPath(cloudWorkingPath, args[0]))})
+		await filen.fs().mkdir({ path: resolveCloudPath(navigateCloudPath(cloudWorkingPath, args[0])) })
 		return {}
 
 	}
@@ -95,7 +99,7 @@ export async function executeCommand(filen: FilenSDK, cloudWorkingPath: string[]
 			return {}
 		}
 		try {
-			await filen.fs().rm({path: resolveCloudPath(navigateCloudPath(cloudWorkingPath, args[0]))})
+			await filen.fs().rm({ path: resolveCloudPath(navigateCloudPath(cloudWorkingPath, args[0])) })
 		} catch (e) {
 			err("No such file or directory")
 		}
@@ -112,10 +116,10 @@ export async function executeCommand(filen: FilenSDK, cloudWorkingPath: string[]
 		const source = args[0]
 		const path = await cloudPathNavigateAndAppendFileNameIfNecessary(filen,
 			cloudWorkingPath, args[1],
-			source.split(/[\/\\]/)[source.split(/[\/\\]/).length-1]
+			source.split(/[/\\]/)[source.split(/[/\\]/).length - 1]
 		)
 
-		await filen.fs().upload({path: resolveCloudPath(path), source})
+		await filen.fs().upload({ path: resolveCloudPath(path), source })
 		return {}
 
 	}
@@ -126,9 +130,9 @@ export async function executeCommand(filen: FilenSDK, cloudWorkingPath: string[]
 			return {}
 		}
 		const source = navigateCloudPath(cloudWorkingPath, args[0])
-		const rawPath = args[1] == undefined || args[1] == "." ? process.cwd() + "/" : args[1]
-		const path = rawPath.endsWith("/") || rawPath.endsWith("\\") ? pathModule.join(rawPath, source[source.length-1]) : rawPath
-		await filen.fs().download({path: resolveCloudPath(source), destination: path})
+		const rawPath = args[1] === undefined || args[1] === "." ? process.cwd() + "/" : args[1]
+		const path = rawPath.endsWith("/") || rawPath.endsWith("\\") ? pathModule.join(rawPath, source[source.length - 1]) : rawPath
+		await filen.fs().download({ path: resolveCloudPath(source), destination: path })
 		return {}
 
 	}
@@ -139,15 +143,15 @@ export async function executeCommand(filen: FilenSDK, cloudWorkingPath: string[]
 			return {}
 		}
 		const path = navigateCloudPath(cloudWorkingPath, args[0])
-		const stat = await filen.fs().stat({path: resolveCloudPath(path)})
+		const stat = await filen.fs().stat({ path: resolveCloudPath(path) })
 
 		let size = stat.size
 		if (!stat.isFile()) {
-			const files = await filen.fs().readdir({path: resolveCloudPath(path), recursive: true})
+			const files = await filen.fs().readdir({ path: resolveCloudPath(path), recursive: true })
 			//TODO could be parallelized
 			for (const file of files) {
-				if (file == "") continue
-				const fileStat = await filen.fs().stat({path: path + "/" + file})
+				if (file === "") continue
+				const fileStat = await filen.fs().stat({ path: path + "/" + file })
 				size += fileStat.size
 			}
 		}
@@ -169,8 +173,8 @@ export async function executeCommand(filen: FilenSDK, cloudWorkingPath: string[]
 		}
 		try {
 			const from = navigateCloudPath(cloudWorkingPath, args[0])
-			const to = await cloudPathNavigateAndAppendFileNameIfNecessary(filen, cloudWorkingPath, args[1], from[from.length-1])
-			const parameters = {from: resolveCloudPath(from), to: resolveCloudPath(to)}
+			const to = await cloudPathNavigateAndAppendFileNameIfNecessary(filen, cloudWorkingPath, args[1], from[from.length - 1])
+			const parameters = { from: resolveCloudPath(from), to: resolveCloudPath(to) }
 			await (copy ? filen.fs().copy(parameters) : filen.fs().rename(parameters))
 		} catch (e) {
 			err("No such file or directory")
@@ -194,12 +198,12 @@ export async function executeCommand(filen: FilenSDK, cloudWorkingPath: string[]
 		}
 		const path = navigateCloudPath(cloudWorkingPath, args[0])
 		const content = args.slice(1).join(" ")
-		await filen.fs().writeFile({path: resolveCloudPath(path), content: Buffer.from(content)})
+		await filen.fs().writeFile({ path: resolveCloudPath(path), content: Buffer.from(content) })
 		return {}
 
 	}
 
-	if (cmd == "exit") return {exit: true}
+	if (cmd === "exit") return { exit: true }
 
 	err(`Unknown command: ${cmd}`)
 	return {}
