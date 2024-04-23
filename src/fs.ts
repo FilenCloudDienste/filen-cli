@@ -1,4 +1,4 @@
-import { err, out, outJson } from "./interface"
+import { err, out, outJson, prompt } from "./interface"
 import FilenSDK from "@filen/sdk"
 import pathModule from "path"
 import { formatTimestamp } from "./util"
@@ -57,6 +57,11 @@ export class FS {
 			}
 			const path = cloudWorkingPath.navigate(args[0])
 			try {
+				const fileSize = (await this.filen.fs().stat({ path: path.toString() })).size
+				if (fileSize > 2_000) {
+					const result = await prompt(`This file is ${fileSize}B large. Continue? [y/N] `)
+					if (result.toLowerCase() !== "y") return {}
+				}
 				const content = (await this.filen.fs().readFile({ path: path.toString() })).toString()
 				if (formatJson) outJson({ text: content })
 				else out(content)
