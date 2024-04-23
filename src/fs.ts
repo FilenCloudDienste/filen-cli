@@ -5,6 +5,7 @@ import { doNothing, formatTimestamp } from "./util"
 import { CloudPath } from "./cloudPath"
 import cliProgress from "cli-progress"
 import * as fsModule from "node:fs"
+import { InterruptHandler } from "./interrupt"
 
 /**
  * Handles CLI commands related to cloud filesystem operations.
@@ -112,7 +113,8 @@ export class FS {
 			const size = fsModule.statSync(source).size
 			const path = await cloudWorkingPath.navigateAndAppendFileNameIfNecessary(args[1], source.split(/[/\\]/)[source.split(/[/\\]/).length - 1])
 			const onProgress = quiet ? doNothing : this.displayTransferProgressBar("Uploading", path.getLastSegment(), size).onProgress
-			await this.filen.fs().upload({ path: path.toString(), source, onProgress })
+			const abortSignal = InterruptHandler.instance.createAbortSignal()
+			await this.filen.fs().upload({ path: path.toString(), source, onProgress, abortSignal })
 			return {}
 
 		}
@@ -127,7 +129,8 @@ export class FS {
 			const path = rawPath.endsWith("/") || rawPath.endsWith("\\") ? pathModule.join(rawPath, source.cloudPath[source.cloudPath.length - 1]) : rawPath
 			const size = (await this.filen.fs().stat({ path: source.toString() })).size
 			const onProgress = quiet ? doNothing : this.displayTransferProgressBar("Downloading", source.getLastSegment(), size).onProgress
-			await this.filen.fs().download({ path: source.toString(), destination: path, onProgress })
+			const abortSignal = InterruptHandler.instance.createAbortSignal()
+			await this.filen.fs().download({ path: source.toString(), destination: path, onProgress, abortSignal })
 			return {}
 
 		}
@@ -204,7 +207,8 @@ export class FS {
 						progressBar = this.displayTransferProgressBar("Uploading", from.getLastSegment(), fromSize, true)
 					}
 				}
-				await this.filen.fs().copy({ from: from.toString(), to: to.toString(), onProgress })
+				const abortSignal = InterruptHandler.instance.createAbortSignal()
+				await this.filen.fs().copy({ from: from.toString(), to: to.toString(), onProgress, abortSignal })
 			} catch (e) {
 				err("No such file or directory")
 			}
