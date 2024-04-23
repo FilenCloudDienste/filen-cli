@@ -1,5 +1,9 @@
-// see https://stackoverflow.com/a/19448513
+/**
+ * Formats a timestamp as yyyy-MM-dd.hh.mm.ss.SSS
+ * @param ms timestamp
+ */
 export function formatTimestamp(ms: number) {
+	// see https://stackoverflow.com/a/19448513
 	const pad2 = (n: number) => {
 		return n < 10 ? "0" + n : n
 	}
