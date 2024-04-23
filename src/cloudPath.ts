@@ -52,6 +52,10 @@ export class CloudPath {
 		return new CloudPath(this.filen, appendFileName ? [...cloudPath, fileName] : cloudPath)
 	}
 
+	public getLastSegment(): string {
+		return this.cloudPath[this.cloudPath.length - 1]
+	}
+
 	/**
 	 * Formats this path like "/.../...".
 	 */

@@ -8,5 +8,11 @@ export function formatTimestamp(ms: number) {
 		return n < 10 ? "0" + n : n
 	}
 	const date = new Date(ms)
-	return date.getFullYear().toString() + "-" + pad2(date.getMonth() + 1) + "-" + pad2( date.getDate()) + " " + pad2( date.getHours() ) + ":" + pad2( date.getMinutes() ) + ":" + pad2( date.getSeconds() ) + "." + pad2( date.getMilliseconds() )
+	return date.getFullYear().toString() + "-" + pad2(date.getMonth() + 1) + "-" + pad2(date.getDate()) + " " + pad2(date.getHours()) + ":" + pad2(date.getMinutes()) + ":" + pad2(date.getSeconds()) + "." + pad2(date.getMilliseconds())
+}
+
+/**
+ * A function that does nothing.
+ */
+export const doNothing = () => {
 }

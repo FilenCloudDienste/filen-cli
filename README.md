@@ -18,6 +18,7 @@ $ filen [options...] <cmd...>
 Options:
 - `--help`, `-h`: display usage information
 - `--verbose`, `-v`: display additional information
+- `--quiet`, `-q`: hide things like progress bars
 - `--root <path>`, `-r <path`: execute a stateless command from a different working directory
 - `--json`: format output as JSON
 

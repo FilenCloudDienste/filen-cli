@@ -1,14 +1,19 @@
 import { err, out, outJson, prompt } from "./interface"
 import FilenSDK from "@filen/sdk"
 import pathModule from "path"
-import { formatTimestamp } from "./util"
+import { doNothing, formatTimestamp } from "./util"
 import { CloudPath } from "./cloudPath"
+import cliProgress from "cli-progress"
+import * as fsModule from "node:fs"
 
 /**
  * Handles CLI commands related to cloud filesystem operations.
  */
 export class FS {
-	public constructor(private readonly filen: FilenSDK) {
+	private readonly filen: FilenSDK
+
+	public constructor(filen: FilenSDK) {
+		this.filen = filen
 	}
 
 	/**
@@ -17,9 +22,10 @@ export class FS {
 	 * @param cmd
 	 * @param args
 	 * @param formatJson Whether to format the output as JSON.
+	 * @param quiet Whether to hide things like progress bars
 	 * @returns Whether to exit the interactive environment, and where to navigate (via `cd` command)
 	 */
-	public async executeCommand(cloudWorkingPath: CloudPath, cmd: string, args: string[], formatJson: boolean): Promise<{
+	public async executeCommand(cloudWorkingPath: CloudPath, cmd: string, args: string[], formatJson: boolean, quiet: boolean): Promise<{
 		exit?: boolean,
 		cloudWorkingPath?: CloudPath
 	}> {
@@ -103,9 +109,10 @@ export class FS {
 				return {}
 			}
 			const source = args[0]
+			const size = fsModule.statSync(source).size
 			const path = await cloudWorkingPath.navigateAndAppendFileNameIfNecessary(args[1], source.split(/[/\\]/)[source.split(/[/\\]/).length - 1])
-
-			await this.filen.fs().upload({ path: path.toString(), source })
+			const onProgress = quiet ? doNothing : this.displayTransferProgressBar("Uploading", path.getLastSegment(), size).onProgress
+			await this.filen.fs().upload({ path: path.toString(), source, onProgress })
 			return {}
 
 		}
@@ -118,7 +125,9 @@ export class FS {
 			const source = cloudWorkingPath.navigate(args[0])
 			const rawPath = args[1] === undefined || args[1] === "." ? process.cwd() + "/" : args[1]
 			const path = rawPath.endsWith("/") || rawPath.endsWith("\\") ? pathModule.join(rawPath, source.cloudPath[source.cloudPath.length - 1]) : rawPath
-			await this.filen.fs().download({ path: source.toString(), destination: path })
+			const size = (await this.filen.fs().stat({ path: source.toString() })).size
+			const onProgress = quiet ? doNothing : this.displayTransferProgressBar("Downloading", source.getLastSegment(), size).onProgress
+			await this.filen.fs().download({ path: source.toString(), destination: path, onProgress })
 			return {}
 
 		}
@@ -160,8 +169,7 @@ export class FS {
 			return {}
 
 		}
-
-		const moveOrCopy = async (args: string[], copy: boolean) => {
+		if (["mv", "move", "rename"].includes(cmd)) {
 			if (args.length < 2) {
 				if (args.length < 1) err("Need to provide arg 1: path from")
 				else err("Need to provide arg 2: path to")
@@ -170,18 +178,36 @@ export class FS {
 			try {
 				const from = cloudWorkingPath.navigate(args[0])
 				const to = await cloudWorkingPath.navigateAndAppendFileNameIfNecessary(args[1], from.cloudPath[from.cloudPath.length - 1])
-				const parameters = { from: from.toString(), to: to.toString() }
-				await (copy ? this.filen.fs().copy(parameters) : this.filen.fs().rename(parameters))
+				await this.filen.fs().rename({ from: from.toString(), to: to.toString() })
 			} catch (e) {
 				err("No such file or directory")
 			}
-		}
-		if (["mv", "move", "rename"].includes(cmd)) {
-			await moveOrCopy(args, false)
 			return {}
 		}
 		if (["cp", "copy"].includes(cmd)) {
-			await moveOrCopy(args, true)
+			if (args.length < 2) {
+				if (args.length < 1) err("Need to provide arg 1: path from")
+				else err("Need to provide arg 2: path to")
+				return {}
+			}
+			try {
+				const from = cloudWorkingPath.navigate(args[0])
+				const to = await cloudWorkingPath.navigateAndAppendFileNameIfNecessary(args[1], from.cloudPath[from.cloudPath.length - 1])
+				const fromSize = (await this.filen.fs().stat({ path: from.toString() })).size
+				let progressBar = quiet ? null : this.displayTransferProgressBar("Downloading", from.getLastSegment(), fromSize, true)
+				let stillDownloading = true
+				const onProgress = quiet ? doNothing : (transferred: number) => {
+					progressBar!.onProgress(transferred)
+					//if (progressBar!.progressBar.getProgress() > 0.9) console.log(progressBar!.progressBar.getProgress())
+					if (progressBar!.progressBar.getProgress() >= 1 && stillDownloading) {
+						stillDownloading = false
+						progressBar = this.displayTransferProgressBar("Uploading", from.getLastSegment(), fromSize, true)
+					}
+				}
+				await this.filen.fs().copy({ from: from.toString(), to: to.toString(), onProgress })
+			} catch (e) {
+				err("No such file or directory")
+			}
 			return {}
 		}
 
@@ -204,5 +230,27 @@ export class FS {
 
 		err(`Unknown command: ${cmd}`)
 		return {}
+	}
+
+	/**
+	 * Display a progress bar for a file transfer.
+	 * @param action The action (like "Downloading", "Uploading")
+	 * @param file The file's name
+	 * @param total Total size of the file (in bytes)
+	 * @param isApproximate Whether to display an approximate symbol "~" before the current total
+	 */
+	private displayTransferProgressBar(action: string, file: string, total: number, isApproximate: boolean = false): {
+		progressBar: cliProgress.SingleBar,
+		onProgress: (transferred: number) => void
+	} {
+		const progressBar = new cliProgress.SingleBar({
+			format: `${action} ${file} [{bar}] {percentage}% | ETA: {eta}s | ${isApproximate ? "~ " : ""}{value} B / {total} B`
+		}, cliProgress.Presets.legacy)
+		progressBar.start(total, 0, { speed: "N/A" })
+		const onProgress = (transferred: number) => {
+			progressBar.increment(transferred)
+			if (progressBar.getProgress() >= 1.0) progressBar.stop()
+		}
+		return { progressBar, onProgress }
 	}
 }
