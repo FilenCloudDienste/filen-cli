@@ -144,15 +144,7 @@ export class FS {
 			const stat = await this.filen.fs().stat({ path: path.toString() })
 
 			let size = stat.size
-			if (!stat.isFile()) {
-				const files = await this.filen.fs().readdir({ path: path.toString(), recursive: true })
-				//TODO could be parallelized
-				for (const file of files) {
-					if (file === "") continue
-					const fileStat = await this.filen.fs().stat({ path: path + "/" + file })
-					size += fileStat.size
-				}
-			}
+			if (!stat.isFile()) size = await this.filen.cloud().directorySize({ uuid: stat.uuid })
 
 			if (formatJson) {
 				outJson({
