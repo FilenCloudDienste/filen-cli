@@ -1,6 +1,6 @@
 import readline from "node:readline"
 
-const rl = readline.createInterface({input: process.stdin, output: process.stdout})
+export const readlineInterface = readline.createInterface({ input: process.stdin, output: process.stdout })
 
 /**
  * Global output method
@@ -41,6 +41,6 @@ export function errExit(message: string) {
  */
 export async function prompt(message?: string) {
     return new Promise<string>((resolve) => {
-        rl.question(message ?? "", (input) => resolve(input))
+        readlineInterface.question(message ?? "", (input) => resolve(input))
     })
 }

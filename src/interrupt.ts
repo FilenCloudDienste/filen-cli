@@ -1,4 +1,4 @@
-import readline from "node:readline"
+import { readlineInterface } from "./interface"
 
 /**
  * Handles SIGINT signals.
@@ -10,8 +10,7 @@ export class InterruptHandler {
 
 	public constructor() {
 		if (process.platform === "win32") {
-			const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
-			rl.on("SIGINT", function() {
+			readlineInterface.on("SIGINT", function() {
 				process.emit("SIGINT")
 			})
 		}
