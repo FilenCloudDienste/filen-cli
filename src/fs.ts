@@ -7,6 +7,7 @@ import cliProgress from "cli-progress"
 import * as fsModule from "node:fs"
 import { InterruptHandler } from "./interrupt"
 import open from "open"
+import { fsCommands } from "./commands"
 
 type CommandParameters = {
 	cloudWorkingPath: CloudPath,
@@ -38,80 +39,69 @@ export class FS {
 		exit?: boolean,
 		cloudWorkingPath?: CloudPath
 	}> {
+		if (cmd === "exit") return { exit: true }
+
 		const params = { cloudWorkingPath, args, formatJson, quiet }
 
-		if (["cd", "navigate"].includes(cmd)) {
+		const command = fsCommands.find(command => [command.cmd, ...command.aliases].includes(cmd))
+
+		if (command === undefined) {
+			err(`Unknown command: ${cmd}`)
+			return {}
+		}
+
+		const minArgumentsCount = command.arguments.filter(arg => arg.optional !== true).length
+		if (args.length < minArgumentsCount) {
+			err(`Need to specify all arguments: ${command.arguments.map(arg => arg.name + (arg.optional ? " (optional)" : "")).join(", ")}`)
+			return {}
+		}
+
+		if (command.cmd === "cd") {
 			const cloudWorkingPath = await this._cd(params)
 			return { cloudWorkingPath }
 		}
 
-		if (["ls", "list"].includes(cmd)) {
-			await this._ls(params)
-			return {}
+		switch (command.cmd) {
+			case "ls":
+				await this._ls(params)
+				break
+			case "more":
+				await this._more(params)
+				break
+			case "mkdir":
+				await this._mkdir(params)
+				break
+			case "rm":
+				await this._rm(params)
+				break
+			case "upload":
+				await this._upload(params)
+				break
+			case "download":
+				await this._download(params)
+				break
+			case "stat":
+				await this._stat(params)
+				break
+			case "statfs":
+				await this._statfs(params)
+				break
+			case "mv":
+				await this._mv(params)
+				break
+			case "cp":
+				await this._cp(params)
+				break
+			case "write":
+				await this._write(params)
+				break
+			case "open":
+				await this._openOrEdit(params, false)
+				break
+			case "edit":
+				await this._openOrEdit(params, true)
+				break
 		}
-
-		if (["more", "read"].includes(cmd)) {
-			await this._more(params)
-			return {}
-		}
-
-		if (["mkdir"].includes(cmd)) {
-			await this._mkdir(params)
-			return {}
-		}
-
-		if (["rm", "rmdir", "remove", "del", "delete"].includes(cmd)) {
-			await this._rm(params)
-			return {}
-		}
-
-		if (["upload"].includes(cmd)) {
-			await this._upload(params)
-			return {}
-		}
-
-		if (["download"].includes(cmd)) {
-			await this._download(params)
-			return {}
-		}
-
-		if (["stat", "stats"].includes(cmd)) {
-			await this._stat(params)
-			return {}
-		}
-
-		if (["statfs"].includes(cmd)) {
-			await this._statfs(params)
-			return {}
-		}
-
-		if (["mv", "move", "rename"].includes(cmd)) {
-			await this._mv(params)
-			return {}
-		}
-
-		if (["cp", "copy"].includes(cmd)) {
-			await this._cp(params)
-			return {}
-		}
-
-		if (["write"].includes(cmd)) {
-			await this._write(params)
-			return {}
-		}
-
-		if (["open"].includes(cmd)) {
-			await this._openOrEdit(params, false)
-			return {}
-		}
-		if (["edit"].includes(cmd)) {
-			await this._openOrEdit(params, true)
-			return {}
-		}
-
-		if (cmd === "exit") return { exit: true }
-
-		err(`Unknown command: ${cmd}`)
 		return {}
 	}
 
@@ -120,10 +110,6 @@ export class FS {
 	 * @return the CloudPath navigated to, if successful
 	 */
 	private async _cd(params: CommandParameters) {
-		if (params.args.length < 1) {
-			err("Need to provide arg 1: directory")
-			return
-		}
 		const path = params.cloudWorkingPath.navigate(params.args[0])
 		try {
 			const directory = await this.filen.fs().stat({ path: path.toString() })
@@ -152,10 +138,6 @@ export class FS {
 	 * Execute a `more` command
 	 */
 	private async _more(params: CommandParameters) {
-		if (params.args.length < 1) {
-			err("Need to provide arg 1: file")
-			return
-		}
 		const path = params.cloudWorkingPath.navigate(params.args[0])
 		try {
 			const fileSize = (await this.filen.fs().stat({ path: path.toString() })).size
@@ -175,10 +157,6 @@ export class FS {
 	 * Execute an `mkdir` command
 	 */
 	private async _mkdir(params: CommandParameters) {
-		if (params.args.length < 1) {
-			err("Need to provide arg 1: directory name")
-			return
-		}
 		await this.filen.fs().mkdir({ path: params.cloudWorkingPath.navigate(params.args[0]).toString() })
 	}
 
@@ -186,10 +164,6 @@ export class FS {
 	 * Execute a `rm` command
 	 */
 	private async _rm(params: CommandParameters) {
-		if (params.args.length < 1) {
-			err("Need to provide arg 1: path")
-			return
-		}
 		try {
 			await this.filen.fs().rm({ path: params.cloudWorkingPath.navigate(params.args[0]).toString() })
 		} catch (e) {
@@ -201,11 +175,6 @@ export class FS {
 	 * Execute an `upload` command (upload a local file into the cloud)
 	 */
 	private async _upload(params: CommandParameters) {
-		if (params.args.length < 2) {
-			if (params.args.length < 1) err("Need to provide arg 1: local file")
-			else err("Need to provide arg 2: cloud path")
-			return {}
-		}
 		const source = params.args[0]
 		const size = fsModule.statSync(source).size
 		const path = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(params.args[1], source.split(/[/\\]/)[source.split(/[/\\]/).length - 1])
@@ -228,14 +197,10 @@ export class FS {
 	 * Execute a `download` command (download file form the cloud into local storage)
 	 */
 	private async _download(params: CommandParameters) {
-		if (params.args.length < 1) {
-			err("Need to provide arg 1: cloud file")
-			return
-		}
-		const source = params.cloudWorkingPath.navigate(params.args[0])
-		const rawPath = params.args[1] === undefined || params.args[1] === "." ? process.cwd() + "/" : params.args[1]
-		const path = rawPath.endsWith("/") || rawPath.endsWith("\\") ? pathModule.join(rawPath, source.cloudPath[source.cloudPath.length - 1]) : rawPath
 		try {
+			const source = params.cloudWorkingPath.navigate(params.args[0])
+			const rawPath = params.args[1] === undefined || params.args[1] === "." ? process.cwd() + "/" : params.args[1]
+			const path = rawPath.endsWith("/") || rawPath.endsWith("\\") ? pathModule.join(rawPath, source.cloudPath[source.cloudPath.length - 1]) : rawPath
 			const size = (await this.filen.fs().stat({ path: source.toString() })).size
 			const progressBar = params.quiet ? null : this.displayTransferProgressBar("Downloading", source.getLastSegment(), size)
 			try {
@@ -259,12 +224,8 @@ export class FS {
 	 * Execute a `stat` command
 	 */
 	private async _stat(params: CommandParameters) {
-		if (params.args.length < 1) {
-			err("Need to provide arg 1: path")
-			return
-		}
-		const path = params.cloudWorkingPath.navigate(params.args[0])
 		try {
+			const path = params.cloudWorkingPath.navigate(params.args[0])
 			const stat = await this.filen.fs().stat({ path: path.toString() })
 			const size = stat.isFile() ? stat.size : await this.filen.cloud().directorySize({ uuid: stat.uuid })
 
@@ -308,11 +269,6 @@ export class FS {
 	 * Execute a `mv` command
 	 */
 	private async _mv(params: CommandParameters) {
-		if (params.args.length < 2) {
-			if (params.args.length < 1) err("Need to provide arg 1: path from")
-			else err("Need to provide arg 2: path to")
-			return
-		}
 		try {
 			const from = params.cloudWorkingPath.navigate(params.args[0])
 			const to = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(params.args[1], from.cloudPath[from.cloudPath.length - 1])
@@ -326,11 +282,6 @@ export class FS {
 	 * Execute a `cp` command
 	 */
 	private async _cp(params: CommandParameters) {
-		if (params.args.length < 2) {
-			if (params.args.length < 1) err("Need to provide arg 1: path from")
-			else err("Need to provide arg 2: path to")
-			return
-		}
 		try {
 			const from = params.cloudWorkingPath.navigate(params.args[0])
 			const to = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(params.args[1], from.cloudPath[from.cloudPath.length - 1])
@@ -360,10 +311,6 @@ export class FS {
 	 * Execute a `write` command (write plain text to a file in the cloud)
 	 */
 	private async _write(params: CommandParameters) {
-		if (params.args.length < 1) {
-			err("Need to provide arg 1: file")
-			return
-		}
 		const path = params.cloudWorkingPath.navigate(params.args[0])
 		const content = params.args.slice(1).join(" ")
 		await this.filen.fs().writeFile({ path: path.toString(), content: Buffer.from(content) })
@@ -374,10 +321,6 @@ export class FS {
 	 * @param edit If this flag is set and the file was edited, it will be re-uploaded after closing the application
 	 */
 	private async _openOrEdit(params: CommandParameters, edit: boolean) {
-		if (params.args.length < 1) {
-			err("Need to provide arg 1: file")
-			return {}
-		}
 		try {
 			const path = params.cloudWorkingPath.navigate(params.args[0])
 			const downloadPath = pathModule.join(this.filen.config.tmpPath ?? process.cwd(), path.getLastSegment())

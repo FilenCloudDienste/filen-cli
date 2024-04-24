@@ -4,7 +4,11 @@ import { readlineInterface } from "./interface"
  * Handles SIGINT signals.
  */
 export class InterruptHandler {
-	public static readonly instance = new InterruptHandler()
+	private static _instance?: InterruptHandler
+	public static get instance() {
+		if (this._instance === undefined) this._instance = new InterruptHandler()
+		return this._instance
+	}
 
 	private listeners: (() => void)[] = []
 
