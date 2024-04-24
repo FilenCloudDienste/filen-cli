@@ -80,6 +80,11 @@ export class FS {
 			return {}
 		}
 
+		if (["statfs"].includes(cmd)) {
+			await this._statfs(params)
+			return {}
+		}
+
 		if (["mv", "move", "rename"].includes(cmd)) {
 			await this._mv(params)
 			return {}
@@ -280,6 +285,22 @@ export class FS {
 			}
 		} catch (e) {
 			err("No such file")
+		}
+	}
+
+	/**
+	 * Execute a `statfs` command
+	 */
+	private async _statfs(params: CommandParameters) {
+		const statfs = await this.filen.fs().statfs()
+		if (params.formatJson) {
+			outJson({
+				used: statfs.used,
+				max: statfs.max
+			})
+		} else {
+			out(`Used: ${formatBytes(statfs.used)}`)
+			out(` Max: ${formatBytes(statfs.max)}`)
 		}
 	}
 
