@@ -17,12 +17,16 @@ const args = arg({
 	"--verbose": Boolean,
 	"--json": Boolean,
 	"--quiet": Boolean,
+	"--email": String,
+	"--password": String,
 
 	// aliases
 	"-h": "--help",
 	"-r": "--root",
 	"-v": "--verbose",
-	"-q": "--quiet"
+	"-q": "--quiet",
+	"-e": "--email",
+	"-p": "--password"
 })
 
 if (args["--help"]) {
@@ -46,7 +50,19 @@ if (args["--help"]) {
 	})
 
 	const storedCredentials = await keytar.findCredentials("filen-cli")
-	if (storedCredentials.length > 0) {
+	if (args["--email"] !== undefined) {
+		const email = args["--email"]
+		const password = args["--password"]
+		if (password === undefined) errExit("Need to also specify argument --password")
+		await filen.login({ email, password })
+		if (args["--verbose"]) out(`Logged in as ${email} (using arguments)`)
+	} else if (process.env.FILEN_EMAIL !== undefined) {
+		const email = process.env.FILEN_EMAIL
+		const password = process.env.FILEN_PASSWORD
+		if (password === undefined) errExit("Need to also specify environment variable FILEN_PASSWORD")
+		await filen.login({ email, password })
+		if (args["--verbose"]) out(`Logged in as ${email} (using environment variables)`)
+	} else if (storedCredentials.length > 0) {
 		const credentials = storedCredentials[0]
 		await filen.login({ email: credentials.account, password: credentials.password })
 		if (args["--verbose"]) out(`Logged in as ${credentials.account} (using saved credentials)`)

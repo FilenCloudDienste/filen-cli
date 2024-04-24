@@ -18,6 +18,7 @@ $ filen [options...] <cmd...>
 Options:
 - `--help`, `-h`: display usage information
 - `--verbose`, `-v`: display additional information
+- `--email <email>` and `--password <password>` specify credentials
 - `--quiet`, `-q`: hide things like progress bars
 - `--root <path>`, `-r <path`: execute a stateless command from a different working directory
 - `--json`: format output as JSON
@@ -51,4 +52,6 @@ Additional available commands:
 
 There are several ways to authenticate:
 - Invoke the CLI and specify your Filen email and password. You can then choose to save them in your OS's keystore. You can delete them later using the `--delete-credentials` flag.
+- Invoke the CLI with the `--email` and `--password` arguments set.
+- Put your credentials in the `FILEN_EMAIL` and `FILEN_PASSWORD` environment variables.
 - Store your Filen email and password in a file named `.filen-cli-credentials` where you invoke the CLI. Put your email and password in separate lines, in plain text.
