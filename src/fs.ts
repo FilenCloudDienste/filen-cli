@@ -1,11 +1,12 @@
 import { err, out, outJson, prompt } from "./interface"
 import FilenSDK from "@filen/sdk"
 import pathModule from "path"
-import { doNothing, formatTimestamp } from "./util"
+import { doNothing, formatTimestamp, hashFile } from "./util"
 import { CloudPath } from "./cloudPath"
 import cliProgress from "cli-progress"
 import * as fsModule from "node:fs"
 import { InterruptHandler } from "./interrupt"
+import open from "open"
 
 /**
  * Handles CLI commands related to cloud filesystem operations.
@@ -207,7 +208,7 @@ export class FS {
 			return {}
 		}
 
-		// not a UNIX command; write text into a file
+		// write text into a file
 		if (["write"].includes(cmd)) {
 
 			if (args.length < 1) {
@@ -218,8 +219,33 @@ export class FS {
 			const content = args.slice(1).join(" ")
 			await this.filen.fs().writeFile({ path: path.toString(), content: Buffer.from(content) })
 			return {}
-			//TODO bug: opens WordPad somehow
 
+		}
+
+		// download a file into a temporary location and open it in the associated app
+		const openOrEdit = async (args: string[], edit: boolean) => {
+			if (args.length < 1) {
+				err("Need to provide arg 1: file")
+				return {}
+			}
+			const path = cloudWorkingPath.navigate(args[0])
+			const downloadPath = pathModule.join(this.filen.config.tmpPath ?? process.cwd(), path.getLastSegment())
+			await this.filen.fs().download({ path: path.toString(), destination: downloadPath })
+			const hash = !edit ? null : await hashFile(downloadPath)
+			await open(downloadPath, { wait: edit })
+			if (edit && await hashFile(downloadPath) !== hash) {
+				await this.filen.fs().upload({ path: path.toString(), source: downloadPath })
+			}
+			fsModule.unlinkSync(downloadPath)
+			return {}
+		}
+		if (["open"].includes(cmd)) {
+			await openOrEdit(args, false)
+			return {}
+		}
+		if (["edit"].includes(cmd)) {
+			await openOrEdit(args, true)
+			return {}
 		}
 
 		if (cmd === "exit") return { exit: true }

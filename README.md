@@ -33,6 +33,8 @@ Options:
 - `stat <path>`: display information about a file or directory
 - `mv <from> <to>` / `cp <from> <to>`: move or copy a file to a path (parent directory or file)
 - `write <file> <content...>`: write text to a file
+- `open <file>`: open a file locally in the associated application
+- `edit <file>`: edit a file locally in the associated application (save and close to re-upload)
 
 ### Interactive mode
 

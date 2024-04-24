@@ -1,3 +1,6 @@
+import crypto from "crypto"
+import * as fsModule from "node:fs"
+
 /**
  * Formats a timestamp as yyyy-MM-dd.hh.mm.ss.SSS
  * @param ms timestamp
@@ -15,4 +18,20 @@ export function formatTimestamp(ms: number) {
  * A function that does nothing.
  */
 export const doNothing = () => {
+}
+
+/**
+ * Generate the md5 hash of a file
+ */
+export function hashFile(path: string) {
+	return new Promise((resolve) => {
+		// see https://stackoverflow.com/a/18658613
+		const hash = crypto.createHash("md5", { encoding: "hex" })
+		const stream = fsModule.createReadStream(path)
+		stream.on("end", () => {
+			hash.end()
+			resolve(hash.read().toString())
+		})
+		stream.pipe(hash)
+	})
 }
