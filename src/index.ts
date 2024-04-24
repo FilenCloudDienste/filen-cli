@@ -2,7 +2,7 @@ import arg from "arg"
 import FilenSDK from "@filen/sdk"
 import path from "path"
 import os from "os"
-import { err, errExit, out, prompt } from "./interface"
+import { err, errExit, errorOccurred, out, prompt } from "./interface"
 import * as fsModule from "node:fs"
 import keytar from "keytar"
 import { CloudPath } from "./cloudPath"
@@ -91,6 +91,7 @@ if (args["--help"]) {
 		}
 	} else {
 		const result = await fs.executeCommand(cloudRootPath, args["_"][0], args["_"].slice(1), formatJson, quiet)
+		if (errorOccurred) process.exit(1)
 		if (result.cloudWorkingPath !== undefined) err("To navigate in a stateful environment, please invoke the CLI without any arguments.")
 	}
 	process.exit()

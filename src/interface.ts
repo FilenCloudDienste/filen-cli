@@ -18,12 +18,16 @@ export function outJson(json: any) {
     console.log(json)
 }
 
+export let errorOccurred = false
+
 /**
  * Global error output method
  * @param message
  */
 export function err(message: string) {
-    console.error(message)
+    errorOccurred = true
+    // red color: see https://stackoverflow.com/a/41407246
+    console.error("\x1b[31m" + message + "\x1b[0m")
 }
 
 /**
