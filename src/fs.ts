@@ -1,7 +1,7 @@
 import { err, out, outJson, prompt } from "./interface"
 import FilenSDK from "@filen/sdk"
 import pathModule from "path"
-import { doNothing, formatTimestamp, hashFile } from "./util"
+import { doNothing, formatBytes, formatTimestamp, hashFile } from "./util"
 import { CloudPath } from "./cloudPath"
 import cliProgress from "cli-progress"
 import * as fsModule from "node:fs"
@@ -71,7 +71,7 @@ export class FS {
 			try {
 				const fileSize = (await this.filen.fs().stat({ path: path.toString() })).size
 				if (fileSize > 2_000) {
-					const result = await prompt(`This file is ${fileSize}B large. Continue? [y/N] `)
+					const result = await prompt(`This file is ${formatBytes(fileSize)} large. Continue? [y/N] `)
 					if (result.toLowerCase() !== "y") return {}
 				}
 				const content = (await this.filen.fs().readFile({ path: path.toString() })).toString()
@@ -172,9 +172,7 @@ export class FS {
 			const path = cloudWorkingPath.navigate(args[0])
 			try {
 				const stat = await this.filen.fs().stat({ path: path.toString() })
-
-				let size = stat.size
-				if (!stat.isFile()) size = await this.filen.cloud().directorySize({ uuid: stat.uuid })
+				const size = stat.isFile() ? stat.size : await this.filen.cloud().directorySize({ uuid: stat.uuid })
 
 				if (formatJson) {
 					outJson({
@@ -187,7 +185,7 @@ export class FS {
 				} else {
 					out(`  File: ${stat.name}`)
 					out(`  Type: ${stat.type}`)
-					out(`  Size: ${size}`)
+					out(`  Size: ${formatBytes(size)}`)
 					out(`Modify: ${formatTimestamp(stat.mtimeMs)}`)
 					out(` Birth: ${formatTimestamp(stat.birthtimeMs)}`)
 				}
@@ -306,9 +304,11 @@ export class FS {
 		onProgress: (transferred: number) => void
 	} {
 		const progressBar = new cliProgress.SingleBar({
-			format: `${action} ${file} [{bar}] {percentage}% | ETA: {eta}s | ${isApproximate ? "~ " : ""}{value} B / {total} B`
+			format: `${action} ${file} [{bar}] {percentage}% | ETA: {eta_formatted} | ${isApproximate ? "~ " : ""}{value} / {total}`,
+			// of a number is <= 100, it is likely a percentage; otherwise format as byte (library used here doesn't provide other options)
+			formatValue: n => n <= 100 ? n.toString() : formatBytes(n)
 		}, cliProgress.Presets.legacy)
-		progressBar.start(total, 0, { speed: "N/A" })
+		progressBar.start(total, 0)
 		const onProgress = (transferred: number) => {
 			progressBar.increment(transferred)
 			if (progressBar.getProgress() >= 1.0) progressBar.stop()
