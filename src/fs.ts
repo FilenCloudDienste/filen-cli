@@ -117,9 +117,19 @@ export class FS {
 			const source = args[0]
 			const size = fsModule.statSync(source).size
 			const path = await cloudWorkingPath.navigateAndAppendFileNameIfNecessary(args[1], source.split(/[/\\]/)[source.split(/[/\\]/).length - 1])
-			const onProgress = quiet ? doNothing : this.displayTransferProgressBar("Uploading", path.getLastSegment(), size).onProgress
-			const abortSignal = InterruptHandler.instance.createAbortSignal()
-			await this.filen.fs().upload({ path: path.toString(), source, onProgress, abortSignal })
+			const progressBar = quiet ? null : this.displayTransferProgressBar("Uploading", path.getLastSegment(), size)
+			try {
+				const abortSignal = InterruptHandler.instance.createAbortSignal()
+				await this.filen.fs().upload({
+					path: path.toString(),
+					source,
+					onProgress: quiet ? doNothing : progressBar!.onProgress,
+					abortSignal
+				})
+			} catch (e) {
+				if (progressBar) progressBar.progressBar.stop()
+				err("Aborted")
+			}
 			return {}
 
 		}
@@ -134,9 +144,19 @@ export class FS {
 			const path = rawPath.endsWith("/") || rawPath.endsWith("\\") ? pathModule.join(rawPath, source.cloudPath[source.cloudPath.length - 1]) : rawPath
 			try {
 				const size = (await this.filen.fs().stat({ path: source.toString() })).size
-				const onProgress = quiet ? doNothing : this.displayTransferProgressBar("Downloading", source.getLastSegment(), size).onProgress
-				const abortSignal = InterruptHandler.instance.createAbortSignal()
-				await this.filen.fs().download({ path: source.toString(), destination: path, onProgress, abortSignal })
+				const progressBar = quiet ? null : this.displayTransferProgressBar("Downloading", source.getLastSegment(), size)
+				try {
+					const abortSignal = InterruptHandler.instance.createAbortSignal()
+					await this.filen.fs().download({
+						path: source.toString(),
+						destination: path,
+						onProgress: progressBar?.onProgress ?? doNothing,
+						abortSignal
+					})
+				} catch (e) {
+					if (progressBar) progressBar.progressBar.stop()
+					err("Aborted")
+				}
 			} catch (e) {
 				err("No such file")
 			}
@@ -206,14 +226,18 @@ export class FS {
 				let stillDownloading = true
 				const onProgress = quiet ? doNothing : (transferred: number) => {
 					progressBar!.onProgress(transferred)
-					//if (progressBar!.progressBar.getProgress() > 0.9) console.log(progressBar!.progressBar.getProgress())
 					if (progressBar!.progressBar.getProgress() >= 1 && stillDownloading) {
 						stillDownloading = false
 						progressBar = this.displayTransferProgressBar("Uploading", from.getLastSegment(), fromSize, true)
 					}
 				}
-				const abortSignal = InterruptHandler.instance.createAbortSignal()
-				await this.filen.fs().copy({ from: from.toString(), to: to.toString(), onProgress, abortSignal })
+				try {
+					const abortSignal = InterruptHandler.instance.createAbortSignal()
+					await this.filen.fs().copy({ from: from.toString(), to: to.toString(), onProgress, abortSignal })
+				} catch (e) {
+					if (progressBar) progressBar.progressBar.stop()
+					err("Aborted")
+				}
 			} catch (e) {
 				err("No such file or directory")
 			}

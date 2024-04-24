@@ -7,6 +7,7 @@ import * as fsModule from "node:fs"
 import keytar from "keytar"
 import { CloudPath } from "./cloudPath"
 import { FS } from "./fs"
+import { InterruptHandler } from "./interrupt"
 
 const args = arg({
 	// arguments
@@ -79,6 +80,7 @@ if (args["--help"]) {
 		let cloudWorkingPath: CloudPath = cloudRootPath
 		// eslint-disable-next-line no-constant-condition
 		while (true) {
+			InterruptHandler.instance.addListener(() => process.exit())
 			const command = await prompt(`${cloudWorkingPath.toString()} > `)
 			if (command === "") continue
 			const cmd = command.split(" ")[0].toLowerCase()

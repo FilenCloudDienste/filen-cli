@@ -18,7 +18,7 @@ export class InterruptHandler {
 	}
 
 	private interrupt() {
-		this.listeners.forEach((listener) => listener())
+		if (this.listeners.length > 0) this.listeners[0]()
 		this.listeners = []
 	}
 
@@ -27,7 +27,7 @@ export class InterruptHandler {
 	 * It will be removed after firing once.
 	 */
 	public addListener(onInterrupt: () => void) {
-		this.listeners.push(onInterrupt)
+		this.listeners.unshift(onInterrupt)
 	}
 
 	/**
