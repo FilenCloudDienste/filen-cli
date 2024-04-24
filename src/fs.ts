@@ -51,9 +51,13 @@ export class FS {
 		if (["ls", "list"].includes(cmd)) {
 
 			const path = args.length > 0 ? cloudWorkingPath.navigate(args[0]) : cloudWorkingPath
-			const output = await this.filen.fs().readdir({ path: path.toString() })
-			if (formatJson) outJson(output)
-			else out(output.join("  "))
+			try {
+				const output = await this.filen.fs().readdir({ path: path.toString() })
+				if (formatJson) outJson(output)
+				else out(output.join("  "))
+			} catch (e) {
+				err("No such directory")
+			}
 			return {}
 
 		}
@@ -128,10 +132,14 @@ export class FS {
 			const source = cloudWorkingPath.navigate(args[0])
 			const rawPath = args[1] === undefined || args[1] === "." ? process.cwd() + "/" : args[1]
 			const path = rawPath.endsWith("/") || rawPath.endsWith("\\") ? pathModule.join(rawPath, source.cloudPath[source.cloudPath.length - 1]) : rawPath
-			const size = (await this.filen.fs().stat({ path: source.toString() })).size
-			const onProgress = quiet ? doNothing : this.displayTransferProgressBar("Downloading", source.getLastSegment(), size).onProgress
-			const abortSignal = InterruptHandler.instance.createAbortSignal()
-			await this.filen.fs().download({ path: source.toString(), destination: path, onProgress, abortSignal })
+			try {
+				const size = (await this.filen.fs().stat({ path: source.toString() })).size
+				const onProgress = quiet ? doNothing : this.displayTransferProgressBar("Downloading", source.getLastSegment(), size).onProgress
+				const abortSignal = InterruptHandler.instance.createAbortSignal()
+				await this.filen.fs().download({ path: source.toString(), destination: path, onProgress, abortSignal })
+			} catch (e) {
+				err("No such file")
+			}
 			return {}
 
 		}
@@ -142,25 +150,29 @@ export class FS {
 				return {}
 			}
 			const path = cloudWorkingPath.navigate(args[0])
-			const stat = await this.filen.fs().stat({ path: path.toString() })
+			try {
+				const stat = await this.filen.fs().stat({ path: path.toString() })
 
-			let size = stat.size
-			if (!stat.isFile()) size = await this.filen.cloud().directorySize({ uuid: stat.uuid })
+				let size = stat.size
+				if (!stat.isFile()) size = await this.filen.cloud().directorySize({ uuid: stat.uuid })
 
-			if (formatJson) {
-				outJson({
-					file: stat.name,
-					type: stat.type,
-					size: size,
-					mtimeMs: stat.mtimeMs,
-					birthtimeMs: stat.birthtimeMs
-				})
-			} else {
-				out(`  File: ${stat.name}`)
-				out(`  Type: ${stat.type}`)
-				out(`  Size: ${size}`)
-				out(`Modify: ${formatTimestamp(stat.mtimeMs)}`)
-				out(` Birth: ${formatTimestamp(stat.birthtimeMs)}`)
+				if (formatJson) {
+					outJson({
+						file: stat.name,
+						type: stat.type,
+						size: size,
+						mtimeMs: stat.mtimeMs,
+						birthtimeMs: stat.birthtimeMs
+					})
+				} else {
+					out(`  File: ${stat.name}`)
+					out(`  Type: ${stat.type}`)
+					out(`  Size: ${size}`)
+					out(`Modify: ${formatTimestamp(stat.mtimeMs)}`)
+					out(` Birth: ${formatTimestamp(stat.birthtimeMs)}`)
+				}
+			} catch (e) {
+				err("No such file")
 			}
 			return {}
 
@@ -228,15 +240,19 @@ export class FS {
 				err("Need to provide arg 1: file")
 				return {}
 			}
-			const path = cloudWorkingPath.navigate(args[0])
-			const downloadPath = pathModule.join(this.filen.config.tmpPath ?? process.cwd(), path.getLastSegment())
-			await this.filen.fs().download({ path: path.toString(), destination: downloadPath })
-			const hash = !edit ? null : await hashFile(downloadPath)
-			await open(downloadPath, { wait: edit })
-			if (edit && await hashFile(downloadPath) !== hash) {
-				await this.filen.fs().upload({ path: path.toString(), source: downloadPath })
+			try {
+				const path = cloudWorkingPath.navigate(args[0])
+				const downloadPath = pathModule.join(this.filen.config.tmpPath ?? process.cwd(), path.getLastSegment())
+				await this.filen.fs().download({ path: path.toString(), destination: downloadPath })
+				const hash = !edit ? null : await hashFile(downloadPath)
+				await open(downloadPath, { wait: edit })
+				if (edit && await hashFile(downloadPath) !== hash) {
+					await this.filen.fs().upload({ path: path.toString(), source: downloadPath })
+				}
+				fsModule.unlinkSync(downloadPath)
+			} catch (e) {
+				err("No such file")
 			}
-			fsModule.unlinkSync(downloadPath)
 			return {}
 		}
 		if (["open"].includes(cmd)) {
