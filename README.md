@@ -31,6 +31,7 @@ Options:
 - `download <cloud path> <local destination>`: download a file or directory from the cloud into a local destination
 - `upload <local file> <cloud path>`: upload a local file into the cloud at a specified path
 - `stat <path>`: display information about a file or directory
+- `statfs`: display information about your Filen cloud drive
 - `mv <from> <to>` / `cp <from> <to>`: move or copy a file to a path (parent directory or file)
 - `write <file> <content...>`: write text to a file
 - `open <file>`: open a file locally in the associated application
