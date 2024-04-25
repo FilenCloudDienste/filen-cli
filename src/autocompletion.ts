@@ -2,9 +2,10 @@ import { CompleterResult } from "node:readline"
 import { fsCommands } from "./commands"
 import FilenSDK from "@filen/sdk"
 import { CloudPath } from "./cloudPath"
+import * as fs from "node:fs"
 
 /**
- * Provides autocompletion for fs commands and cloud paths.
+ * Provides autocompletion for fs commands, cloud paths and local paths.
  */
 export class Autocompletion {
 	/**
@@ -51,16 +52,18 @@ export class Autocompletion {
 			if (command === undefined) return [[], input]
 			const argument = command.arguments[argumentIndex]
 			const argumentInput = segments[segments.length - 1]
-			if (argument.type === "cloud_directory" || argument.type === "cloud_file" || argument.type === "cloud_path") {
-				const inputPath = this.cloudWorkingPath.navigate(argumentInput)
+			if (argument.type === "cloud_directory" || argument.type === "cloud_file" || argument.type === "cloud_path" || argument.type === "local_file" || argument.type === "local_path") {
+				const filesystem = argument.type.startsWith("cloud") ? "cloud" : "local"
+
+				const inputPath = filesystem === "cloud" ? this.cloudWorkingPath.navigate(argumentInput).toString() : argumentInput
 				let autocompleteOptions: string[]
 				try {
-					const items = await this.readDirectory(inputPath)
+					const items = await (filesystem === "cloud" ? this.readCloudDirectory(inputPath) : this.readLocalDirectory(inputPath))
 					autocompleteOptions = items.map(item => argumentInput + ((argumentInput.endsWith("/") || argumentInput === "") ? "" : "/") + item)
 				} catch (e) { // path does not exist
 					try {
-						const inputPathParent = new CloudPath(this.filen, inputPath.cloudPath.slice(0, inputPath.cloudPath.length - 1))
-						const items = await this.readDirectory(inputPathParent)
+						const inputPathParent = inputPath.substring(0, inputPath.lastIndexOf("/") - 1)
+						const items = await (filesystem === "cloud" ? this.readCloudDirectory(inputPathParent) : this.readLocalDirectory(inputPathParent))
 						autocompleteOptions = items.map(item => argumentInput.substring(0, argumentInput.lastIndexOf("/") + 1) + item)
 					} catch (e) {
 						return [[], input]
@@ -68,25 +71,34 @@ export class Autocompletion {
 				}
 				const options = autocompleteOptions.filter(option => option.startsWith(argumentInput))
 				return [options, argumentInput]
-			} else if (argument.type === "local_file" || argument.type === "local_path") {
-				//TODO: implement
-				return [[], input]
 			} else {
 				return [[], input]
 			}
 		}
 	}
 
-	private cachedPaths: string[] = []
+	private cachedCloudPaths: string[] = []
 
-	private async readDirectory(path: CloudPath) {
-		if (this.cachedPaths.includes(path.toString())) {
+	private async readCloudDirectory(path: string) {
+		if (this.cachedCloudPaths.includes(path)) {
 			return Object.keys(this.filen.fs()._items)
-				.filter(cachedPath => cachedPath.startsWith(path.toString()) && cachedPath !== path.toString())
+				.filter(cachedPath => cachedPath.startsWith(path) && cachedPath !== path)
 				.map(cachedPath => cachedPath.includes("/") ? cachedPath.substring(cachedPath.lastIndexOf("/") + 1) : cachedPath)
 		} else {
-			const items = await this.filen.fs().readdir({ path: path.toString() })
-			this.cachedPaths.push(path.toString())
+			const items = await this.filen.fs().readdir({ path })
+			this.cachedCloudPaths.push(path)
+			return items
+		}
+	}
+
+	private cachedLocalItems = new Map<string, string[]>()
+
+	private async readLocalDirectory(path: string) {
+		if (this.cachedLocalItems.has(path)) {
+			return this.cachedLocalItems.get(path)!
+		} else {
+			const items = fs.readdirSync("./" + path)
+			this.cachedLocalItems.set(path, items)
 			return items
 		}
 	}
