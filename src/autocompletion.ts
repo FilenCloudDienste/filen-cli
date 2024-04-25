@@ -26,6 +26,7 @@ export class Autocompletion {
 	 * Supply the current user input so autocomplete results can be pre-fetched asynchronously.
 	 */
 	public prefetchForInput(input: string) {
+		if (this.autocompleteResults.has(input)) return
 		this._autocomplete(input).then(result => {
 			this.autocompleteResults.set(input, result)
 		})
@@ -38,7 +39,6 @@ export class Autocompletion {
 		return this.autocompleteResults.get(input) ?? [[], input]
 	}
 
-	//TODO: use cached file tree from `filen.fs()._items`
 	private async _autocomplete(input: string): Promise<CompleterResult> {
 		const segments = input.split(" ")
 		if (segments.length < 2) { // typing command
@@ -55,21 +55,15 @@ export class Autocompletion {
 				const inputPath = this.cloudWorkingPath.navigate(argumentInput)
 				let autocompleteOptions: string[]
 				try {
-					console.log("[[[")
-					console.log("path:", inputPath.toString())
-					const items = await this.filen.fs().readdir({ path: inputPath.toString() })
-					console.log(" (successful) ")
-					console.log("]]]")
+					const items = await this.readDirectory(inputPath)
 					autocompleteOptions = items.map(item => argumentInput + ((argumentInput.endsWith("/") || argumentInput === "") ? "" : "/") + item)
 				} catch (e) { // path does not exist
 					try {
 						const inputPathParent = new CloudPath(this.filen, inputPath.cloudPath.slice(0, inputPath.cloudPath.length - 1))
-						const items = await this.filen.fs().readdir({ path: inputPathParent.toString() })
+						const items = await this.readDirectory(inputPathParent)
 						autocompleteOptions = items.map(item => argumentInput.substring(0, argumentInput.lastIndexOf("/") + 1) + item)
 					} catch (e) {
 						return [[], input]
-					} finally {
-						console.log("]]]")
 					}
 				}
 				const options = autocompleteOptions.filter(option => option.startsWith(argumentInput))
@@ -80,6 +74,20 @@ export class Autocompletion {
 			} else {
 				return [[], input]
 			}
+		}
+	}
+
+	private cachedPaths: string[] = []
+
+	private async readDirectory(path: CloudPath) {
+		if (this.cachedPaths.includes(path.toString())) {
+			return Object.keys(this.filen.fs()._items)
+				.filter(cachedPath => cachedPath.startsWith(path.toString()) && cachedPath !== path.toString())
+				.map(cachedPath => cachedPath.includes("/") ? cachedPath.substring(cachedPath.lastIndexOf("/") + 1) : cachedPath)
+		} else {
+			const items = await this.filen.fs().readdir({ path: path.toString() })
+			this.cachedPaths.push(path.toString())
+			return items
 		}
 	}
 }
