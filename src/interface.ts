@@ -54,6 +54,9 @@ export function errExit(message: string) {
  */
 export async function prompt(message?: string) {
 	return new Promise<string>((resolve) => {
-		readlineInterface.question(message ?? "", (input) => resolve(input))
+		readlineInterface.question(message ?? "", (input) => {
+			Autocompletion.instance?.clearPrefetchedResults()
+			resolve(input)
+		})
 	})
 }
