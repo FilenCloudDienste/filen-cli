@@ -36,15 +36,15 @@ export function hashFile(path: string) {
 	})
 }
 
+/**
+ * Format an amount of bytes as a unit (Bytes, KiB, MiB, ...)
+ */
 export function formatBytes(bytes: number, decimals: number = 2) {
 	// see https://stackoverflow.com/a/18650828
 	if (!+bytes) return "0 Bytes"
-
-	const k = 1024
-	const dm = decimals < 0 ? 0 : decimals
+	const base = 1024
+	decimals = decimals < 0 ? 0 : decimals
 	const sizes = ["Bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"]
-
-	const i = Math.floor(Math.log(bytes) / Math.log(k))
-
-	return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+	const i = Math.floor(Math.log(bytes) / Math.log(base))
+	return `${parseFloat((bytes / Math.pow(base, i)).toFixed(decimals))} ${sizes[i]}`
 }

@@ -20,6 +20,7 @@ const args = arg({
 	"--quiet": Boolean,
 	"--email": String,
 	"--password": String,
+	"--no-autocomplete": String,
 
 	// aliases
 	"-h": "--help",
@@ -93,7 +94,7 @@ if (args["--help"]) {
 
 	const cloudRootPath = args["--root"] !== undefined ? new CloudPath(filen, []).navigate(args["--root"]) : new CloudPath(filen, [])
 	const fs = new FS(filen)
-	Autocompletion.instance = new Autocompletion(filen, cloudRootPath)
+	if (!args["--no-autocomplete"]) Autocompletion.instance = new Autocompletion(filen, cloudRootPath)
 
 	if (args["_"].length === 0) {
 		let cloudWorkingPath: CloudPath = cloudRootPath
@@ -108,7 +109,7 @@ if (args["--help"]) {
 			if (result.exit) break
 			if (result.cloudWorkingPath !== undefined) {
 				cloudWorkingPath = result.cloudWorkingPath
-				Autocompletion.instance.cloudWorkingPath = result.cloudWorkingPath
+				if (Autocompletion.instance) Autocompletion.instance.cloudWorkingPath = result.cloudWorkingPath
 			}
 		}
 	} else {

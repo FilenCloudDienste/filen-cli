@@ -18,10 +18,11 @@ $ filen [options...] <cmd...>
 Options:
 - `--help`, `-h`: display usage information
 - `--verbose`, `-v`: display additional information
-- `--email <email>` and `--password <password>` specify credentials
+- `--email <email>` and `--password <password>`: specify credentials
 - `--quiet`, `-q`: hide things like progress bars
 - `--root <path>`, `-r <path`: execute a stateless command from a different working directory
 - `--json`: format output as JSON
+- `--no-autocomplete`: disable autocompletion (for performance or bandwidth reasons)
 
 ### Available commands
 

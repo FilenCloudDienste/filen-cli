@@ -3,8 +3,14 @@ import { fsCommands } from "./commands"
 import FilenSDK from "@filen/sdk"
 import { CloudPath } from "./cloudPath"
 
+/**
+ * Provides autocompletion for fs commands and cloud paths.
+ */
 export class Autocompletion {
-	public static instance?: Autocompletion
+	/**
+	 * The instance. Is `null` when autocompletion is disabled.
+	 */
+	public static instance: Autocompletion | null
 
 	private readonly filen: FilenSDK
 	public cloudWorkingPath: CloudPath
@@ -16,12 +22,18 @@ export class Autocompletion {
 
 	private autocompleteResults = new Map<string, CompleterResult>()
 
+	/**
+	 * Supply the current user input so autocomplete results can be pre-fetched asynchronously.
+	 */
 	public prefetchForInput(input: string) {
 		this._autocomplete(input).then(result => {
 			this.autocompleteResults.set(input, result)
 		})
 	}
 
+	/**
+	 * @return pre-fetched autocomplete results for a given user input
+	 */
 	public autocomplete(input: string): CompleterResult {
 		return this.autocompleteResults.get(input) ?? [[], input]
 	}
