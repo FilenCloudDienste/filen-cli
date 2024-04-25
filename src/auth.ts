@@ -58,7 +58,7 @@ export class Authentication {
 		try {
 			await this.filen.login(credentials!)
 		} catch (e) {
-			if (e ! instanceof APIError) throw e
+			if (!(e instanceof APIError)) throw e
 			if ((e as APIError).code !== "enter_2fa") throw e
 			const twoFactorCode = await prompt("Please enter your 2FA code: ")
 			await this.filen.login({ ...credentials!, twoFactorCode })
