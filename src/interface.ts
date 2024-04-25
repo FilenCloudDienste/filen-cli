@@ -1,8 +1,14 @@
 import readline from "node:readline"
+import { Autocompletion } from "./autocompletion"
 
 export const readlineInterface = readline.createInterface({
 	input: process.stdin,
-	output: process.stdout
+	output: process.stdout,
+	completer: (input: string) => Autocompletion.instance?.autocomplete(input) ?? [[], input]
+})
+
+process.stdin.on("keypress", () => {
+	Autocompletion.instance?.prefetchForInput(readlineInterface.line)
 })
 
 /**

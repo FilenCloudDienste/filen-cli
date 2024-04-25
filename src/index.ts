@@ -8,6 +8,7 @@ import keytar from "keytar"
 import { CloudPath } from "./cloudPath"
 import { FS } from "./fs"
 import { InterruptHandler } from "./interrupt"
+import { Autocompletion } from "./autocompletion"
 
 const args = arg({
 	// arguments
@@ -90,8 +91,10 @@ if (args["--help"]) {
 	const quiet = args["--quiet"]!
 	const formatJson = args["--json"]!
 
-	const fs = new FS(filen)
 	const cloudRootPath = args["--root"] !== undefined ? new CloudPath(filen, []).navigate(args["--root"]) : new CloudPath(filen, [])
+	const fs = new FS(filen)
+	Autocompletion.instance = new Autocompletion(filen, cloudRootPath)
+
 	if (args["_"].length === 0) {
 		let cloudWorkingPath: CloudPath = cloudRootPath
 		// eslint-disable-next-line no-constant-condition
@@ -103,7 +106,10 @@ if (args["--help"]) {
 			const args = command.split(" ").splice(1)
 			const result = await fs.executeCommand(cloudWorkingPath, cmd, args, formatJson, quiet)
 			if (result.exit) break
-			if (result.cloudWorkingPath !== undefined) cloudWorkingPath = result.cloudWorkingPath
+			if (result.cloudWorkingPath !== undefined) {
+				cloudWorkingPath = result.cloudWorkingPath
+				Autocompletion.instance.cloudWorkingPath = result.cloudWorkingPath
+			}
 		}
 	} else {
 		const result = await fs.executeCommand(cloudRootPath, args["_"][0], args["_"].slice(1), formatJson, quiet)
