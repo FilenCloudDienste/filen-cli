@@ -1,4 +1,4 @@
-import { readlineInterface } from "./interface"
+import { out, readlineInterface } from "./interface"
 
 /**
  * Handles SIGINT signals.
@@ -18,12 +18,22 @@ export class InterruptHandler {
 				process.emit("SIGINT")
 			})
 		}
-		process.on("SIGINT", () => this.interrupt())
-	}
+		let lastInterruptTimestamp = 0
+		let consecutiveInterrupts = 0
+		process.on("SIGINT", () => {
+			if (this.listeners.length > 0) this.listeners[0]()
+			this.listeners = []
 
-	private interrupt() {
-		if (this.listeners.length > 0) this.listeners[0]()
-		this.listeners = []
+			const now = new Date().getMilliseconds()
+			if (now - lastInterruptTimestamp < 500) {
+				consecutiveInterrupts++
+				if (consecutiveInterrupts === 2) out("\nPress 3 consecutive times to close the application")
+				if (consecutiveInterrupts >= 3) process.exit()
+			} else {
+				consecutiveInterrupts = 1
+			}
+			lastInterruptTimestamp = now
+		})
 	}
 
 	/**
