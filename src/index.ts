@@ -2,13 +2,12 @@ import arg from "arg"
 import FilenSDK from "@filen/sdk"
 import path from "path"
 import os from "os"
-import { err, errExit, errorOccurred, out, prompt } from "./interface"
-import * as fsModule from "node:fs"
-import keytar from "keytar"
+import { err, errorOccurred, out, prompt } from "./interface"
 import { CloudPath } from "./cloudPath"
 import { FS } from "./fs"
 import { InterruptHandler } from "./interrupt"
 import { Autocompletion } from "./autocompletion"
+import { Authentication } from "./auth"
 
 const args = arg({
 	// arguments
@@ -20,6 +19,7 @@ const args = arg({
 	"--quiet": Boolean,
 	"--email": String,
 	"--password": String,
+	"--two-factor-code": String,
 	"--no-autocomplete": String,
 
 	// aliases
@@ -28,7 +28,8 @@ const args = arg({
 	"-v": "--verbose",
 	"-q": "--quiet",
 	"-e": "--email",
-	"-p": "--password"
+	"-p": "--password",
+	"-c": "--two-factor-code"
 })
 
 if (args["--help"]) {
@@ -38,56 +39,14 @@ if (args["--help"]) {
 
 (async () => {
 
-	if (args["--delete-credentials"]) {
-		const credentials = await keytar.findCredentials("filen-cli")
-		for (const credential of credentials) {
-			await keytar.deletePassword("filen-cli", credential.account)
-		}
-		out("Credentials deleted")
-	}
-
 	const filen = new FilenSDK({
 		metadataCache: true,
 		tmpPath: path.join(os.tmpdir(), "filen-cli")
 	})
 
-	const storedCredentials = await keytar.findCredentials("filen-cli")
-	if (args["--email"] !== undefined) {
-		const email = args["--email"]
-		const password = args["--password"]
-		if (password === undefined) errExit("Need to also specify argument --password")
-		await filen.login({ email, password })
-		if (args["--verbose"]) out(`Logged in as ${email} (using arguments)`)
-	} else if (process.env.FILEN_EMAIL !== undefined) {
-		const email = process.env.FILEN_EMAIL
-		const password = process.env.FILEN_PASSWORD
-		if (password === undefined) errExit("Need to also specify environment variable FILEN_PASSWORD")
-		await filen.login({ email, password })
-		if (args["--verbose"]) out(`Logged in as ${email} (using environment variables)`)
-	} else if (storedCredentials.length > 0) {
-		const credentials = storedCredentials[0]
-		await filen.login({ email: credentials.account, password: credentials.password })
-		if (args["--verbose"]) out(`Logged in as ${credentials.account} (using saved credentials)`)
-	} else if (fsModule.existsSync(".filen-cli-credentials")) {
-		const lines = fsModule.readFileSync(".filen-cli-credentials").toString().split("\n")
-		if (lines.length < 2) errExit("Invalid .filen-cli-credentials!")
-		await filen.login({ email: lines[0], password: lines[1] })
-		if (args["--verbose"]) out(`Logged in as ${lines[0]} (using .filen-cli-credentials)`)
-	} else {
-		out("Please enter your Filen credentials:")
-		const email = await prompt("Email: ")
-		const password = await prompt("Password: ")
-		if (!email || !password) errExit("Please provide your credentials!")
-		await filen.login({ email, password })
-
-		const saveCredentials = (await prompt("Save credentials locally for future invocations? [y/N] ")).toLowerCase() === "y"
-		if (saveCredentials) {
-			await keytar.setPassword("filen-cli", email, password)
-			out("You can delete these credentials using `filen --delete-credentials`")
-		}
-
-		out("")
-	}
+	const authentication = new Authentication(filen, args["--verbose"] ?? false)
+	if (args["--delete-credentials"]) await authentication.deleteStoredCredentials()
+	await authentication.authenticate(args["--email"], args["--password"], args["--two-factor-code"])
 
 	const quiet = args["--quiet"]!
 	const formatJson = args["--json"]!

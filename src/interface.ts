@@ -43,7 +43,7 @@ export function err(message: string) {
  * Global error output method. Exist the application
  * @param message
  */
-export function errExit(message: string) {
+export function errExit(message: string): never {
 	err(message)
 	process.exit()
 }
