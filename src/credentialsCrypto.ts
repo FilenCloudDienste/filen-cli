@@ -3,6 +3,7 @@ import fsModule from "node:fs"
 import crypto from "node:crypto"
 import { platformConfigPath } from "./util"
 import { type Credentials } from "./auth"
+import { key } from "./key"
 
 /**
  * Handles cryptography for securely storing credentials in a file.
@@ -12,8 +13,7 @@ export class CredentialsCrypto {
 	private readonly salt
 
 	public constructor() {
-		const keyFile = process.pkg !== undefined ? path.join(__dirname, "../dist/key") : path.join(__dirname, "../key")
-		this.key = fsModule.readFileSync(keyFile, { encoding: "utf-8" })
+		this.key = key
 
 		const saltFile = path.join(platformConfigPath(), ".credentials.salt")
 		if (!fsModule.existsSync(saltFile)) {
