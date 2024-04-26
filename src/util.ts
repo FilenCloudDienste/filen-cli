@@ -1,5 +1,8 @@
 import crypto from "crypto"
 import * as fsModule from "node:fs"
+import { PathLike } from "node:fs"
+import path from "path"
+import os from "os"
 
 /**
  * Formats a timestamp as yyyy-MM-dd.hh.mm.ss.SSS
@@ -47,4 +50,36 @@ export function formatBytes(bytes: number, decimals: number = 2) {
 	const sizes = ["Bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"]
 	const i = Math.floor(Math.log(bytes) / Math.log(base))
 	return `${parseFloat((bytes / Math.pow(base, i)).toFixed(decimals))} ${sizes[i]}`
+}
+
+/**
+ * Check if a path exists.
+ */
+export async function exists(path: PathLike) {
+	try {
+		await fsModule.promises.stat(path)
+		return true
+	} catch (e) {
+		return false
+	}
+}
+
+/**
+ * Returns the platform-specific directory for storing configuration files.
+ * - Windows: `%APPDATA%`
+ * - OS X: `~/Library/Application Support`
+ * - Unix: `$XDG_CONFIG_HOME` or `~/.config`
+ */
+export function platformConfigPath() {
+	// see https://github.com/jprichardson/ospath/blob/master/index.js
+	switch (process.platform) {
+		case "win32":
+			return path.resolve(process.env.APPDATA!)
+		case "darwin":
+			return path.resolve(path.join(os.homedir(), "Library/Application Support/"))
+		default:
+			return process.env.XDG_CONFIG_HOME
+				? path.resolve(process.env.XDG_CONFIG_HOME)
+				: path.resolve(path.join(os.homedir(), ".config/"))
+	}
 }

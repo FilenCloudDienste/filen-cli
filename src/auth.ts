@@ -1,7 +1,9 @@
 import FilenSDK, { APIError } from "@filen/sdk"
-import keytar from "keytar"
 import { errExit, out, prompt } from "./interface"
 import fsModule from "node:fs"
+import { exists, platformConfigPath } from "./util"
+import path from "path"
+import { CredentialsCrypto } from "./credentialsCrypto"
 
 type Credentials = {
 	email: string,
@@ -16,19 +18,20 @@ export class Authentication {
 	private readonly filen: FilenSDK
 	private readonly verbose: boolean
 
+	private readonly crypto = new CredentialsCrypto()
+	private readonly credentialsDirectory = path.join(platformConfigPath(), "filen-cli")
+	private readonly credentialsFile = path.join(this.credentialsDirectory, "filen-cli-credentials")
+
 	public constructor(filen: FilenSDK, verbose: boolean) {
 		this.filen = filen
 		this.verbose = verbose
 	}
 
 	/**
-	 * Delete credentials stored in the system keychain
+	 * Delete credentials stored in a file
 	 */
 	public async deleteStoredCredentials() {
-		const credentials = await keytar.findCredentials("filen-cli")
-		for (const credential of credentials) {
-			await keytar.deletePassword("filen-cli", credential.account)
-		}
+		await fsModule.promises.unlink(this.credentialsFile)
 		out("Credentials deleted")
 	}
 
@@ -90,24 +93,14 @@ export class Authentication {
 	}
 
 	/**
-	 * Authenticate using the credentials stored in the system keychain, if applicable.
+	 * Authenticate using the credentials stored a file, if applicable.
 	 */
 	private async authenticateUsingStoredCredentials(): Promise<Credentials | undefined> {
-		const storedCredentials = await keytar.findCredentials("filen-cli")
-		if (storedCredentials.length === 0) {
-			console.log("no stored credentials")
-			return
-		}
-		const credentials = storedCredentials[0]
-		const TWO_FACTOR_INDICATOR = ";TWO_FACTOR_CODE:"
-		const password = credentials.password.includes(TWO_FACTOR_INDICATOR)
-			? credentials.password.substring(0, credentials.password.indexOf(TWO_FACTOR_INDICATOR))
-			: credentials.password
-		const twoFactorCode = credentials.password.includes(TWO_FACTOR_INDICATOR)
-			? credentials.password.substring(credentials.password.indexOf(TWO_FACTOR_INDICATOR) + TWO_FACTOR_INDICATOR.length)
-			: undefined
-		if (this.verbose) out(`Logging in as ${credentials.account} (using saved credentials)`)
-		return { email: credentials.account, password, twoFactorCode }
+		if (!(await exists(this.credentialsFile))) return
+		const encryptedCredentials = (await fsModule.promises.readFile(this.credentialsFile)).toString()
+		const credentials = this.crypto.decrypt(encryptedCredentials)
+		if (this.verbose) out(`Logging in as ${credentials.email} (using saved credentials)`)
+		return credentials
 	}
 
 	/**
@@ -133,7 +126,9 @@ export class Authentication {
 
 		const saveCredentials = (await prompt("Save credentials locally for future invocations? [y/N] ")).toLowerCase() === "y"
 		if (saveCredentials) {
-			await keytar.setPassword("filen-cli", email, password)
+			if (!(await exists(this.credentialsDirectory))) await fsModule.promises.mkdir(this.credentialsDirectory, { recursive: true })
+			const encryptedCredentials = this.crypto.encrypt({ email, password })
+			await fsModule.promises.writeFile(this.credentialsFile, encryptedCredentials)
 			out("You can delete these credentials using `filen --delete-credentials`")
 		}
 
