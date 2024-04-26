@@ -5,9 +5,9 @@ import { exists, platformConfigPath } from "./util"
 import path from "path"
 import { CredentialsCrypto } from "./credentialsCrypto"
 
-type Credentials = {
-	email: string,
-	password: string,
+export type Credentials = {
+	email: string
+	password: string
 	twoFactorCode?: string
 }
 
@@ -19,8 +19,8 @@ export class Authentication {
 	private readonly verbose: boolean
 
 	private readonly crypto = new CredentialsCrypto()
-	private readonly credentialsDirectory = path.join(platformConfigPath(), "filen-cli")
-	private readonly credentialsFile = path.join(this.credentialsDirectory, "filen-cli-credentials")
+	private readonly credentialsDirectory = platformConfigPath()
+	private readonly credentialsFile = path.join(this.credentialsDirectory, ".credentials")
 
 	public constructor(filen: FilenSDK, verbose: boolean) {
 		this.filen = filen
@@ -32,6 +32,7 @@ export class Authentication {
 	 */
 	public async deleteStoredCredentials() {
 		await fsModule.promises.unlink(this.credentialsFile)
+
 		out("Credentials deleted")
 	}
 
@@ -50,7 +51,9 @@ export class Authentication {
 			async () => await this.authenticateUsingFile(),
 			async () => await this.authenticateUsingPrompt()
 		]
+
 		let credentials: Credentials
+
 		for (const authenticate of authenticationMethods) {
 			const result = await authenticate()
 			if (result !== undefined) {
@@ -58,12 +61,15 @@ export class Authentication {
 				break
 			}
 		}
+
 		try {
 			await this.filen.login(credentials!)
 		} catch (e) {
 			if (!(e instanceof APIError)) throw e
 			if ((e as APIError).code !== "enter_2fa") throw e
+
 			const twoFactorCode = await prompt("Please enter your 2FA code: ")
+
 			await this.filen.login({ ...credentials!, twoFactorCode })
 		}
 	}
@@ -71,11 +77,20 @@ export class Authentication {
 	/**
 	 * Authenticate using the `--email`, `--password` (and optionally `--two-factor-code`) CLI arguments, if applicable.
 	 */
-	private async authenticateUsingArguments(email: string | undefined, password: string | undefined, twoFactorCodeArg: string | undefined): Promise<Credentials | undefined> {
+	private async authenticateUsingArguments(
+		email: string | undefined,
+		password: string | undefined,
+		twoFactorCodeArg: string | undefined
+	): Promise<Credentials | undefined> {
 		if (email === undefined) return
 		if (password === undefined) return errExit("Need to also specify argument --password")
 		if (this.verbose) out(`Logging in as ${email} (using arguments)`)
-		return { email, password, twoFactorCode: twoFactorCodeArg }
+
+		return {
+			email,
+			password,
+			twoFactorCode: twoFactorCodeArg
+		}
 	}
 
 	/**
@@ -85,6 +100,7 @@ export class Authentication {
 		if (process.env.FILEN_EMAIL === undefined) return
 		if (process.env.FILEN_PASSWORD === undefined) errExit("Need to also specify environment variable FILEN_PASSWORD")
 		if (this.verbose) out(`Logging in as ${process.env.FILEN_EMAIL} (using environment variables)`)
+
 		return {
 			email: process.env.FILEN_EMAIL,
 			password: process.env.FILEN_PASSWORD,
@@ -96,10 +112,19 @@ export class Authentication {
 	 * Authenticate using the credentials stored a file, if applicable.
 	 */
 	private async authenticateUsingStoredCredentials(): Promise<Credentials | undefined> {
-		if (!(await exists(this.credentialsFile))) return
-		const encryptedCredentials = (await fsModule.promises.readFile(this.credentialsFile)).toString()
-		const credentials = this.crypto.decrypt(encryptedCredentials)
-		if (this.verbose) out(`Logging in as ${credentials.email} (using saved credentials)`)
+		if (!(await exists(this.credentialsFile))) {
+			return
+		}
+
+		const encryptedCredentials = await fsModule.promises.readFile(this.credentialsFile, {
+			encoding: "utf-8"
+		})
+		const credentials = await this.crypto.decrypt(encryptedCredentials)
+
+		if (this.verbose) {
+			out(`Logging in as ${credentials.email} (using saved credentials)`)
+		}
+
 		return credentials
 	}
 
@@ -126,8 +151,7 @@ export class Authentication {
 
 		const saveCredentials = (await prompt("Save credentials locally for future invocations? [y/N] ")).toLowerCase() === "y"
 		if (saveCredentials) {
-			if (!(await exists(this.credentialsDirectory))) await fsModule.promises.mkdir(this.credentialsDirectory, { recursive: true })
-			const encryptedCredentials = this.crypto.encrypt({ email, password })
+			const encryptedCredentials = await this.crypto.encrypt({ email, password })
 			await fsModule.promises.writeFile(this.credentialsFile, encryptedCredentials)
 			out("You can delete these credentials using `filen --delete-credentials`")
 		}

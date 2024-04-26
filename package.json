@@ -6,14 +6,24 @@
 	"scripts": {
 		"start-dev": "tsc && node build/index.js",
 		"lint": "eslint src/**/* --ext .js,.jsx,.ts,.tsx",
-		"package": "tsc && esbuild build/index.js --bundle --outfile=dist/bundle.js --format=cjs --platform=node --external:keytar && npm run generateKey && pkg .",
-		"generateKey": "node -e \"require('crypto').randomBytes(48, (err, buffer) => require('fs').writeFileSync('dist/key', buffer.toString('hex')))\""
+		"package": "tsc && esbuild build/index.js --bundle --outfile=dist/bundle.js --format=cjs --platform=node && npm run generateKey:prod && pkg .",
+		"generateKey:dev": "node -e \"require('crypto').randomBytes(32, (err, buffer) => require('fs').writeFileSync('key', buffer.toString('hex')))\"",
+		"generateKey:prod": "node -e \"require('crypto').randomBytes(32, (err, buffer) => require('fs').writeFileSync('dist/key', buffer.toString('hex')))\""
 	},
 	"bin": "dist/bundle.js",
 	"pkg": {
 		"outputPath": "dist",
-		"targets": [ "node18-windows", "node18-linux", "node18-macos" ],
-		"assets": [ "dist/key" ]
+		"targets": [
+			"node18-windows-x64",
+			"node18-linux-x64",
+			"node18-macos-x64",
+			"node18-windows-arm64",
+			"node18-linux-arm64",
+			"node18-macos-arm64"
+		],
+		"assets": [
+			"dist/key"
+		]
 	},
 	"engines": {
 		"node": "18"
