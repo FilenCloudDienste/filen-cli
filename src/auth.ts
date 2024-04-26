@@ -32,7 +32,6 @@ export class Authentication {
 	 */
 	public async deleteStoredCredentials() {
 		await fsModule.promises.unlink(this.credentialsFile)
-
 		out("Credentials deleted")
 	}
 
@@ -53,7 +52,6 @@ export class Authentication {
 		]
 
 		let credentials: Credentials
-
 		for (const authenticate of authenticationMethods) {
 			const result = await authenticate()
 			if (result !== undefined) {
@@ -67,9 +65,7 @@ export class Authentication {
 		} catch (e) {
 			if (!(e instanceof APIError)) throw e
 			if ((e as APIError).code !== "enter_2fa") throw e
-
 			const twoFactorCode = await prompt("Please enter your 2FA code: ")
-
 			await this.filen.login({ ...credentials!, twoFactorCode })
 		}
 	}
@@ -85,12 +81,7 @@ export class Authentication {
 		if (email === undefined) return
 		if (password === undefined) return errExit("Need to also specify argument --password")
 		if (this.verbose) out(`Logging in as ${email} (using arguments)`)
-
-		return {
-			email,
-			password,
-			twoFactorCode: twoFactorCodeArg
-		}
+		return { email, password, twoFactorCode: twoFactorCodeArg }
 	}
 
 	/**
@@ -100,7 +91,6 @@ export class Authentication {
 		if (process.env.FILEN_EMAIL === undefined) return
 		if (process.env.FILEN_PASSWORD === undefined) errExit("Need to also specify environment variable FILEN_PASSWORD")
 		if (this.verbose) out(`Logging in as ${process.env.FILEN_EMAIL} (using environment variables)`)
-
 		return {
 			email: process.env.FILEN_EMAIL,
 			password: process.env.FILEN_PASSWORD,

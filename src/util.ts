@@ -46,15 +46,12 @@ export function hashFile(path: string): Promise<string> {
 		// see https://stackoverflow.com/a/18658613
 		const hash = crypto.createHash("md5", { encoding: "hex" })
 		const stream = fsModule.createReadStream(path)
-
 		stream.on("error", reject)
-
 		stream.on("end", () => {
 			hash.end()
 
 			resolve(hash.read().toString())
 		})
-
 		stream.pipe(hash)
 	})
 }
@@ -78,7 +75,6 @@ export function formatBytes(bytes: number, decimals: number = 2): string {
 export async function exists(path: PathLike): Promise<boolean> {
 	try {
 		await fsModule.promises.stat(path)
-
 		return true
 	} catch (e) {
 		return false
@@ -87,12 +83,10 @@ export async function exists(path: PathLike): Promise<boolean> {
 
 /**
  * Returns the platform-specific directory for storing configuration files.
- * - Windows: `%APPDATA%`
- * - OS X: `~/Library/Application Support`
- * - Unix: `$XDG_CONFIG_HOME` or `~/.config`
- *
- * @export
- * @returns {string}
+ * Creates the directory if it doesn't exist.
+ * - Windows: `%APPDATA%\filen-cli`
+ * - OS X: `~/Library/Application Support/filen-cli`
+ * - Unix: `$XDG_CONFIG_HOME/filen-cli` or `~/.config/filen-cli`
  */
 export function platformConfigPath(): string {
 	// see https://github.com/jprichardson/ospath/blob/master/index.js
@@ -102,17 +96,14 @@ export function platformConfigPath(): string {
 	switch (process.platform) {
 		case "win32":
 			configPath = path.resolve(process.env.APPDATA!)
-
 			break
 		case "darwin":
 			configPath = path.resolve(path.join(os.homedir(), "Library/Application Support/"))
-
 			break
 		default:
 			configPath = process.env.XDG_CONFIG_HOME
 				? path.resolve(process.env.XDG_CONFIG_HOME)
 				: path.resolve(path.join(os.homedir(), ".config/"))
-
 			break
 	}
 

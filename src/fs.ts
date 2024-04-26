@@ -183,10 +183,7 @@ export class FS {
 	private async _upload(params: CommandParameters) {
 		const source = params.args[0]
 		const size = fsModule.statSync(source).size
-		const path = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(
-			params.args[1],
-			source.split(/[/\\]/)[source.split(/[/\\]/).length - 1]
-		)
+		const path = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(params.args[1], source.split(/[/\\]/)[source.split(/[/\\]/).length - 1])
 		const progressBar = params.quiet ? null : this.displayTransferProgressBar("Uploading", path.getLastSegment(), size)
 		try {
 			const abortSignal = InterruptHandler.instance.createAbortSignal()
@@ -209,10 +206,7 @@ export class FS {
 		try {
 			const source = params.cloudWorkingPath.navigate(params.args[0])
 			const rawPath = params.args[1] === undefined || params.args[1] === "." ? process.cwd() + "/" : params.args[1]
-			const path =
-				rawPath.endsWith("/") || rawPath.endsWith("\\")
-					? pathModule.join(rawPath, source.cloudPath[source.cloudPath.length - 1])
-					: rawPath
+			const path = rawPath.endsWith("/") || rawPath.endsWith("\\") ? pathModule.join(rawPath, source.cloudPath[source.cloudPath.length - 1]) : rawPath
 			const size = (await this.filen.fs().stat({ path: source.toString() })).size
 			const progressBar = params.quiet ? null : this.displayTransferProgressBar("Downloading", source.getLastSegment(), size)
 			try {
@@ -283,10 +277,7 @@ export class FS {
 	private async _mv(params: CommandParameters) {
 		try {
 			const from = params.cloudWorkingPath.navigate(params.args[0])
-			const to = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(
-				params.args[1],
-				from.cloudPath[from.cloudPath.length - 1]
-			)
+			const to = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(params.args[1], from.cloudPath[from.cloudPath.length - 1])
 			await this.filen.fs().rename({ from: from.toString(), to: to.toString() })
 		} catch (e) {
 			err("No such file or directory")
@@ -309,12 +300,12 @@ export class FS {
 			const onProgress = params.quiet
 				? doNothing
 				: (transferred: number) => {
-						progressBar!.onProgress(transferred)
-						if (progressBar!.progressBar.getProgress() >= 1 && stillDownloading) {
-							stillDownloading = false
-							progressBar = this.displayTransferProgressBar("Uploading", from.getLastSegment(), fromSize, true)
-						}
-				  }
+					progressBar!.onProgress(transferred)
+					if (progressBar!.progressBar.getProgress() >= 1 && stillDownloading) {
+						stillDownloading = false
+						progressBar = this.displayTransferProgressBar("Uploading", from.getLastSegment(), fromSize, true)
+					}
+				}
 			try {
 				const abortSignal = InterruptHandler.instance.createAbortSignal()
 				await this.filen.fs().copy({ from: from.toString(), to: to.toString(), onProgress, abortSignal })
