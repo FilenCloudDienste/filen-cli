@@ -26,7 +26,7 @@ export const fsCommands: Command[] = [
 	},
 	{
 		cmd: "cat",
-		aliases: ["read", "more"],
+		aliases: ["more", "read"],
 		arguments: [{ name: "file", type: "cloud_file" }]
 	},
 	{

@@ -71,10 +71,8 @@ export class FS {
 			case "ls":
 				await this._ls(params)
 				break
-			case "more":
-			case "read":
 			case "cat":
-				await this._more(params)
+				await this._cat(params)
 				break
 			case "mkdir":
 				await this._mkdir(params)
@@ -143,9 +141,9 @@ export class FS {
 	}
 
 	/**
-	 * Execute a `more` command
+	 * Execute a `cat` command
 	 */
-	private async _more(params: CommandParameters) {
+	private async _cat(params: CommandParameters) {
 		const path = params.cloudWorkingPath.navigate(params.args[0])
 		try {
 			const fileSize = (await this.filen.fs().stat({ path: path.toString() })).size
