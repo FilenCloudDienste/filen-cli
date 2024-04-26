@@ -6,11 +6,13 @@
 	"scripts": {
 		"start-dev": "tsc && node build/index.js",
 		"lint": "eslint src/**/* --ext .js,.jsx,.ts,.tsx",
-		"package": "tsc && esbuild build/index.js --bundle --outfile=dist/bundle.js --format=cjs --platform=node --external:keytar && npm run generateKey && pkg -t node18 -o dist/filen.exe .",
+		"package": "tsc && esbuild build/index.js --bundle --outfile=dist/bundle.js --format=cjs --platform=node --external:keytar && npm run generateKey && pkg .",
 		"generateKey": "node -e \"require('crypto').randomBytes(48, (err, buffer) => require('fs').writeFileSync('dist/key', buffer.toString('hex')))\""
 	},
 	"bin": "dist/bundle.js",
 	"pkg": {
+		"outputPath": "dist",
+		"targets": [ "node18-windows", "node18-linux", "node18-macos" ],
 		"assets": [ "dist/key" ]
 	},
 	"engines": {
@@ -29,7 +31,6 @@
 		"@filen/sdk": "^0.1.62",
 		"arg": "^5.0.2",
 		"cli-progress": "^3.12.0",
-		"keytar": "^7.9.0",
 		"open": "^7.4.2"
 	},
 	"devDependencies": {
