@@ -8,6 +8,7 @@ import { FS } from "./fs"
 import { InterruptHandler } from "./interrupt"
 import { Autocompletion } from "./autocompletion"
 import { Authentication } from "./auth"
+import fsModule from "node:fs"
 
 const args = arg({
 	// arguments
@@ -38,6 +39,14 @@ if (args["--help"]) {
 }
 
 (async () => {
+
+	let keyFile = path.join(__dirname, "../key")
+	//eslint-disable-next-line @typescript-eslint/no-explicit-any
+	if ((process as any)["pkg"]) { // is packaged
+		keyFile = path.join(__dirname, "../dist/key")
+	}
+	const key = fsModule.readFileSync(keyFile).toString()
+	console.log("key:", key)
 
 	const filen = new FilenSDK({
 		metadataCache: true,

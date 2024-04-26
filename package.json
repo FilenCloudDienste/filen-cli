@@ -5,8 +5,13 @@
 	"main": "build/index.js",
 	"scripts": {
 		"start-dev": "tsc && node build/index.js",
-		"package": "tsc && esbuild build/index.js --bundle --outfile=dist/bundle.js --format=cjs --platform=node --external:keytar && pkg -t node18 -o dist/filen.exe dist/bundle.js",
-		"lint": "eslint src/**/* --ext .js,.jsx,.ts,.tsx"
+		"lint": "eslint src/**/* --ext .js,.jsx,.ts,.tsx",
+		"package": "tsc && esbuild build/index.js --bundle --outfile=dist/bundle.js --format=cjs --platform=node --external:keytar && npm run generateKey && pkg -t node18 -o dist/filen.exe .",
+		"generateKey": "node -e \"require('crypto').randomBytes(48, (err, buffer) => require('fs').writeFileSync('dist/key', buffer.toString('hex')))\""
+	},
+	"bin": "dist/bundle.js",
+	"pkg": {
+		"assets": [ "dist/key" ]
 	},
 	"engines": {
 		"node": "18"
