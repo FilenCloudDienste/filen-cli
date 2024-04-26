@@ -54,7 +54,7 @@ export class CredentialsCrypto {
 			return salt
 		}
 
-		return fsModule.readFileSync(saltFilePath).toString("hex")
+		return fsModule.readFileSync(saltFilePath).toString("utf-8")
 	}
 
 	/**
