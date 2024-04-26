@@ -1,5 +1,6 @@
 import readline from "node:readline"
 import { Autocompletion } from "./autocompletion"
+import { InterruptHandler } from "./interrupt"
 
 export const readlineInterface = readline.createInterface({
 	input: process.stdin,
@@ -9,6 +10,7 @@ export const readlineInterface = readline.createInterface({
 
 process.stdin.on("keypress", () => {
 	Autocompletion.instance?.prefetchForInput(readlineInterface.line)
+	hasReceivedInput = readlineInterface.line.length > 0
 })
 
 /**
@@ -50,13 +52,22 @@ export function errExit(message: string): never {
 
 /**
  * Global input prompting method
- * @param message
+ * @param message The message to print before the prompt
+ * @param allowExit Whether to allow to exit the application here via `^C`
  */
-export async function prompt(message?: string) {
+export async function prompt(message: string | undefined, allowExit: boolean = false) {
 	return new Promise<string>((resolve) => {
-		readlineInterface.question(message ?? "", (input) => {
+		const signal = allowExit ? InterruptHandler.instance.createAbortSignal() : undefined
+		readlineInterface.question(message ?? "", { signal }, (input) => {
 			Autocompletion.instance?.clearPrefetchedResults()
 			resolve(input)
 		})
+		hasReceivedInput = false
+		signal?.addEventListener("abort", () => {
+			if (!hasReceivedInput) process.exit()
+			else resolve("")
+		})
 	})
 }
+
+let hasReceivedInput = false
