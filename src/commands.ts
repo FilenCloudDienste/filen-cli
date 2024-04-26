@@ -1,12 +1,12 @@
 export type Command = {
-	cmd: string,
-	aliases: string[],
+	cmd: string
+	aliases: string[]
 	arguments: CommandArgument[]
 }
 
 export type CommandArgument = {
-	name: string,
-	type: "cloud_directory" | "cloud_file" | "cloud_path" | "local_file" | "local_path" | "text",
+	name: string
+	type: "cloud_directory" | "cloud_file" | "cloud_path" | "local_file" | "local_path" | "text"
 	optional?: boolean
 }
 
@@ -17,37 +17,27 @@ export const fsCommands: Command[] = [
 	{
 		cmd: "cd",
 		aliases: ["navigate"],
-		arguments: [
-			{ name: "directory", type: "cloud_directory" }
-		]
+		arguments: [{ name: "directory", type: "cloud_directory" }]
 	},
 	{
 		cmd: "ls",
 		aliases: ["list"],
-		arguments: [
-			{ name: "directory", type: "cloud_directory", optional: true }
-		]
+		arguments: [{ name: "directory", type: "cloud_directory", optional: true }]
 	},
 	{
-		cmd: "more",
-		aliases: ["read"],
-		arguments: [
-			{ name: "file", type: "cloud_file" }
-		]
+		cmd: "cat",
+		aliases: ["more", "read"],
+		arguments: [{ name: "file", type: "cloud_file" }]
 	},
 	{
 		cmd: "mkdir",
 		aliases: [],
-		arguments: [
-			{ name: "directory name", type: "cloud_directory" }
-		]
+		arguments: [{ name: "directory name", type: "cloud_directory" }]
 	},
 	{
 		cmd: "rm",
 		aliases: ["rmdir", "remove", "del", "delete"],
-		arguments: [
-			{ name: "file or directory", type: "cloud_path" }
-		]
+		arguments: [{ name: "file or directory", type: "cloud_path" }]
 	},
 	{
 		cmd: "upload",
@@ -68,9 +58,7 @@ export const fsCommands: Command[] = [
 	{
 		cmd: "stat",
 		aliases: ["stats"],
-		arguments: [
-			{ name: "file or directory", type: "cloud_path" }
-		]
+		arguments: [{ name: "file or directory", type: "cloud_path" }]
 	},
 	{
 		cmd: "statfs",
@@ -104,15 +92,11 @@ export const fsCommands: Command[] = [
 	{
 		cmd: "open",
 		aliases: [],
-		arguments: [
-			{ name: "file", type: "cloud_file" }
-		]
+		arguments: [{ name: "file", type: "cloud_file" }]
 	},
 	{
 		cmd: "edit",
 		aliases: [],
-		arguments: [
-			{ name: "file", type: "cloud_file" }
-		]
+		arguments: [{ name: "file", type: "cloud_file" }]
 	}
 ]

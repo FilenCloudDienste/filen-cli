@@ -33,11 +33,12 @@ const args = arg({
 
 if (args["--help"]) {
 	out("Filen CLI v0.0.1")
+
 	process.exit()
 }
 
-(async () => {
-
+// eslint-disable-next-line no-extra-semi
+;(async () => {
 	const filen = new FilenSDK({
 		metadataCache: true,
 		tmpPath: path.join(os.tmpdir(), "filen-cli")
@@ -72,8 +73,8 @@ if (args["--help"]) {
 	} else {
 		const result = await fs.executeCommand(cloudRootPath, args["_"][0], args["_"].slice(1), formatJson, quiet)
 		if (errorOccurred) process.exit(1)
-		if (result.cloudWorkingPath !== undefined) err("To navigate in a stateful environment, please invoke the CLI without any arguments.")
+		if (result.cloudWorkingPath !== undefined)
+			err("To navigate in a stateful environment, please invoke the CLI without any arguments.")
 	}
 	process.exit()
-
 })()

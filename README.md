@@ -27,7 +27,7 @@ Options:
 ### Available commands
 
 - `ls <path to directory>`: list items inside a directory
-- `more <path to file>`: print content of a text file
+- `cat <path to file>`: print content of a text file
 - `mkdir <path to directory>`: create a directory
 - `rm <path>`: delete a file or directory
 - `download <cloud path> <local destination>`: download a file or directory from the cloud into a local destination
