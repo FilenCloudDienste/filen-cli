@@ -116,11 +116,7 @@ export function platformConfigPath(): string {
 			break
 	}
 
-	configPath = path.join(configPath, "filen-cli")
-
-	if (process.pkg) {
-		configPath = path.join(configPath, "filen-cli", "dev")
-	}
+	configPath = process.pkg ? path.join(configPath, "filen-cli") : path.join(configPath, "filen-cli", "dev")
 
 	if (!fsModule.existsSync(configPath)) {
 		fsModule.mkdirSync(configPath, {
