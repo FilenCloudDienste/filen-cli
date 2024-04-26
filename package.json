@@ -6,7 +6,8 @@
 	"scripts": {
 		"start-dev": "tsc && node build/index.js",
 		"lint": "eslint src/**/* --ext .js,.jsx,.ts,.tsx",
-		"package": "tsc && node injectKey.mjs && esbuild build/index.js --bundle --outfile=dist/bundle.js --format=cjs --platform=node && pkg ."
+		"package": "tsc && node injectKey.mjs && esbuild build/index.js --bundle --outfile=dist/bundle.js --format=cjs --platform=node && pkg .",
+		"generateKey": "node generateKey.mjs"
 	},
 	"bin": "dist/bundle.js",
 	"pkg": {
