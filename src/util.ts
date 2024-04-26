@@ -116,6 +116,10 @@ export function platformConfigPath(): string {
 			break
 	}
 
+	if (!configPath || configPath.length === 0) {
+		throw new Error("Could not find homedir path.")
+	}
+
 	configPath = process.pkg ? path.join(configPath, "filen-cli") : path.join(configPath, "filen-cli", "dev")
 
 	if (!fsModule.existsSync(configPath)) {
