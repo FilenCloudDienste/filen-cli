@@ -109,13 +109,15 @@ export class Authentication {
 		const encryptedCredentials = await fsModule.promises.readFile(this.credentialsFile, {
 			encoding: "utf-8"
 		})
-		const credentials = await this.crypto.decrypt(encryptedCredentials)
-
-		if (this.verbose) {
-			out(`Logging in as ${credentials.email} (using saved credentials)`)
+		try {
+			const credentials = await this.crypto.decrypt(encryptedCredentials)
+			if (this.verbose) {
+				out(`Logging in as ${credentials.email} (using saved credentials)`)
+			}
+			return credentials
+		} catch (e) {
+			return
 		}
-
-		return credentials
 	}
 
 	/**
