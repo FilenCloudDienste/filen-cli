@@ -3,7 +3,7 @@ import fsModule from "node:fs"
 import crypto from "node:crypto"
 import { platformConfigPath } from "./util"
 import { type Credentials } from "./auth"
-import { key } from "./key"
+import { key } from "./buildInfo"
 
 /**
  * Handles cryptography for securely storing credentials in a file.

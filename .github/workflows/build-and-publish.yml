@@ -1,6 +1,7 @@
 # This workflow runs when new releases are published.
 # It builds the artifacts using `npm run package`.
 # The crypto base key for injection is read from the `FILEN_CLI_CRYPTO_BASE_KEY` environment variable.
+# The current version is injected.
 # All build artifacts are then attached to the release.
 
 name: Build and attach artifacts
@@ -18,6 +19,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Set version
+        uses: jacobtomlinson/gha-find-replace@v3
+        with:
+          include: "package.json"
+          find: "\"version\": \"0.0.0\""
+          replace: "\"version\": \"${{ github.event.release.tag_name }}\""
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -26,6 +33,8 @@ jobs:
       - run: npm run package
         env:
           FILEN_CLI_CRYPTO_BASE_KEY: ${{ secrets.FILEN_CLI_CRYPTO_BASE_KEY }}
+      - name: Check info
+        run: node dist/bundle.js --help
       - name: Attach artifacts to release
         uses: softprops/action-gh-release@v2
         with:

@@ -1,13 +1,14 @@
 {
 	"name": "filen-cli",
-	"version": "0.0.1",
+	"version": "0.0.0",
 	"description": "Filen CLI",
 	"main": "build/index.js",
 	"scripts": {
 		"start-dev": "tsc && node build/index.js",
 		"lint": "eslint src/**/* --ext .js,.jsx,.ts,.tsx",
-		"package": "tsc && node injectKey.mjs && esbuild build/index.js --bundle --outfile=dist/bundle.js --format=cjs --platform=node && pkg .",
-		"generateKey": "node generateKey.mjs"
+		"generateKey": "node generateKey.mjs",
+		"build": "tsc && node injectBuildInfo.mjs && esbuild build/index.js --bundle --outfile=dist/bundle.js --format=cjs --platform=node",
+		"package": "npm run build && pkg ."
 	},
 	"bin": "dist/bundle.js",
 	"pkg": {

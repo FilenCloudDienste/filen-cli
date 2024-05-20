@@ -7,6 +7,7 @@ import { CloudPath } from "./cloudPath"
 import { FS } from "./fs"
 import { Autocompletion } from "./autocompletion"
 import { Authentication } from "./auth"
+import { version } from "./buildInfo"
 
 const args = arg({
 	// arguments
@@ -38,7 +39,7 @@ const args = arg({
 export const isDevelopment = args["--dev"] ?? false
 
 if (args["--help"]) {
-	out("Filen CLI v0.0.1")
+	out(`Filen CLI ${version}`)
 	if (isDevelopment) out("Running in development environment")
 
 	process.exit()
