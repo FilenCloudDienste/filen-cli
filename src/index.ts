@@ -10,6 +10,7 @@ import { Authentication } from "./auth"
 
 const args = arg({
 	// arguments
+	"--dev": Boolean,
 	"--help": Boolean,
 	"--root": String,
 	"--delete-credentials": Boolean,
@@ -31,8 +32,14 @@ const args = arg({
 	"-c": "--two-factor-code"
 })
 
+/**
+ * Whether the application is run in a development environment (set via the `--dev` flag).
+ */
+export const isDevelopment = args["--dev"] ?? false
+
 if (args["--help"]) {
 	out("Filen CLI v0.0.1")
+	if (isDevelopment) out("Running in development environment")
 
 	process.exit()
 }

@@ -3,6 +3,7 @@ import * as fsModule from "node:fs"
 import { PathLike } from "node:fs"
 import path from "path"
 import os from "os"
+import { isDevelopment } from "./index"
 
 /**
  * Formats a timestamp as yyyy-MM-dd.hh.mm.ss.SSS
@@ -111,7 +112,7 @@ export function platformConfigPath(): string {
 		throw new Error("Could not find homedir path.")
 	}
 
-	configPath = process.pkg ? path.join(configPath, "filen-cli") : path.join(configPath, "filen-cli", "dev")
+	configPath = !isDevelopment ? path.join(configPath, "filen-cli") : path.join(configPath, "filen-cli", "dev")
 
 	if (!fsModule.existsSync(configPath)) {
 		fsModule.mkdirSync(configPath, {
