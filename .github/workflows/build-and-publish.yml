@@ -1,0 +1,35 @@
+# This workflow runs when new releases are published.
+# It builds the artifacts using `npm run package`.
+# The crypto base key for injection is read from the `FILEN_CLI_CRYPTO_BASE_KEY` environment variable.
+# All build artifacts are then attached to the release.
+
+name: Build and attach artifacts
+
+on:
+  release:
+    types: [ published ]
+
+jobs:
+  build-and-publish:
+    name: Build artifacts and attach to release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18.x"
+      - run: npm ci
+      - run: npm run package
+        env:
+          FILEN_CLI_CRYPTO_BASE_KEY: ${{ secrets.FILEN_CLI_CRYPTO_BASE_KEY }}
+      - name: Attach artifacts to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/filen-cli-win.exe
+            dist/filen-cli-linux
+            dist/filen-cli-macos
