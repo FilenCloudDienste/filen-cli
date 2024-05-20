@@ -142,6 +142,7 @@ export class Authentication {
 		const saveCredentials = (await prompt("Save credentials locally for future invocations? [y/N] ")).toLowerCase() === "y"
 		if (saveCredentials) {
 			const encryptedCredentials = await this.crypto.encrypt({ email, password })
+			if (!(await exists(this.credentialsDirectory))) await fsModule.promises.mkdir(this.credentialsDirectory)
 			await fsModule.promises.writeFile(this.credentialsFile, encryptedCredentials)
 			out("You can delete these credentials using `filen --delete-credentials`")
 		}
