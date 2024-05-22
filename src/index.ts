@@ -8,6 +8,7 @@ import { FS } from "./fs"
 import { Autocompletion } from "./autocompletion"
 import { Authentication } from "./auth"
 import { version } from "./buildInfo"
+import { helpPage } from "./helpPage"
 
 const args = arg({
 	// arguments
@@ -41,8 +42,12 @@ export const isDevelopment = args["--dev"] ?? false
 if (args["--help"]) {
 	out(`Filen CLI ${version}`)
 	if (isDevelopment) out("Running in development environment")
+	out(helpPage)
 
 	process.exit()
+}
+if (args["--verbose"]) {
+	out(`Filen CLI ${version}`)
 }
 
 // eslint-disable-next-line no-extra-semi
