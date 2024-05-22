@@ -1,5 +1,8 @@
 import { version } from "./buildInfo"
-import { out, prompt } from "./interface"
+import { errExit, out, prompt } from "./interface"
+import path from "path"
+import { spawn } from "node:child_process"
+import { downloadFile } from "./util"
 
 type ReleaseInfo = {
 	tag_name: string
@@ -33,5 +36,33 @@ export class Updater {
 	}
 
 	private async update(releaseInfo: ReleaseInfo) {
+		let platformStr = "linux"
+		if (process.platform === "win32") platformStr = "win"
+		if (process.platform === "darwin") platformStr = "macos"
+		const url = releaseInfo.assets.find(asset => asset.name.includes(platformStr))!.browser_download_url
+		const selfApplicationFile = process.pkg === undefined ? __filename : process.argv[0]
+		const downloadedFile = path.join(path.dirname(selfApplicationFile), `filen_update_${releaseInfo.tag_name}`)
+
+		out("Downloading update...")
+		await downloadFile(url, downloadedFile)
+
+		out("Installing update...")
+		if (process.platform === "win32") {
+			const commands = [
+				`del "${selfApplicationFile}"`,
+				`rename "${downloadedFile}" ${path.basename(selfApplicationFile)}`,
+				`echo "Successfully updated to ${releaseInfo.tag_name}"`,
+				"pause"
+			]
+			spawn("cmd.exe", ["/c", commands.join(" & ")], { shell: true, detached: true })
+			process.exit()
+		}
+		if (process.platform === "darwin") {
+			//TODO implement @Dwynr
+		}
+		if (process.platform === "linux") {
+			//TODO implement @Dwynr
+		}
+		errExit(`Could not install for platform ${process.platform}`)
 	}
 }
