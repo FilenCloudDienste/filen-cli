@@ -26,6 +26,11 @@ export class Updater {
 		const currentVersion = version
 		const publishedVersion = releaseInfo.tag_name
 
+		if (currentVersion === "0.0.0") {
+			if (verbose) out("Skipping updates in development environment")
+			return
+		}
+
 		if (currentVersion !== publishedVersion) {
 			if ((await prompt(`Update from ${currentVersion} to ${publishedVersion}? [y/N] `)).toLowerCase() === "y") {
 				await this.update(releaseInfo)
