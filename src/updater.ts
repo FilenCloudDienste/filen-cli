@@ -66,7 +66,15 @@ export class Updater {
 			//TODO implement @Dwynr
 		}
 		if (process.platform === "linux") {
-			//TODO implement @Dwynr
+			const commands = [
+				`rm "${selfApplicationFile}"`,
+				`chmod +x "${downloadedFile}"`,
+				`mv "${downloadedFile}" "${selfApplicationFile}"`,
+				`echo "Successfully updated to ${releaseInfo.tag_name}"`,
+				"read -p \"Press enter to continue...\""
+			]
+			spawn("bash", ["-c", `${commands.join(" & ")}`], { detached: true })
+			process.exit()
 		}
 		errExit(`Could not install for platform ${process.platform}`)
 	}
