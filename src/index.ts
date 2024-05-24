@@ -39,15 +39,14 @@ const args = arg({
  */
 export const isDevelopment = args["--dev"] ?? false
 
-if (args["--help"]) {
+if (args["--help"] || args["--verbose"]) {
 	out(`Filen CLI ${version}`)
 	if (isDevelopment) out("Running in development environment")
-	out(helpPage)
-
-	process.exit()
 }
-if (args["--verbose"]) {
-	out(`Filen CLI ${version}`)
+
+if (args["--help"]) {
+	out(helpPage)
+	process.exit()
 }
 
 // eslint-disable-next-line no-extra-semi
