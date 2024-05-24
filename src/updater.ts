@@ -73,7 +73,7 @@ export class Updater {
 				`echo "Successfully updated to ${releaseInfo.tag_name}"`,
 				"read -p \"Press enter to continue...\""
 			]
-			spawn("bash", ["-c", `${commands.join(" & ")}`], { detached: true })
+			spawn("sh", ["-c", `${commands.join(" & ")}`], { detached: true })
 			process.exit()
 		}
 		errExit(`Could not install for platform ${process.platform}`)
