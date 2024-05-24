@@ -18,6 +18,7 @@ export class CloudPath {
 	 * @returns The resulting CloudPath
 	 */
 	public navigate(path: string): CloudPath {
+		if (path.startsWith("\"") && path.endsWith("\"")) path = path.substring(1, path.length - 1)
 		if (path.startsWith("/")) return new CloudPath(this.filen, path.substring(1).split("/"))
 		else {
 			let newPath = [...this.cloudPath]

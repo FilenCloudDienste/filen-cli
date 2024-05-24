@@ -9,6 +9,7 @@ import { Autocompletion } from "./autocompletion"
 import { Authentication } from "./auth"
 import { version } from "./buildInfo"
 import { helpPage } from "./helpPage"
+import { splitCommandSegments } from "./commands"
 
 const args = arg({
 	// arguments
@@ -73,8 +74,9 @@ if (args["--help"]) {
 		while (true) {
 			const command = await prompt(`${cloudWorkingPath.toString()} > `, true)
 			if (command === "") continue
-			const cmd = command.split(" ")[0].toLowerCase()
-			const args = command.split(" ").splice(1)
+			const segments = splitCommandSegments(command)
+			const cmd = segments[0].toLowerCase()
+			const args = segments.splice(1)
 			const result = await fs.executeCommand(cloudWorkingPath, cmd, args, formatJson, quiet)
 			if (result.exit) break
 			if (result.cloudWorkingPath !== undefined) {

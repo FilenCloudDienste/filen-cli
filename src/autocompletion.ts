@@ -1,5 +1,5 @@
 import { CompleterResult } from "node:readline"
-import { fsCommands } from "./commands"
+import { fsCommands, splitCommandSegments } from "./commands"
 import FilenSDK from "@filen/sdk"
 import { CloudPath } from "./cloudPath"
 import * as fs from "node:fs"
@@ -51,7 +51,7 @@ export class Autocompletion {
 	}
 
 	private async _autocomplete(input: string): Promise<CompleterResult> {
-		const segments = input.split(" ")
+		const segments = splitCommandSegments(input)
 		if (segments.length < 2) { // typing command
 			const commands = fsCommands.map(cmd => cmd.cmd + (cmd.arguments.length > 0 ? " " : ""))
 			const hits = commands.filter(cmd => cmd.startsWith(input))
@@ -61,6 +61,7 @@ export class Autocompletion {
 			const command = fsCommands.find(cmd => cmd.cmd === segments[0])
 			if (command === undefined) return [[], input]
 			const argument = command.arguments[argumentIndex]
+			if (argument === undefined) return [[], input]
 			const argumentInput = segments[segments.length - 1]
 			if (argument.type === "cloud_directory" || argument.type === "cloud_file" || argument.type === "cloud_path" || argument.type === "local_file" || argument.type === "local_path") {
 				const filesystem = argument.type.startsWith("cloud") ? "cloud" : "local"
@@ -82,7 +83,9 @@ export class Autocompletion {
 						return [[], input]
 					}
 				}
-				const options = autocompleteOptions.filter(option => option.startsWith(argumentInput))
+				const options = autocompleteOptions
+					.filter(option => option.startsWith(argumentInput))
+					.map(option => option.includes(" ") ? `"${option}"` : option)
 				return [options, argumentInput]
 			} else {
 				return [[], input]

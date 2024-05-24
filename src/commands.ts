@@ -100,3 +100,24 @@ export const fsCommands: Command[] = [
 		arguments: [{ name: "file", type: "cloud_file" }]
 	}
 ]
+
+/**
+ * Splits a command input into segments, while respecting quotes.
+ * Example: `'cd "folder name"'` returns `['cd', '"folder name"']`.
+ */
+export function splitCommandSegments(input: string): string[] {
+	const segments: string[] = []
+	let buffer = ""
+	let insideQuotes = false
+	input.split("").forEach(c => {
+		if (c === "\"") insideQuotes = !insideQuotes
+		if (c === " " && !insideQuotes) {
+			segments.push(buffer)
+			buffer = ""
+		} else {
+			buffer += c
+		}
+	})
+	if (buffer.length > 0) segments.push(buffer)
+	return segments
+}
