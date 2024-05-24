@@ -75,7 +75,7 @@ if (args["--help"]) {
 			const command = await prompt(`${cloudWorkingPath.toString()} > `, true)
 			if (command === "") continue
 			const segments = splitCommandSegments(command)
-			const cmd = segments[0].toLowerCase()
+			const cmd = segments[0]!.toLowerCase()
 			const args = segments.splice(1)
 			const result = await fs.executeCommand(cloudWorkingPath, cmd, args, formatJson, quiet)
 			if (result.exit) break
@@ -85,7 +85,7 @@ if (args["--help"]) {
 			}
 		}
 	} else {
-		const result = await fs.executeCommand(cloudRootPath, args["_"][0], args["_"].slice(1), formatJson, quiet)
+		const result = await fs.executeCommand(cloudRootPath, args["_"][0]!, args["_"].slice(1), formatJson, quiet)
 		if (errorOccurred) process.exit(1)
 		if (result.cloudWorkingPath !== undefined)
 			err("To navigate in a stateful environment, please invoke the CLI without any arguments.")

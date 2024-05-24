@@ -54,7 +54,7 @@ export class CloudPath {
 	}
 
 	public getLastSegment(): string {
-		return this.cloudPath[this.cloudPath.length - 1]
+		return this.cloudPath[this.cloudPath.length - 1]!
 	}
 
 	/**

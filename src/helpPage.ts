@@ -58,7 +58,7 @@ function formatTable(table: string[][], spacing: number = 3): string {
 		columnWidths.push(0)
 		table.forEach(row => {
 			const cell = row[i]
-			if (cell.length > columnWidths[i]) columnWidths[i] = cell.length
+			if (cell !== undefined && cell.length > columnWidths[i]!) columnWidths[i] = cell.length
 		})
 	}
 
@@ -66,7 +66,7 @@ function formatTable(table: string[][], spacing: number = 3): string {
 	table.forEach(row => {
 		const line: string[] = []
 		for (let column = 0; column < row.length; column++) {
-			line.push(row[column] + " ".repeat(columnWidths[column] - row[column].length))
+			line.push(row[column] + " ".repeat(columnWidths[column]! - row[column]!.length))
 		}
 		lines.push(line.join(" ".repeat(spacing)))
 	})

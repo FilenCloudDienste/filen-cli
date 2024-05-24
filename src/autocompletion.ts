@@ -62,7 +62,7 @@ export class Autocompletion {
 			if (command === undefined) return [[], input]
 			const argument = command.arguments[argumentIndex]
 			if (argument === undefined) return [[], input]
-			const argumentInput = segments[segments.length - 1]
+			const argumentInput = segments[segments.length - 1]!
 			if (argument.type === "cloud_directory" || argument.type === "cloud_file" || argument.type === "cloud_path" || argument.type === "local_file" || argument.type === "local_path") {
 				const filesystem = argument.type.startsWith("cloud") ? "cloud" : "local"
 				const acceptFile = argument.type.endsWith("file") || argument.type.endsWith("path")
@@ -102,7 +102,7 @@ export class Autocompletion {
 		}
 		return Object.keys(this.filen.fs()._items)
 			.filter(cachedPath => cachedPath.startsWith(path) && cachedPath !== path)
-			.map(cachedPath => ({ name: cachedPath, type: this.filen.fs()._items[cachedPath].type }))
+			.map(cachedPath => ({ name: cachedPath, type: this.filen.fs()._items[cachedPath]!.type }))
 			.map(item => ({
 				...item,
 				name: item.name.includes("/") ? item.name.substring(item.name.lastIndexOf("/") + 1) : item.name

@@ -12,7 +12,8 @@
 		"sourceMap": true,
 		"skipDefaultLibCheck": true,
 		"skipLibCheck": true,
-		"resolveJsonModule": true
+		"resolveJsonModule": true,
+		"noUncheckedIndexedAccess": true
 	},
 	"ts-node": {
 		"files": true

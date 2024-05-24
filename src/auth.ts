@@ -129,7 +129,7 @@ export class Authentication {
 		if (lines.length < 2) errExit("Invalid .filen-cli-credentials!")
 		const twoFactorCode = lines.length > 2 ? lines[2] : undefined
 		if (this.verbose) out(`Logging in as ${lines[0]} (using .filen-cli-credentials)`)
-		return { email: lines[0], password: lines[1], twoFactorCode }
+		return { email: lines[0]!, password: lines[1]!, twoFactorCode }
 	}
 
 	/**
