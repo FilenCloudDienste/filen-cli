@@ -337,7 +337,7 @@ export class FS {
 			const downloadPath = pathModule.join(this.filen.config.tmpPath ?? process.cwd(), path.getLastSegment())
 			await this.filen.fs().download({ path: path.toString(), destination: downloadPath })
 			const hash = !edit ? null : await hashFile(downloadPath)
-			await open(downloadPath, { wait: edit })
+			await open(downloadPath, { wait: true })
 			if (edit && (await hashFile(downloadPath)) !== hash) {
 				await this.filen.fs().upload({ path: path.toString(), source: downloadPath })
 			}
