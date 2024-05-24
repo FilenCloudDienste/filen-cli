@@ -4,12 +4,12 @@ Usage: filen [options...] <cmd...>
 Options:
 ${formatTable([
 	["--help, -h", "display usage information"],
-	["--verbose`, `-v", "display additional information"],
+	["--verbose, -v", "display additional information"],
 	["--email <email>", "specify credentials"],
 	["--password <password>", ""],
 	["--two-factor-code <code>, -c <code>", "(optional)"],
 	["--quiet, -q", "hide things like progress bars"],
-	["--root <path>` -r <path>", "execute a stateless command from a different working directory"],
+	["--root <path>, -r <path>", "execute a stateless command from a different working directory"],
 	["--json", "format output as JSON"],
 	["--no-autocomplete", "disable autocompletion (for performance or bandwidth reasons)"],
 ])}
