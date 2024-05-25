@@ -41,7 +41,7 @@ export class CloudPath {
 	 */
 	public async navigateAndAppendFileNameIfNecessary(filen: FilenSDK, path: string, fileName: string): Promise<CloudPath> {
 		let appendFileName: boolean
-		const cloudPath = this.navigate(path).cloudPath
+		const cloudPath = this.navigate(path)
 		if (path.endsWith("/")) appendFileName = true
 		else {
 			try {
@@ -50,7 +50,8 @@ export class CloudPath {
 				appendFileName = false
 			}
 		}
-		return new CloudPath(appendFileName ? [...cloudPath, fileName] : cloudPath)
+		if (appendFileName) return cloudPath.navigate(fileName)
+		else return cloudPath
 	}
 
 	public getLastSegment(): string {

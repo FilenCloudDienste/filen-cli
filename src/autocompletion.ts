@@ -80,6 +80,14 @@ export type Item = {
 	type: "directory" | "file"
 }
 
+/**
+ * Generate autocompletion results for a given input.
+ * @param input The user input.
+ * @param cloudWorkingPath The current cloud working path.
+ * @param availableCommands The commands available to the user.
+ * @param readCloudDirectory Callback function that should return the items inside a cloud location, or throw an error if it doesn't exist.
+ * @param readLocalDirectory Callback function that should return the items inside a local location, or throw an error if it doesn't exist.
+ */
 export async function autocomplete(
 	input: string,
 	cloudWorkingPath: CloudPath,
