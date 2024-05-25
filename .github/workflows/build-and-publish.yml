@@ -1,5 +1,6 @@
 # This workflow runs when new releases are published.
 # It builds the artifacts using `npm run package`.
+# QEMU emulation is used for arm64 builds.
 # The crypto base key for injection is read from the `FILEN_CLI_CRYPTO_BASE_KEY` environment variable.
 # The current version is injected.
 # All build artifacts are then attached to the release.
@@ -25,12 +26,14 @@ jobs:
           include: "package.json"
           find: "\"version\": \"0.0.0\""
           replace: "\"version\": \"${{ github.event.release.tag_name }}\""
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "18.x"
       - run: npm ci
-      - run: npm run package
+      - run: npm run package-all
         env:
           FILEN_CLI_CRYPTO_BASE_KEY: ${{ secrets.FILEN_CLI_CRYPTO_BASE_KEY }}
       - name: Check info
@@ -39,6 +42,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/filen-cli-win.exe
-            dist/filen-cli-linux
-            dist/filen-cli-macos
+            dist/filen-cli-win-x64.exe
+            dist/filen-cli-linux-x64
+            dist/filen-cli-macos-x64
+            dist/filen-cli-win-arm64.exe
+            dist/filen-cli-linux-arm64
+            dist/filen-cli-macos-arm64
