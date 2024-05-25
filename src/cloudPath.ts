@@ -5,10 +5,10 @@ import FilenSDK from "@filen/sdk"
  * The path is represented by the corresponding array of path segments.
  */
 export class CloudPath {
-	public constructor(
-		private readonly filen: FilenSDK,
-		public readonly cloudPath: string[]
-	) {
+	readonly cloudPath: string[]
+
+	public constructor(cloudPath: string[]) {
+		this.cloudPath = cloudPath
 	}
 
 	/**
@@ -19,7 +19,7 @@ export class CloudPath {
 	 */
 	public navigate(path: string): CloudPath {
 		if (path.startsWith("\"") && path.endsWith("\"")) path = path.substring(1, path.length - 1)
-		if (path.startsWith("/")) return new CloudPath(this.filen, path.substring(1).split("/"))
+		if (path.startsWith("/")) return new CloudPath(path.substring(1).split("/"))
 		else {
 			let newPath = [...this.cloudPath]
 			for (let segment of path.split("/")) {
@@ -29,7 +29,7 @@ export class CloudPath {
 				if (segment === "..") newPath = newPath.slice(0, newPath.length - 1)
 				else newPath = [...newPath, segment]
 			}
-			return new CloudPath(this.filen, newPath)
+			return new CloudPath(newPath)
 		}
 	}
 
@@ -39,18 +39,19 @@ export class CloudPath {
 	 * @param path The navigation string
 	 * @param fileName The filename to append if necessary
 	 */
-	public async navigateAndAppendFileNameIfNecessary(path: string, fileName: string): Promise<CloudPath> {
+	public async navigateAndAppendFileNameIfNecessary(filen: FilenSDK, path: string, fileName: string): Promise<CloudPath> {
 		let appendFileName: boolean
-		const cloudPath = this.navigate(path).cloudPath
+		const cloudPath = this.navigate(path)
 		if (path.endsWith("/")) appendFileName = true
 		else {
 			try {
-				appendFileName = (await this.filen.fs().stat({ path: cloudPath.toString() })).isDirectory()
+				appendFileName = (await filen.fs().stat({ path: cloudPath.toString() })).isDirectory()
 			} catch (e) {
 				appendFileName = false
 			}
 		}
-		return new CloudPath(this.filen, appendFileName ? [...cloudPath, fileName] : cloudPath)
+		if (appendFileName) return cloudPath.navigate(fileName)
+		else return cloudPath
 	}
 
 	public getLastSegment(): string {

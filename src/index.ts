@@ -64,7 +64,7 @@ if (args["--help"]) {
 	const quiet = args["--quiet"]!
 	const formatJson = args["--json"]!
 
-	const cloudRootPath = args["--root"] !== undefined ? new CloudPath(filen, []).navigate(args["--root"]) : new CloudPath(filen, [])
+	const cloudRootPath = args["--root"] !== undefined ? new CloudPath([]).navigate(args["--root"]) : new CloudPath([])
 	const fs = new FS(filen)
 	if (!args["--no-autocomplete"]) Autocompletion.instance = new Autocompletion(filen, cloudRootPath)
 

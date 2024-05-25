@@ -1,14 +1,9 @@
 import { CompleterResult } from "node:readline"
-import { fsCommands, splitCommandSegments } from "./commands"
+import { Command, fsCommands, splitCommandSegments } from "./commands"
 import FilenSDK from "@filen/sdk"
 import { CloudPath } from "./cloudPath"
 import * as fs from "node:fs"
 import pathModule from "path"
-
-type Item = {
-	name: string,
-	type: "directory" | "file"
-}
 
 /**
  * Provides autocompletion for fs commands, cloud paths and local paths.
@@ -34,9 +29,8 @@ export class Autocompletion {
 	 */
 	public prefetchForInput(input: string) {
 		if (this.autocompleteResults.has(input)) return
-		this._autocomplete(input).then(result => {
-			this.autocompleteResults.set(input, result)
-		})
+		autocomplete(input, this.cloudWorkingPath, fsCommands, (path) => this.readCloudDirectory(path), (path) => this.readLocalDirectory(path))
+			.then(result => this.autocompleteResults.set(input, result))
 	}
 
 	public clearPrefetchedResults() {
@@ -48,49 +42,6 @@ export class Autocompletion {
 	 */
 	public autocomplete(input: string): CompleterResult {
 		return this.autocompleteResults.get(input) ?? [[], input]
-	}
-
-	private async _autocomplete(input: string): Promise<CompleterResult> {
-		const segments = splitCommandSegments(input)
-		if (segments.length < 2) { // typing command
-			const commands = fsCommands.map(cmd => cmd.cmd + (cmd.arguments.length > 0 ? " " : ""))
-			const hits = commands.filter(cmd => cmd.startsWith(input))
-			return [hits, input]
-		} else { // typing arguments
-			const argumentIndex = segments.length - 2
-			const command = fsCommands.find(cmd => cmd.cmd === segments[0])
-			if (command === undefined) return [[], input]
-			const argument = command.arguments[argumentIndex]
-			if (argument === undefined) return [[], input]
-			const argumentInput = segments[segments.length - 1]!
-			if (argument.type === "cloud_directory" || argument.type === "cloud_file" || argument.type === "cloud_path" || argument.type === "local_file" || argument.type === "local_path") {
-				const filesystem = argument.type.startsWith("cloud") ? "cloud" : "local"
-				const acceptFile = argument.type.endsWith("file") || argument.type.endsWith("path")
-
-				const inputPath = filesystem === "cloud" ? this.cloudWorkingPath.navigate(argumentInput).toString() : argumentInput
-				let autocompleteOptions: string[]
-				try {
-					const items = await (filesystem === "cloud" ? this.readCloudDirectory(inputPath) : this.readLocalDirectory(inputPath))
-					const acceptedItems = items.filter(item => item.type === "file" ? acceptFile : true)
-					autocompleteOptions = acceptedItems.map(item => argumentInput + ((argumentInput.endsWith("/") || argumentInput === "") ? "" : "/") + item.name)
-				} catch (e) { // path does not exist
-					try {
-						const inputPathParent = inputPath.substring(0, inputPath.lastIndexOf("/"))
-						const items = await (filesystem === "cloud" ? this.readCloudDirectory(inputPathParent) : this.readLocalDirectory(inputPathParent))
-						const acceptedItems = items.filter(item => item.type === "file" ? acceptFile : true)
-						autocompleteOptions = acceptedItems.map(item => argumentInput.substring(0, argumentInput.lastIndexOf("/") + 1) + item.name)
-					} catch (e) {
-						return [[], input]
-					}
-				}
-				const options = autocompleteOptions
-					.filter(option => option.startsWith(argumentInput))
-					.map(option => option.includes(" ") ? `"${option}"` : option)
-				return [options, argumentInput]
-			} else {
-				return [[], input]
-			}
-		}
 	}
 
 	private cachedCloudPaths: string[] = []
@@ -121,5 +72,67 @@ export class Autocompletion {
 			this.cachedLocalItems.set(path, items)
 		}
 		return this.cachedLocalItems.get(path)!
+	}
+}
+
+export type Item = {
+	name: string,
+	type: "directory" | "file"
+}
+
+/**
+ * Generate autocompletion results for a given input.
+ * @param input The user input.
+ * @param cloudWorkingPath The current cloud working path.
+ * @param availableCommands The commands available to the user.
+ * @param readCloudDirectory Callback function that should return the items inside a cloud location, or throw an error if it doesn't exist.
+ * @param readLocalDirectory Callback function that should return the items inside a local location, or throw an error if it doesn't exist.
+ */
+export async function autocomplete(
+	input: string,
+	cloudWorkingPath: CloudPath,
+	availableCommands: Command[],
+	readCloudDirectory: (path: string) => Promise<Item[]>,
+	readLocalDirectory: (path: string) => Promise<Item[]>
+): Promise<CompleterResult> {
+	const segments = splitCommandSegments(input)
+	if (segments.length < 2) { // typing command
+		const commands = availableCommands.flatMap(cmd => [cmd.cmd, ...cmd.aliases].map(alias => alias + (cmd.arguments.length > 0 ? " " : "")))
+		const hits = commands.filter(cmd => cmd.startsWith(input))
+		return [hits, input]
+	} else { // typing arguments
+		const argumentIndex = segments.length - 2
+		const command = availableCommands.find(cmd => [cmd.cmd, ...cmd.aliases].includes(segments[0]!))
+		if (command === undefined) return [[], input]
+		const argument = command.arguments[argumentIndex]
+		if (argument === undefined) return [[], input]
+		const argumentInput = segments[segments.length - 1]!
+		if (argument.type === "cloud_directory" || argument.type === "cloud_file" || argument.type === "cloud_path" || argument.type === "local_file" || argument.type === "local_path") {
+			const filesystem = argument.type.startsWith("cloud") ? "cloud" : "local"
+			const acceptFile = argument.type.endsWith("file") || argument.type.endsWith("path")
+
+			const inputPath = filesystem === "cloud" ? cloudWorkingPath.navigate(argumentInput).toString() : argumentInput
+			let autocompleteOptions: string[]
+			try {
+				const items = await (filesystem === "cloud" ? readCloudDirectory(inputPath) : readLocalDirectory(inputPath))
+				const acceptedItems = items.filter(item => item.type === "file" ? acceptFile : true)
+				autocompleteOptions = acceptedItems.map(item => argumentInput + ((argumentInput.endsWith("/") || argumentInput === "") ? "" : "/") + item.name)
+			} catch (e) { // path does not exist
+				try {
+					const inputPathParent = inputPath.substring(0, inputPath.lastIndexOf("/"))
+					const items = await (filesystem === "cloud" ? readCloudDirectory(inputPathParent) : readLocalDirectory(inputPathParent))
+					const acceptedItems = items.filter(item => item.type === "file" ? acceptFile : true)
+					autocompleteOptions = acceptedItems.map(item => argumentInput.substring(0, argumentInput.lastIndexOf("/") + 1) + item.name)
+				} catch (e) {
+					return [[], input]
+				}
+			}
+			const options = autocompleteOptions
+				.filter(option => option.startsWith(argumentInput))
+				.map(option => option.includes(" ") ? `"${option}"` : option)
+			return [options, argumentInput]
+		} else {
+			return [[], input]
+		}
 	}
 }
