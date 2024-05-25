@@ -1,6 +1,5 @@
 import FilenSDK from "@filen/sdk"
 import { CloudPath } from "./cloudPath"
-import { FS } from "@filen/sdk/dist/types/fs"
 
 describe("navigate()", () => {
 
