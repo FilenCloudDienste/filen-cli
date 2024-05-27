@@ -45,7 +45,7 @@ export class Updater {
 		if (process.platform === "win32") platformStr = "win"
 		if (process.platform === "darwin") platformStr = "macos"
 		const url = releaseInfo.assets.find(asset => asset.name.includes(platformStr) && asset.name.includes(process.arch))!.browser_download_url
-		const selfApplicationFile = process.pkg === undefined ? __filename : process.argv[0]
+		const selfApplicationFile = process.pkg === undefined ? __filename : process.argv[0]!
 		const downloadedFile = path.join(path.dirname(selfApplicationFile), `filen_update_${releaseInfo.tag_name}`)
 
 		out("Downloading update...")
