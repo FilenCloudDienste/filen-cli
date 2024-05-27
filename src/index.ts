@@ -9,6 +9,8 @@ import { Autocompletion } from "./autocompletion"
 import { Authentication } from "./auth"
 import { version } from "./buildInfo"
 import { Updater } from "./updater"
+import { helpPage } from "./helpPage"
+import { splitCommandSegments } from "./commands"
 
 const args = arg({
 	// arguments
@@ -39,10 +41,13 @@ const args = arg({
  */
 export const isDevelopment = args["--dev"] ?? false
 
-if (args["--help"]) {
+if (args["--help"] || args["--verbose"]) {
 	out(`Filen CLI ${version}`)
 	if (isDevelopment) out("Running in development environment")
+}
 
+if (args["--help"]) {
+	out(helpPage)
 	process.exit()
 }
 
@@ -62,7 +67,7 @@ if (args["--help"]) {
 	const quiet = args["--quiet"]!
 	const formatJson = args["--json"]!
 
-	const cloudRootPath = args["--root"] !== undefined ? new CloudPath(filen, []).navigate(args["--root"]) : new CloudPath(filen, [])
+	const cloudRootPath = args["--root"] !== undefined ? new CloudPath([]).navigate(args["--root"]) : new CloudPath([])
 	const fs = new FS(filen)
 	if (!args["--no-autocomplete"]) Autocompletion.instance = new Autocompletion(filen, cloudRootPath)
 
@@ -72,8 +77,9 @@ if (args["--help"]) {
 		while (true) {
 			const command = await prompt(`${cloudWorkingPath.toString()} > `, true)
 			if (command === "") continue
-			const cmd = command.split(" ")[0].toLowerCase()
-			const args = command.split(" ").splice(1)
+			const segments = splitCommandSegments(command)
+			const cmd = segments[0]!.toLowerCase()
+			const args = segments.splice(1)
 			const result = await fs.executeCommand(cloudWorkingPath, cmd, args, formatJson, quiet)
 			if (result.exit) break
 			if (result.cloudWorkingPath !== undefined) {
@@ -82,7 +88,7 @@ if (args["--help"]) {
 			}
 		}
 	} else {
-		const result = await fs.executeCommand(cloudRootPath, args["_"][0], args["_"].slice(1), formatJson, quiet)
+		const result = await fs.executeCommand(cloudRootPath, args["_"][0]!, args["_"].slice(1), formatJson, quiet)
 		if (errorOccurred) process.exit(1)
 		if (result.cloudWorkingPath !== undefined)
 			err("To navigate in a stateful environment, please invoke the CLI without any arguments.")

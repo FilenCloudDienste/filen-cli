@@ -21,7 +21,7 @@ export class InterruptHandler {
 		let lastInterruptTimestamp = 0
 		let consecutiveInterrupts = 0
 		process.on("SIGINT", () => {
-			if (this.listeners.length > 0) this.listeners[0]()
+			if (this.listeners.length > 0) this.listeners[0]!()
 			this.listeners = []
 
 			const now = new Date().getMilliseconds()

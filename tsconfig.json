@@ -12,10 +12,12 @@
 		"sourceMap": true,
 		"skipDefaultLibCheck": true,
 		"skipLibCheck": true,
-		"resolveJsonModule": true
+		"resolveJsonModule": true,
+		"noUncheckedIndexedAccess": true
 	},
 	"ts-node": {
 		"files": true
 	},
-	"include": ["src", "index.d.ts"]
+	"include": ["src", "index.d.ts"],
+	"exclude": ["**/**.test.ts"]
 }

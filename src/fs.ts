@@ -116,7 +116,7 @@ export class FS {
 	 * @return the CloudPath navigated to, if successful
 	 */
 	private async _cd(params: CommandParameters) {
-		const path = params.cloudWorkingPath.navigate(params.args[0])
+		const path = params.cloudWorkingPath.navigate(params.args[0]!)
 		try {
 			const directory = await this.filen.fs().stat({ path: path.toString() })
 			if (!directory.isDirectory()) err("Not a directory")
@@ -130,7 +130,7 @@ export class FS {
 	 * Execute an `ls` command
 	 */
 	private async _ls(params: CommandParameters) {
-		const path = params.args.length > 0 ? params.cloudWorkingPath.navigate(params.args[0]) : params.cloudWorkingPath
+		const path = params.args.length > 0 ? params.cloudWorkingPath.navigate(params.args[0]!) : params.cloudWorkingPath
 		try {
 			const output = await this.filen.fs().readdir({ path: path.toString() })
 			if (params.formatJson) outJson(output)
@@ -144,7 +144,7 @@ export class FS {
 	 * Execute a `cat` command
 	 */
 	private async _cat(params: CommandParameters) {
-		const path = params.cloudWorkingPath.navigate(params.args[0])
+		const path = params.cloudWorkingPath.navigate(params.args[0]!)
 		try {
 			const fileSize = (await this.filen.fs().stat({ path: path.toString() })).size
 			if (fileSize > 8192) {
@@ -163,7 +163,7 @@ export class FS {
 	 * Execute an `mkdir` command
 	 */
 	private async _mkdir(params: CommandParameters) {
-		await this.filen.fs().mkdir({ path: params.cloudWorkingPath.navigate(params.args[0]).toString() })
+		await this.filen.fs().mkdir({ path: params.cloudWorkingPath.navigate(params.args[0]!).toString() })
 	}
 
 	/**
@@ -171,7 +171,7 @@ export class FS {
 	 */
 	private async _rm(params: CommandParameters) {
 		try {
-			await this.filen.fs().rm({ path: params.cloudWorkingPath.navigate(params.args[0]).toString() })
+			await this.filen.fs().rm({ path: params.cloudWorkingPath.navigate(params.args[0]!).toString() })
 		} catch (e) {
 			err("No such file or directory")
 		}
@@ -181,9 +181,9 @@ export class FS {
 	 * Execute an `upload` command (upload a local file into the cloud)
 	 */
 	private async _upload(params: CommandParameters) {
-		const source = params.args[0]
+		const source = params.args[0]!
 		const size = fsModule.statSync(source).size
-		const path = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(params.args[1], source.split(/[/\\]/)[source.split(/[/\\]/).length - 1])
+		const path = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(this.filen, params.args[1]!, source.split(/[/\\]/)[source.split(/[/\\]/).length - 1]!)
 		const progressBar = params.quiet ? null : this.displayTransferProgressBar("Uploading", path.getLastSegment(), size)
 		try {
 			const abortSignal = InterruptHandler.instance.createAbortSignal()
@@ -204,9 +204,9 @@ export class FS {
 	 */
 	private async _download(params: CommandParameters) {
 		try {
-			const source = params.cloudWorkingPath.navigate(params.args[0])
+			const source = params.cloudWorkingPath.navigate(params.args[0]!)
 			const rawPath = params.args[1] === undefined || params.args[1] === "." ? process.cwd() + "/" : params.args[1]
-			const path = rawPath.endsWith("/") || rawPath.endsWith("\\") ? pathModule.join(rawPath, source.cloudPath[source.cloudPath.length - 1]) : rawPath
+			const path = rawPath.endsWith("/") || rawPath.endsWith("\\") ? pathModule.join(rawPath, source.cloudPath[source.cloudPath.length - 1]!) : rawPath
 			const size = (await this.filen.fs().stat({ path: source.toString() })).size
 			const progressBar = params.quiet ? null : this.displayTransferProgressBar("Downloading", source.getLastSegment(), size)
 			try {
@@ -231,7 +231,7 @@ export class FS {
 	 */
 	private async _stat(params: CommandParameters) {
 		try {
-			const path = params.cloudWorkingPath.navigate(params.args[0])
+			const path = params.cloudWorkingPath.navigate(params.args[0]!)
 			const stat = await this.filen.fs().stat({ path: path.toString() })
 			const size = stat.isFile() ? stat.size : await this.filen.cloud().directorySize({ uuid: stat.uuid })
 
@@ -276,8 +276,8 @@ export class FS {
 	 */
 	private async _mv(params: CommandParameters) {
 		try {
-			const from = params.cloudWorkingPath.navigate(params.args[0])
-			const to = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(params.args[1], from.cloudPath[from.cloudPath.length - 1])
+			const from = params.cloudWorkingPath.navigate(params.args[0]!)
+			const to = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(this.filen, params.args[1]!, from.cloudPath[from.cloudPath.length - 1]!)
 			await this.filen.fs().rename({ from: from.toString(), to: to.toString() })
 		} catch (e) {
 			err("No such file or directory")
@@ -289,10 +289,10 @@ export class FS {
 	 */
 	private async _cp(params: CommandParameters) {
 		try {
-			const from = params.cloudWorkingPath.navigate(params.args[0])
-			const to = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(
-				params.args[1],
-				from.cloudPath[from.cloudPath.length - 1]
+			const from = params.cloudWorkingPath.navigate(params.args[0]!)
+			const to = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(this.filen,
+				params.args[1]!,
+				from.cloudPath[from.cloudPath.length - 1]!
 			)
 			const fromSize = (await this.filen.fs().stat({ path: from.toString() })).size
 			let progressBar = params.quiet ? null : this.displayTransferProgressBar("Downloading", from.getLastSegment(), fromSize, true)
@@ -322,7 +322,7 @@ export class FS {
 	 * Execute a `write` command (write plain text to a file in the cloud)
 	 */
 	private async _write(params: CommandParameters) {
-		const path = params.cloudWorkingPath.navigate(params.args[0])
+		const path = params.cloudWorkingPath.navigate(params.args[0]!)
 		const content = params.args.slice(1).join(" ")
 		await this.filen.fs().writeFile({ path: path.toString(), content: Buffer.from(content) })
 	}
@@ -333,15 +333,15 @@ export class FS {
 	 */
 	private async _openOrEdit(params: CommandParameters, edit: boolean) {
 		try {
-			const path = params.cloudWorkingPath.navigate(params.args[0])
+			const path = params.cloudWorkingPath.navigate(params.args[0]!)
 			const downloadPath = pathModule.join(this.filen.config.tmpPath ?? process.cwd(), path.getLastSegment())
 			await this.filen.fs().download({ path: path.toString(), destination: downloadPath })
 			const hash = !edit ? null : await hashFile(downloadPath)
-			await open(downloadPath, { wait: edit })
+			await open(downloadPath, { wait: true })
 			if (edit && (await hashFile(downloadPath)) !== hash) {
 				await this.filen.fs().upload({ path: path.toString(), source: downloadPath })
 			}
-			fsModule.unlinkSync(downloadPath)
+			setTimeout(() => fsModule.unlinkSync(downloadPath), 500)
 		} catch (e) {
 			err("No such file")
 		}
