@@ -62,10 +62,7 @@ export class Updater {
 			spawn("cmd.exe", ["/c", commands.join(" & ")], { shell: true, detached: true })
 			process.exit()
 		}
-		if (process.platform === "darwin") {
-			//TODO implement @Dwynr
-		}
-		if (process.platform === "linux") {
+		if (process.platform === "linux" || process.platform === "darwin") {
 			const commands = [
 				`rm "${selfApplicationFile}"`,
 				`chmod +x "${downloadedFile}"`,
