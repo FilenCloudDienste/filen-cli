@@ -8,6 +8,7 @@ import { FS } from "./fs"
 import { Autocompletion } from "./autocompletion"
 import { Authentication } from "./auth"
 import { version } from "./buildInfo"
+import { Updater } from "./updater"
 import { helpPage } from "./helpPage"
 import { splitCommandSegments } from "./commands"
 
@@ -52,6 +53,8 @@ if (args["--help"]) {
 
 // eslint-disable-next-line no-extra-semi
 ;(async () => {
+	await new Updater().checkForUpdates(args["--verbose"] ?? false)
+
 	const filen = new FilenSDK({
 		metadataCache: true,
 		tmpPath: path.join(os.tmpdir(), "filen-cli")

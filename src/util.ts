@@ -4,6 +4,7 @@ import { PathLike } from "node:fs"
 import path from "path"
 import os from "os"
 import { isDevelopment } from "./index"
+import * as https from "node:https"
 
 /**
  * Formats a timestamp as yyyy-MM-dd.hh.mm.ss.SSS
@@ -121,4 +122,27 @@ export function platformConfigPath(): string {
 	}
 
 	return configPath
+}
+
+/**
+ * Downloads a file.
+ * @param url Where to download the file from.
+ * @param file Where to download the file to.
+ */
+export function downloadFile(url: string, file: PathLike) {
+	return new Promise<void>((resolve, reject) => {
+		const stream = fsModule.createWriteStream(file)
+		https.get(url, function(response) {
+			if (response.statusCode === 302) {
+				downloadFile(response.headers.location!, file).then(() => resolve())
+			} else {
+				response.pipe(stream)
+				stream.on("finish", () => {
+					stream.close()
+					resolve()
+				})
+				stream.on("error", reject)
+			}
+		})
+	})
 }
