@@ -1,3 +1,29 @@
+const commands = [
+	["ls [dir]", "list items inside a directory"],
+	["cat <file>", "print content of a text file"],
+	["mkdir <dir>", "create a directory"],
+	["rm <path>", "delete a file or directory"],
+	["download <cloud path> <local path>", "download a file or directory from the cloud into a local destination"],
+	["upload <local file> <cloud path>", "upload a local file into the cloud at a specified path"],
+	["stat <path>", "display information about a file or directory"],
+	["statfs", "display information about your Filen cloud drive"],
+	["mv <path from> <path to>", "move a file to a path (parent directory or file)"],
+	["cp <path from> <path to>", "copy a file to a path (parent directory or file)"],
+	["write <file> <content...>", "write text to a file"],
+	["open <file>", "open a file locally in the associated application"],
+	["edit <file>", "edit a file locally in the associated application (save and close to re-upload)"],
+]
+const interactiveModeCommands = [
+	["cd <path>", "navigate to a different path"],
+	["ls", "list items inside current directory"],
+	["exit, ^C", "exit interactive mode"]
+]
+
+export const fsCommandsHelpPage: string = `
+Commands:
+${formatTable([...commands, ...interactiveModeCommands])}}
+`
+
 export const helpPage: string = `
 Usage: filen [options...] <cmd...>
 
@@ -15,29 +41,11 @@ ${formatTable([
 ])}
 
 Commands:
-${formatTable([
-	["ls [dir]", "list items inside a directory"],
-	["cat <file>", "print content of a text file"],
-	["mkdir <dir>", "create a directory"],
-	["rm <path>", "delete a file or directory"],
-	["download <cloud path> <local path>", "download a file or directory from the cloud into a local destination"],
-	["upload <local file> <cloud path>", "upload a local file into the cloud at a specified path"],
-	["stat <path>", "display information about a file or directory"],
-	["statfs", "display information about your Filen cloud drive"],
-	["mv <path from> <path to>", "move a file to a path (parent directory or file)"],
-	["cp <path from> <path to>", "copy a file to a path (parent directory or file)"],
-	["write <file> <content...>", "write text to a file"],
-	["open <file>", "open a file locally in the associated application"],
-	["edit <file>", "edit a file locally in the associated application (save and close to re-upload)"],
-])}
+${formatTable(commands)}
 
 Interactive mode:
 Invoke the Filen CLI without any specified commands to enter interactive mode. 
-${formatTable([
-	["cd <path>", "navigate to a different path"],
-	["ls", "list items inside current directory"],
-	["exit, ^C", "exit interactive mode"]
-])}
+${formatTable(interactiveModeCommands)}
 
 Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli#readme
 `

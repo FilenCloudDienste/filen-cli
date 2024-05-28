@@ -8,6 +8,7 @@ import * as fsModule from "node:fs"
 import { InterruptHandler } from "./interrupt"
 import open from "open"
 import { fsCommands } from "./commands"
+import { fsCommandsHelpPage } from "./helpPage"
 
 type CommandParameters = {
 	cloudWorkingPath: CloudPath
@@ -46,6 +47,11 @@ export class FS {
 		cloudWorkingPath?: CloudPath
 	}> {
 		if (cmd === "exit") return { exit: true }
+
+		if (cmd === "help" || cmd === "?") {
+			out(fsCommandsHelpPage)
+			return {}
+		}
 
 		const params = { cloudWorkingPath, args, formatJson, quiet }
 
