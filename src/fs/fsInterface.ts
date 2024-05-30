@@ -2,8 +2,15 @@ import { CloudPath } from "../cloudPath"
 import { FS } from "./fs"
 import { Autocompletion } from "./autocompletion"
 import { err, errorOccurred, prompt } from "../interface/interface"
-import { splitCommandSegments } from "../interface/commands"
+import { splitCommandSegments } from "./commands"
 import FilenSDK from "@filen/sdk"
+
+export const fsOptions = {
+	"--root": String,
+	"-r": "--root",
+	"--json": Boolean,
+	"--no-autocomplete": Boolean,
+}
 
 /**
  * Provides the interface for entering and parsing filesystem commands.
