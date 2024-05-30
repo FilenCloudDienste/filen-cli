@@ -8,6 +8,7 @@ import { version } from "./buildInfo"
 import { Updater } from "./updater"
 import { helpPage } from "./interface/helpPage"
 import { FSInterface, fsOptions } from "./fs/fsInterface"
+import { WebDAVInterface, webdavOptions } from "./webdav/webdavInterface"
 
 const args = arg({
 	"--dev": Boolean,
@@ -31,13 +32,9 @@ const args = arg({
 
 	"--two-factor-code": String,
 	"-c": "--two-factor-code",
-	
-	...fsOptions,
-})
 
-export const filen = new FilenSDK({
-	metadataCache: true,
-	tmpPath: path.join(os.tmpdir(), "filen-cli")
+	...fsOptions,
+	...webdavOptions,
 })
 
 /**
@@ -57,15 +54,22 @@ if (args["--help"]) {
 
 // eslint-disable-next-line no-extra-semi
 ;(async () => {
+	const filen = new FilenSDK({
+		metadataCache: true,
+		tmpPath: path.join(os.tmpdir(), "filen-cli")
+	})
+
 	await new Updater().checkForUpdates(args["--verbose"] ?? false)
 
 	const authentication = new Authentication(filen, args["--verbose"] ?? false)
 	if (args["--delete-credentials"]) await authentication.deleteStoredCredentials()
 	await authentication.authenticate(args["--email"], args["--password"], args["--two-factor-code"])
 
-	const quiet = args["--quiet"]!
-	const formatJson = args["--json"]!
-
-	const fsInterface = new FSInterface(filen)
-	await fsInterface.invoke({quiet, formatJson, root: args["--root"], noAutocomplete: args["--no-autocomplete"] ?? false, commandStr: args["_"]})
+	if (args["--webdav"] !== undefined) {
+		const webdavInterface = new WebDAVInterface(filen)
+		await webdavInterface.invoke({hostname: args["--w-hostname"], port: args["--w-port"], username: args["--w-user"], password: args["--w-password"]})
+	} else {
+		const fsInterface = new FSInterface(filen)
+		await fsInterface.invoke({quiet: args["--quiet"]!, formatJson: args["--json"]!, root: args["--root"], noAutocomplete: args["--no-autocomplete"] ?? false, commandStr: args["_"]})
+	}
 })()
