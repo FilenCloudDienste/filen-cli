@@ -1,7 +1,7 @@
 import FilenSDK, { APIError } from "@filen/sdk"
-import { errExit, out, prompt } from "./interface"
+import { errExit, out, prompt } from "../interface/interface"
 import fsModule from "node:fs"
-import { exists, platformConfigPath } from "./util"
+import { exists, platformConfigPath } from "../util"
 import path from "path"
 import { CredentialsCrypto } from "./credentialsCrypto"
 
