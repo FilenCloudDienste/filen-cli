@@ -7,30 +7,32 @@ import { Authentication } from "./auth/auth"
 import { version } from "./buildInfo"
 import { Updater } from "./updater"
 import { helpPage } from "./interface/helpPage"
-import { FSInterface } from "./fs/fsInterface"
+import { FSInterface, fsOptions } from "./fs/fsInterface"
 
 const args = arg({
-	// arguments
 	"--dev": Boolean,
-	"--help": Boolean,
-	"--root": String,
-	"--delete-credentials": Boolean,
-	"--verbose": Boolean,
-	"--json": Boolean,
-	"--quiet": Boolean,
-	"--email": String,
-	"--password": String,
-	"--two-factor-code": String,
-	"--no-autocomplete": Boolean,
 
-	// aliases
+	"--help": Boolean,
 	"-h": "--help",
-	"-r": "--root",
+
+	"--delete-credentials": Boolean,
+
+	"--verbose": Boolean,
 	"-v": "--verbose",
+
+	"--quiet": Boolean,
 	"-q": "--quiet",
+
+	"--email": String,
 	"-e": "--email",
+
+	"--password": String,
 	"-p": "--password",
-	"-c": "--two-factor-code"
+
+	"--two-factor-code": String,
+	"-c": "--two-factor-code",
+	
+	...fsOptions,
 })
 
 export const filen = new FilenSDK({

@@ -7,7 +7,7 @@ import cliProgress from "cli-progress"
 import * as fsModule from "node:fs"
 import { InterruptHandler } from "./interrupt"
 import open from "open"
-import { fsCommands } from "../interface/commands"
+import { fsCommands } from "./commands"
 import { fsCommandsHelpPage } from "../interface/helpPage"
 
 type CommandParameters = {
