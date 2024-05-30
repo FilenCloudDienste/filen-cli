@@ -1,5 +1,5 @@
 import { version } from "./buildInfo"
-import { errExit, out, prompt } from "./interface"
+import { errExit, out, prompt } from "./interface/interface"
 import path from "path"
 import { spawn } from "node:child_process"
 import { downloadFile } from "./util"

@@ -1,6 +1,6 @@
 import { autocomplete, Item } from "./autocompletion"
-import { CloudPath } from "./cloudPath"
-import { fsCommands } from "./commands"
+import { CloudPath } from "../cloudPath"
+import { fsCommands } from "../interface/commands"
 
 const rootPath = new CloudPath([])
 const sampleFolder: Item[] = [

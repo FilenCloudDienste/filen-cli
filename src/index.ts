@@ -2,15 +2,12 @@ import arg from "arg"
 import FilenSDK from "@filen/sdk"
 import path from "path"
 import os from "os"
-import { err, errorOccurred, out, prompt } from "./interface"
-import { CloudPath } from "./cloudPath"
-import { FS } from "./fs"
-import { Autocompletion } from "./autocompletion"
-import { Authentication } from "./auth"
+import { out } from "./interface/interface"
+import { Authentication } from "./auth/auth"
 import { version } from "./buildInfo"
 import { Updater } from "./updater"
-import { helpPage } from "./helpPage"
-import { splitCommandSegments } from "./commands"
+import { helpPage } from "./interface/helpPage"
+import { FSInterface } from "./fs/fsInterface"
 
 const args = arg({
 	// arguments
@@ -24,7 +21,7 @@ const args = arg({
 	"--email": String,
 	"--password": String,
 	"--two-factor-code": String,
-	"--no-autocomplete": String,
+	"--no-autocomplete": Boolean,
 
 	// aliases
 	"-h": "--help",
@@ -34,6 +31,11 @@ const args = arg({
 	"-e": "--email",
 	"-p": "--password",
 	"-c": "--two-factor-code"
+})
+
+export const filen = new FilenSDK({
+	metadataCache: true,
+	tmpPath: path.join(os.tmpdir(), "filen-cli")
 })
 
 /**
@@ -55,11 +57,6 @@ if (args["--help"]) {
 ;(async () => {
 	await new Updater().checkForUpdates(args["--verbose"] ?? false)
 
-	const filen = new FilenSDK({
-		metadataCache: true,
-		tmpPath: path.join(os.tmpdir(), "filen-cli")
-	})
-
 	const authentication = new Authentication(filen, args["--verbose"] ?? false)
 	if (args["--delete-credentials"]) await authentication.deleteStoredCredentials()
 	await authentication.authenticate(args["--email"], args["--password"], args["--two-factor-code"])
@@ -67,31 +64,6 @@ if (args["--help"]) {
 	const quiet = args["--quiet"]!
 	const formatJson = args["--json"]!
 
-	const cloudRootPath = args["--root"] !== undefined ? new CloudPath([]).navigate(args["--root"]) : new CloudPath([])
-	const fs = new FS(filen)
-	if (!args["--no-autocomplete"]) Autocompletion.instance = new Autocompletion(filen, cloudRootPath)
-
-	if (args["_"].length === 0) {
-		let cloudWorkingPath: CloudPath = cloudRootPath
-		// eslint-disable-next-line no-constant-condition
-		while (true) {
-			const command = await prompt(`${cloudWorkingPath.toString()} > `, true)
-			if (command === "") continue
-			const segments = splitCommandSegments(command)
-			const cmd = segments[0]!.toLowerCase()
-			const args = segments.splice(1)
-			const result = await fs.executeCommand(cloudWorkingPath, cmd, args, formatJson, quiet)
-			if (result.exit) break
-			if (result.cloudWorkingPath !== undefined) {
-				cloudWorkingPath = result.cloudWorkingPath
-				if (Autocompletion.instance) Autocompletion.instance.cloudWorkingPath = result.cloudWorkingPath
-			}
-		}
-	} else {
-		const result = await fs.executeCommand(cloudRootPath, args["_"][0]!, args["_"].slice(1), formatJson, quiet)
-		if (errorOccurred) process.exit(1)
-		if (result.cloudWorkingPath !== undefined)
-			err("To navigate in a stateful environment, please invoke the CLI without any arguments.")
-	}
-	process.exit()
+	const fsInterface = new FSInterface(filen)
+	await fsInterface.invoke({quiet, formatJson, root: args["--root"], noAutocomplete: args["--no-autocomplete"] ?? false, commandStr: args["_"]})
 })()
