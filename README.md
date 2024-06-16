@@ -40,7 +40,7 @@ If you have 2FA enabled and don't specify a 2FA code, you will be prompted for i
 $ filen [options...] <cmd...>
 ```
 
-Additional options:
+Options:
 - `--root <path>`, `-r <path`: execute a stateless command from a different working directory
 - `--no-autocomplete`: disable autocompletion (for performance or bandwidth reasons)
 
@@ -73,10 +73,15 @@ Additional available commands:
 ## WebDAV server
 
 ```
-$ filen [options...] --webdav --w-user <...> --w-password <...> [--w-hostname <...>] [--w-port <...>]
+$ filen [options...] --webdav --w-user <...> --w-password <...> [options...]
 ```
 
 Invoke the Filen CLI with the `--webdav` flag to start [a WebDAV server](https://github.com/FilenCloudDienste/filen-webdav) that acts as a local mirror server of your Filen Drive.
-
 You must specify login credentials to the server using the `--w-user` and `--w-password` options (these credentials should be different from your Filen account credentials).
-You can optionally specify the `--w-hostname` and `--w-port` customize which hostname and port the server is started on.
+
+Options:
+
+- `--w-https`: run the server on HTTPS instead of HTTP (using a self-signed certificate)
+- `--w-hostname`: which hostname the server should be started on (default is 0.0.0.0)
+- `--w-port`: which port the server should be started on (default is 80 or 443)
+- `--w-auth-scheme`: the authentication scheme the server should use, "basic" or "digest" (default is basic)

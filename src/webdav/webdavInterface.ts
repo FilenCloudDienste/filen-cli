@@ -7,6 +7,8 @@ export const webdavOptions = {
 	"--webdav": Boolean,
 	"--w-hostname": String,
 	"--w-port": Number,
+	"--w-https": Boolean,
+	"--w-auth-scheme": String,
 	"--w-user": String,
 	"--w-password": String,
 }
@@ -22,31 +24,40 @@ export class WebDAVInterface {
 	}
 
 	public async invoke(args: {
+		username: string | undefined,
+		password: string | undefined,
+		https: boolean,
 		hostname: string | undefined,
 		port: number | undefined,
-		username: string | undefined,
-		password: string | undefined
+		authScheme: string | undefined,
 	}) {
 		if (args.username === undefined || args.password === undefined) {
 			errExit("Need to specify --w-user and --w-password")
 		}
 
+		const https = args.https
 		const hostname = args.hostname ?? "0.0.0.0"
-		const port = args.port ?? 1901
+		const port = args.port ?? (args.https ? 443 : 80)
+
+		if (args.authScheme !== undefined && args.authScheme !== "basic" && args.authScheme !== "digest") {
+			errExit("The only valid options for auth scheme are \"basic\" (default), \"digest\"")
+		}
+		const authScheme = args.authScheme ?? "basic"
 
 		new WebDAVServer({
-			hostname,
-			port,
-			https: false,
 			user: {
 				username: args.username,
 				password: args.password,
 				sdkConfig: this.filen.config
-			}
+			},
+			https,
+			hostname,
+			port,
+			authMode: authScheme
 		})
 			.start()
 			.then(() => {
-				out(`WebDAV server started on http://${hostname}:${port}`)
+				out(`WebDAV server started on ${https ? "https" : "http"}://${hostname}:${port}`)
 			})
 			.catch(e => {
 				err(`An error occurred: ${e}`)

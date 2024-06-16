@@ -66,10 +66,29 @@ if (args["--help"]) {
 	await authentication.authenticate(args["--email"], args["--password"], args["--two-factor-code"])
 
 	if (args["--webdav"] !== undefined) {
+
+		// webdav
 		const webdavInterface = new WebDAVInterface(filen)
-		await webdavInterface.invoke({hostname: args["--w-hostname"], port: args["--w-port"], username: args["--w-user"], password: args["--w-password"]})
+		await webdavInterface.invoke({
+			username: args["--w-user"],
+			password: args["--w-password"],
+			https: args["--w-https"] ?? false,
+			hostname: args["--w-hostname"],
+			port: args["--w-port"],
+			authScheme: args["--w-auth-scheme"],
+		})
+
 	} else {
+
+		// fs commands
 		const fsInterface = new FSInterface(filen)
-		await fsInterface.invoke({quiet: args["--quiet"]!, formatJson: args["--json"]!, root: args["--root"], noAutocomplete: args["--no-autocomplete"] ?? false, commandStr: args["_"]})
+		await fsInterface.invoke({
+			quiet: args["--quiet"]!,
+			formatJson: args["--json"]!,
+			root: args["--root"],
+			noAutocomplete: args["--no-autocomplete"] ?? false,
+			commandStr: args["_"],
+		})
+
 	}
 })()
