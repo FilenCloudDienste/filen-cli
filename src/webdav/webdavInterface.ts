@@ -57,7 +57,9 @@ export class WebDAVInterface {
 		})
 			.start()
 			.then(() => {
-				out(`WebDAV server started on ${https ? "https" : "http"}://${hostname}:${port}`)
+				let location = `${https ? "https" : "http"}://${hostname}:${port}`
+				if (hostname === "127.0.0.1" || hostname === "0.0.0.0") location += ` or ${https ? "https" : "http"}://local.webdav.filen.io:${port}`
+				out(`WebDAV server started on ${location}`)
 			})
 			.catch(e => {
 				err(`An error occurred: ${e}`)
