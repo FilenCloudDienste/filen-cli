@@ -73,10 +73,10 @@ Additional available commands:
 ## WebDAV server
 
 ```
-$ filen [options...] --webdav --w-username <...> --w-password <...> [--w-hostname <...>] [--w-port <...>]
+$ filen [options...] --webdav --w-user <...> --w-password <...> [--w-hostname <...>] [--w-port <...>]
 ```
 
 Invoke the Filen CLI with the `--webdav` flag to start [a WebDAV server](https://github.com/FilenCloudDienste/filen-webdav) that acts as a local mirror server of your Filen Drive.
 
-You must specify login credentials to the server using the `--w-username` and `--w-password` (they should be different from your Filen account credentials).
+You must specify login credentials to the server using the `--w-user` and `--w-password` options (these credentials should be different from your Filen account credentials).
 You can optionally specify the `--w-hostname` and `--w-port` customize which hostname and port the server is started on.
