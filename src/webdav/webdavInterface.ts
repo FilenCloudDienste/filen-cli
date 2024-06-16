@@ -34,28 +34,26 @@ export class WebDAVInterface {
 		const hostname = args.hostname ?? "0.0.0.0"
 		const port = args.port ?? 1901
 
-		try {
-			const server = new WebDAVServer({
-				users: [
-					{
-						name: args.username,
-						password: args.password,
-						isAdmin: true
-					}
-				],
-				hostname,
-				port,
+		new WebDAVServer({
+			hostname,
+			port,
+			https: false,
+			user: {
+				username: args.username,
+				password: args.password,
 				sdkConfig: this.filen.config
+			}
+		})
+			.start()
+			.then(() => {
+				out(`WebDAV server started on http://${hostname}:${port}`)
 			})
-
-			await server.initialize()
-			out(`WebDAV server started on ${hostname}:${port}`)
-			InterruptHandler.instance.addListener(() => {
-				out("Stopping WebDAV server")
-				process.exit()
+			.catch(e => {
+				err(`An error occurred: ${e}`)
 			})
-		} catch (e) {
-			err(`An error occurred: ${e}`)
-		}
+		InterruptHandler.instance.addListener(() => {
+			out("Stopping WebDAV server")
+			process.exit()
+		})
 	}
 }
