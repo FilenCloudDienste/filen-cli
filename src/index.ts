@@ -8,7 +8,8 @@ import { version } from "./buildInfo"
 import { Updater } from "./updater"
 import { helpPage } from "./interface/helpPage"
 import { FSInterface, fsOptions } from "./fs/fsInterface"
-import { WebDAVInterface, webdavOptions } from "./webdav/webdavInterface"
+import { WebDAVInterface, webdavOptions } from "./mirror-server/webdavInterface"
+import { S3Interface, s3Options } from "./mirror-server/s3Interface"
 
 const args = arg({
 	"--dev": Boolean,
@@ -35,6 +36,7 @@ const args = arg({
 
 	...fsOptions,
 	...webdavOptions,
+	...s3Options,
 })
 
 /**
@@ -77,6 +79,18 @@ if (args["--help"]) {
 			hostname: args["--w-hostname"],
 			port: args["--w-port"],
 			authScheme: args["--w-auth-scheme"],
+		})
+
+	} else if (args["--s3"] !== undefined) {
+
+		// s3
+		const s3Interface = new S3Interface(filen)
+		await s3Interface.invoke({
+			hostname: args["--s3-hostname"],
+			port: args["--s3-port"],
+			https: args["--s3-https"] ?? false,
+			accessKeyId: args["--s3-access-key-id"],
+			secretAccessKey: args["--s3-secret-access-key"],
 		})
 
 	} else {
