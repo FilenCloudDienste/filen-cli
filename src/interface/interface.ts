@@ -47,7 +47,7 @@ export function err(message: string) {
  */
 export function errExit(message: string): never {
 	err(message)
-	process.exit()
+	process.exit(1)
 }
 
 /**
