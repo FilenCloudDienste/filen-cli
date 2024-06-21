@@ -1,6 +1,6 @@
 import readline from "node:readline"
 import { Autocompletion } from "../fs/autocompletion"
-import { InterruptHandler } from "../fs/interrupt"
+import { InterruptHandler } from "./interrupt"
 
 export const readlineInterface = readline.createInterface({
 	input: process.stdin,

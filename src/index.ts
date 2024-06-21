@@ -8,6 +8,8 @@ import { version } from "./buildInfo"
 import { Updater } from "./updater"
 import { helpPage } from "./interface/helpPage"
 import { FSInterface, fsOptions } from "./fs/fsInterface"
+import { WebDAVInterface, webdavOptions } from "./mirror-server/webdavInterface"
+import { S3Interface, s3Options } from "./mirror-server/s3Interface"
 
 const args = arg({
 	"--dev": Boolean,
@@ -31,13 +33,10 @@ const args = arg({
 
 	"--two-factor-code": String,
 	"-c": "--two-factor-code",
-	
-	...fsOptions,
-})
 
-export const filen = new FilenSDK({
-	metadataCache: true,
-	tmpPath: path.join(os.tmpdir(), "filen-cli")
+	...fsOptions,
+	...webdavOptions,
+	...s3Options,
 })
 
 /**
@@ -57,15 +56,54 @@ if (args["--help"]) {
 
 // eslint-disable-next-line no-extra-semi
 ;(async () => {
+	const filen = new FilenSDK({
+		metadataCache: true,
+		tmpPath: path.join(os.tmpdir(), "filen-cli")
+	})
+
 	await new Updater().checkForUpdates(args["--verbose"] ?? false)
 
 	const authentication = new Authentication(filen, args["--verbose"] ?? false)
 	if (args["--delete-credentials"]) await authentication.deleteStoredCredentials()
 	await authentication.authenticate(args["--email"], args["--password"], args["--two-factor-code"])
 
-	const quiet = args["--quiet"]!
-	const formatJson = args["--json"]!
+	if (args["--webdav"] !== undefined || args["--webdav-proxy"] !== undefined) {
 
-	const fsInterface = new FSInterface(filen)
-	await fsInterface.invoke({quiet, formatJson, root: args["--root"], noAutocomplete: args["--no-autocomplete"] ?? false, commandStr: args["_"]})
+		// webdav
+		const webdavInterface = new WebDAVInterface(filen)
+		const proxyMode = args["--webdav-proxy"] ?? false
+		await webdavInterface.invoke(proxyMode, {
+			username: args["--w-user"],
+			password: args["--w-password"],
+			https: args["--w-https"] ?? false,
+			hostname: args["--w-hostname"],
+			port: args["--w-port"],
+			authScheme: args["--w-auth-scheme"],
+		})
+
+	} else if (args["--s3"] !== undefined) {
+
+		// s3
+		const s3Interface = new S3Interface(filen)
+		await s3Interface.invoke({
+			hostname: args["--s3-hostname"],
+			port: args["--s3-port"],
+			https: args["--s3-https"] ?? false,
+			accessKeyId: args["--s3-access-key-id"],
+			secretAccessKey: args["--s3-secret-access-key"],
+		})
+
+	} else {
+
+		// fs commands
+		const fsInterface = new FSInterface(filen)
+		await fsInterface.invoke({
+			quiet: args["--quiet"]!,
+			formatJson: args["--json"]!,
+			root: args["--root"],
+			noAutocomplete: args["--no-autocomplete"] ?? false,
+			commandStr: args["_"],
+		})
+
+	}
 })()
