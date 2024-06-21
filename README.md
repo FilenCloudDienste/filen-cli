@@ -5,8 +5,10 @@
 > [!IMPORTANT]
 > The CLI is still work in progress. **DO NOT USE IN PRODUCTION YET**. It is not guaranteed to be stable.
 
-The Filen CLI provides commands for interacting with the cloud filesystem.
-You can use it in a stateless or interactive mode (see below).
+The Filen CLI provides a set of useful tools for interacting with the cloud:
+- [Accessing your Filen Drive](#access-your-filen-drive) in a stateless environment or [interactive mode](#interactive-mode)
+- Running a [WebDAV mirror server](#webdav-server) of your [personal drive](#single-user), or multiple drives in [proxy mode](#proxy-mode)
+- Running an [S3 mirror server](#s3-server)
 
 
 # Usage
@@ -72,7 +74,9 @@ Additional available commands:
 
 ## WebDAV server
 
-You can use the Filen CLI to start [a WebDAV server](https://github.com/FilenCloudDienste/filen-webdav) that acts as a mirror server of your Filen Drive.
+You can use the Filen CLI to start a WebDAV server that acts as a mirror server of your Filen Drive.
+
+For more information, see als [FilenCloudDienste/filen-webdav](https://github.com/FilenCloudDienste/filen-webdav).
 
 ### Single user
 
@@ -83,7 +87,7 @@ $ filen [options...] --webdav --w-user <...> --w-password <...> [options...]
 Invoke the Filen CLI with the `--webdav` flag to start a local WebDAV server that mirrors your personal Filen Drive. 
 This might be useful for allowing local applications to access your Filen Drive via WebDAV.
 
-You must specify login credentials to the server using the `--w-user` and `--w-password` options (these credentials should be different from your Filen account credentials).
+You must specify login credentials for connecting to the server using the `--w-user` and `--w-password` options (these credentials should be different from your Filen account credentials).
 
 Options:
 
@@ -102,4 +106,26 @@ Invoke the Filen CLI with the `--webdav-proxy` flag to start a WebDAV server tha
 This might be useful when hosting a proxy server for multiple users. 
 Digest auth is not available for proxy mode.
 
+**Important:** In proxy mode, the password has to be formatted as `password=yoursecretpassword&twoFactorAuthentication=<RECOVERY_CODE_OR_6_DIGIT_OTP_CODE>` (you can also leave out the `&twoFactorAuthentication=...` part if 2FA is disabled for your account).
+
 Options: `--w-https`, `--w-hostname`, `--w-port` as above
+
+
+## S3 server
+
+```
+$ filen --s3 --s3-access-key-id <...> --s3-secret-access-key <...> [options...]
+```
+
+Invoke the Filen CLI with the `--s3` flag to start an S3 server that acts as a mirror server of your Filen Drive.
+You must specify credentials (Access Key ID and Secret Access Key) for connecting to the server using the `--s3-access-key-id` and `--s3-secret-access-key` options (these credentials should be different from your Filen account credentials).
+
+**Important:** When connecting to the S3 server, you need to enable `s3ForcePathStyle` and set the region to `filen`.
+
+For more information, including on S3 compatibility, see also [FilenCloudDienste/filen-s3](https://github.com/FilenCloudDienste/filen-s3).
+
+Options:
+
+- `--s3-https`: run the server on HTTPS instead of HTTP (using a self-signed certificate)
+- `--s3-hostname`: which hostname the server should be started on (default is 0.0.0.0)
+- `--s3-port`: which port the server should be started on (default is 80 or 443)
