@@ -5,6 +5,7 @@ import { InterruptHandler } from "../interface/interrupt"
 
 export const webdavOptions = {
 	"--webdav": Boolean,
+	"--webdav-proxy": Boolean,
 	"--w-hostname": String,
 	"--w-port": Number,
 	"--w-https": Boolean,
@@ -23,7 +24,7 @@ export class WebDAVInterface {
 		this.filen = filen
 	}
 
-	public async invoke(args: {
+	public async invoke(proxyMode: boolean, args: {
 		username: string | undefined,
 		password: string | undefined,
 		https: boolean,
@@ -31,7 +32,7 @@ export class WebDAVInterface {
 		port: number | undefined,
 		authScheme: string | undefined,
 	}) {
-		if (args.username === undefined || args.password === undefined) {
+		if (!proxyMode && (args.username === undefined || args.password === undefined)) {
 			errExit("Need to specify --w-user and --w-password")
 		}
 
@@ -42,12 +43,15 @@ export class WebDAVInterface {
 		if (args.authScheme !== undefined && args.authScheme !== "basic" && args.authScheme !== "digest") {
 			errExit("The only valid options for auth scheme are \"basic\" (default), \"digest\"")
 		}
+		if (proxyMode && args.authScheme === "digest") {
+			errExit("Only basic auth is supported in proxy mode")
+		}
 		const authScheme = args.authScheme ?? "basic"
 
 		new WebDAVServer({
-			user: {
-				username: args.username,
-				password: args.password,
+			user: proxyMode ? undefined : {
+				username: args.username!,
+				password: args.password!,
 				sdkConfig: this.filen.config
 			},
 			https,
@@ -59,7 +63,7 @@ export class WebDAVInterface {
 			.then(() => {
 				let location = `${https ? "https" : "http"}://${hostname}:${port}`
 				if (hostname === "127.0.0.1" || hostname === "0.0.0.0") location += ` or ${https ? "https" : "http"}://local.webdav.filen.io:${port}`
-				out(`WebDAV server started on ${location}`)
+				out(`WebDAV ${proxyMode ? "proxy server" : "server for " + this.filen.config.email} started on ${location}`)
 			})
 			.catch(e => {
 				err(`An error occurred: ${e}`)

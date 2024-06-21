@@ -72,11 +72,17 @@ Additional available commands:
 
 ## WebDAV server
 
+You can use the Filen CLI to start [a WebDAV server](https://github.com/FilenCloudDienste/filen-webdav) that acts as a mirror server of your Filen Drive.
+
+### Single user
+
 ```
 $ filen [options...] --webdav --w-user <...> --w-password <...> [options...]
 ```
 
-Invoke the Filen CLI with the `--webdav` flag to start [a WebDAV server](https://github.com/FilenCloudDienste/filen-webdav) that acts as a local mirror server of your Filen Drive.
+Invoke the Filen CLI with the `--webdav` flag to start a local WebDAV server that mirrors your personal Filen Drive. 
+This might be useful for allowing local applications to access your Filen Drive via WebDAV.
+
 You must specify login credentials to the server using the `--w-user` and `--w-password` options (these credentials should be different from your Filen account credentials).
 
 Options:
@@ -85,3 +91,15 @@ Options:
 - `--w-hostname`: which hostname the server should be started on (default is 0.0.0.0)
 - `--w-port`: which port the server should be started on (default is 80 or 443)
 - `--w-auth-scheme`: the authentication scheme the server should use, "basic" or "digest" (default is basic)
+
+### Proxy mode
+
+```
+$ filen [options...] --webdav-proxy [options...]
+```
+
+Invoke the Filen CLI with the `--webdav-proxy` flag to start a WebDAV server that allows any user to connect using their Filen account credentials and access their own Filen Drive.
+This might be useful when hosting a proxy server for multiple users. 
+Digest auth is not available for proxy mode.
+
+Options: `--w-https`, `--w-hostname`, `--w-port` as above

@@ -65,11 +65,12 @@ if (args["--help"]) {
 	if (args["--delete-credentials"]) await authentication.deleteStoredCredentials()
 	await authentication.authenticate(args["--email"], args["--password"], args["--two-factor-code"])
 
-	if (args["--webdav"] !== undefined) {
+	if (args["--webdav"] !== undefined || args["--webdav-proxy"] !== undefined) {
 
 		// webdav
 		const webdavInterface = new WebDAVInterface(filen)
-		await webdavInterface.invoke({
+		const proxyMode = args["--webdav-proxy"] ?? false
+		await webdavInterface.invoke(proxyMode, {
 			username: args["--w-user"],
 			password: args["--w-password"],
 			https: args["--w-https"] ?? false,
