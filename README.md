@@ -11,6 +11,12 @@ The Filen CLI provides a set of useful tools for interacting with the cloud:
 - Running an [S3 mirror server](#s3-server)
 
 
+# Installation
+
+You can download the latest binaries from the [release page](https://github.com/FilenCloudDienste/filen-cli/releases/latest).
+Docker images are also available as [filen/cli](https://hub.docker.com/repository/docker/filen/cli).
+
+
 # Usage
 
 ```
