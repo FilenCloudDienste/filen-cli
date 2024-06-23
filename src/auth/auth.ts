@@ -48,10 +48,9 @@ export class Authentication {
 			async () => await this.authenticateUsingEnvironment(),
 			async () => await this.authenticateUsingStoredCredentials(),
 			async () => await this.authenticateUsingFile(),
-			async () => await this.authenticateUsingPrompt()
 		]
 
-		let credentials: Credentials
+		let credentials: Credentials | undefined = undefined
 		for (const authenticate of authenticationMethods) {
 			const result = await authenticate()
 			if (result !== undefined) {
@@ -60,13 +59,39 @@ export class Authentication {
 			}
 		}
 
+		const authenticateUsingPrompt = credentials === undefined
+		if (authenticateUsingPrompt) {
+			out("Please enter your Filen credentials:")
+			const email = await prompt("Email: ")
+			const password = await prompt("Password: ")
+			if (!email || !password) errExit("Please provide your credentials!")
+			credentials = { email, password }
+		}
+
 		try {
 			await this.filen.login(credentials!)
 		} catch (e) {
-			if (!(e instanceof APIError)) throw e
-			if ((e as APIError).code !== "enter_2fa") throw e
-			const twoFactorCode = await prompt("Please enter your 2FA code: ")
-			await this.filen.login({ ...credentials!, twoFactorCode })
+			if (e instanceof APIError && e.code === "enter_2fa") {
+				const twoFactorCode = await prompt("Please enter your 2FA code: ")
+				try {
+					await this.filen.login({ ...credentials!, twoFactorCode })
+				} catch (e) {
+					errExit("Invalid credentials!")
+				}
+			} else {
+				errExit("Invalid credentials!")
+			}
+		}
+
+		if (authenticateUsingPrompt) {
+			const saveCredentials = (await prompt("Save credentials locally for future invocations? [y/N] ")).toLowerCase() === "y"
+			if (saveCredentials) {
+				const encryptedCredentials = await this.crypto.encrypt(credentials!)
+				if (!(await exists(this.credentialsDirectory))) await fsModule.promises.mkdir(this.credentialsDirectory)
+				await fsModule.promises.writeFile(this.credentialsFile, encryptedCredentials)
+				out("You can delete these credentials using `filen --delete-credentials`")
+			}
+			out("")
 		}
 	}
 
@@ -130,26 +155,5 @@ export class Authentication {
 		const twoFactorCode = lines.length > 2 ? lines[2] : undefined
 		if (this.verbose) out(`Logging in as ${lines[0]} (using .filen-cli-credentials)`)
 		return { email: lines[0]!, password: lines[1]!, twoFactorCode }
-	}
-
-	/**
-	 * Prompt the user for credentials.
-	 */
-	private async authenticateUsingPrompt(): Promise<Credentials> {
-		out("Please enter your Filen credentials:")
-		const email = await prompt("Email: ")
-		const password = await prompt("Password: ")
-		if (!email || !password) errExit("Please provide your credentials!")
-
-		const saveCredentials = (await prompt("Save credentials locally for future invocations? [y/N] ")).toLowerCase() === "y"
-		if (saveCredentials) {
-			const encryptedCredentials = await this.crypto.encrypt({ email, password })
-			if (!(await exists(this.credentialsDirectory))) await fsModule.promises.mkdir(this.credentialsDirectory)
-			await fsModule.promises.writeFile(this.credentialsFile, encryptedCredentials)
-			out("You can delete these credentials using `filen --delete-credentials`")
-		}
-
-		out("")
-		return { email, password }
 	}
 }
