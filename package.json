@@ -25,9 +25,9 @@
 	"author": "Filen",
 	"license": "AGPLv3",
 	"dependencies": {
-		"@filen/s3": "^0.2.7",
-		"@filen/sdk": "^0.1.126",
-		"@filen/webdav": "^0.2.15",
+		"@filen/s3": "^0.2.8",
+		"@filen/sdk": "^0.1.127",
+		"@filen/webdav": "^0.2.16",
 		"arg": "^5.0.2",
 		"cli-progress": "^3.12.0",
 		"open": "^7.4.2"
