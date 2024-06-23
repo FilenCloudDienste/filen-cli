@@ -63,7 +63,7 @@ export class Authentication {
 		if (authenticateUsingPrompt) {
 			out("Please enter your Filen credentials:")
 			const email = await prompt("Email: ")
-			const password = await prompt("Password: ")
+			const password = await prompt("Password: ", false, true)
 			if (!email || !password) errExit("Please provide your credentials!")
 			credentials = { email, password }
 		}
