@@ -99,6 +99,9 @@ export class FS {
 			case "statfs":
 				await this._statfs(params)
 				break
+			case "whoami":
+				await this._whoami(params)
+				break
 			case "mv":
 				await this._mv(params)
 				break
@@ -277,6 +280,18 @@ export class FS {
 		} else {
 			out(`Used: ${formatBytes(statfs.used)}`)
 			out(` Max: ${formatBytes(statfs.max)}`)
+		}
+	}
+
+	/**
+	 * Execute a `whoami` command
+	 */
+	private async _whoami(params: CommandParameters) {
+		const email = this.filen.config.email ?? ""
+		if (params.formatJson) {
+			outJson({ email })
+		} else {
+			out(email)
 		}
 	}
 

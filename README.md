@@ -56,6 +56,7 @@ Options:
 - `upload <local file> <cloud path>`: upload a local file into the cloud at a specified path
 - `stat <path>`: display information about a file or directory
 - `statfs`: display information about your Filen cloud drive
+- `whoami`: print the current user
 - `mv <from> <to>` / `cp <from> <to>`: move or copy a file to a path (parent directory or file)
 - `write <file> <content...>`: write text to a file
 - `open <file>`: open a file locally in the associated application

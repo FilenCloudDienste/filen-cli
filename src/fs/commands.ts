@@ -66,6 +66,11 @@ export const fsCommands: Command[] = [
 		arguments: []
 	},
 	{
+		cmd: "whoami",
+		aliases: [],
+		arguments: []
+	},
+	{
 		cmd: "mv",
 		aliases: ["move", "rename"],
 		arguments: [
