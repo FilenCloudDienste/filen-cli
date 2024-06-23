@@ -14,7 +14,7 @@ export const readlineInterface = (() => {
 		completer: (input: string) => Autocompletion.instance?.autocomplete(input) ?? [[], input]
 	})
 	;(rl as any)._writeToOutput = (c: string) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-		(rl as any).output?.write(obfuscateInput === 0 ? c.replace(/./ /* don't replace newlines */, "*") : c) // eslint-disable-line @typescript-eslint/no-explicit-any
+		(rl as any).output?.write(obfuscateInput === 0 ? c.replace(/./ /* don't replace newlines */, "") : c) // eslint-disable-line @typescript-eslint/no-explicit-any
 		if (obfuscateInput > 0) obfuscateInput -= 1
 	}
 	return rl
