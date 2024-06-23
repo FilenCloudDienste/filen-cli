@@ -8,7 +8,7 @@ import * as fsModule from "node:fs"
 import { InterruptHandler } from "../interface/interrupt"
 import open from "open"
 import { fsCommands } from "./commands"
-import { fsCommandsHelpPage } from "../interface/helpPage"
+import { HelpPage } from "../interface/helpPage"
 
 type CommandParameters = {
 	cloudWorkingPath: CloudPath
@@ -50,7 +50,7 @@ export class FS {
 		if (cmd === "exit") return { exit: true }
 
 		if (cmd === "help" || cmd === "?") {
-			out(fsCommandsHelpPage)
+			out(new HelpPage().getInteractiveModeHelpPage())
 			return {}
 		}
 

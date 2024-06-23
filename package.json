@@ -30,6 +30,7 @@
 		"@filen/webdav": "^0.2.16",
 		"arg": "^5.0.2",
 		"cli-progress": "^3.12.0",
+		"dedent": "^1.5.3",
 		"open": "^7.4.2"
 	},
 	"devDependencies": {

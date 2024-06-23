@@ -2,11 +2,11 @@ import arg from "arg"
 import FilenSDK from "@filen/sdk"
 import path from "path"
 import os from "os"
-import { out } from "./interface/interface"
+import { errExit, out } from "./interface/interface"
 import { Authentication } from "./auth/auth"
 import { version } from "./buildInfo"
 import { Updater } from "./updater"
-import { helpPage } from "./interface/helpPage"
+import { HelpPage } from "./interface/helpPage"
 import { FSInterface, fsOptions } from "./fs/fsInterface"
 import { WebDAVInterface, webdavOptions } from "./mirror-server/webdavInterface"
 import { S3Interface, s3Options } from "./mirror-server/s3Interface"
@@ -50,7 +50,13 @@ if (args["--help"] || args["--verbose"]) {
 }
 
 if (args["--help"]) {
-	out(helpPage)
+	const topic = args["_"][0]?.toLowerCase() ?? "general"
+	const helpPage = new HelpPage().getHelpPage(topic)
+	if (helpPage !== undefined) {
+		out("\n" + helpPage)
+	} else {
+		errExit(`Unknown help page ${topic}`)
+	}
 	process.exit()
 }
 
