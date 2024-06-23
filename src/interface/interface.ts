@@ -89,3 +89,15 @@ export async function prompt(message: string, allowExit: boolean = false, obfusc
 }
 
 let hasReceivedInput = false
+
+/**
+ * Global confirmation prompting method
+ * @param action The action to include in the prompt (e. g. "delete file.txt"), or undefined for a generic prompt.
+ */
+export async function promptConfirm(action: string | undefined) {
+	return new Promise<boolean>((resolve) => {
+		prompt(action !== undefined ? `Are you sure you want to ${action}? [y/N] ` : "Are you sure? [y/N] ").then(result => {
+			resolve(result.toLowerCase() === "y")
+		})
+	})
+}

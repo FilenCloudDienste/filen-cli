@@ -1,4 +1,4 @@
-import { err, out, outJson, prompt } from "../interface/interface"
+import { err, out, outJson, prompt, promptConfirm } from "../interface/interface"
 import FilenSDK from "@filen/sdk"
 import pathModule from "path"
 import { doNothing, formatBytes, formatTimestamp, hashFile } from "../util"
@@ -178,7 +178,9 @@ export class FS {
 	 */
 	private async _rm(params: CommandParameters) {
 		try {
-			await this.filen.fs().rm({ path: params.cloudWorkingPath.navigate(params.args[0]!).toString() })
+			const path = params.cloudWorkingPath.navigate(params.args[0]!).toString()
+			if (!await promptConfirm(`delete ${path}`)) return
+			await this.filen.fs().rm({ path })
 		} catch (e) {
 			err("No such file or directory")
 		}
