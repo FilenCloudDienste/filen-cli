@@ -31,7 +31,9 @@ export class Authentication {
 	 * Delete credentials stored in a file
 	 */
 	public async deleteStoredCredentials() {
-		await fsModule.promises.unlink(this.credentialsFile)
+		if (await exists(this.credentialsFile)) {
+			await fsModule.promises.unlink(this.credentialsFile)
+		}
 		out("Credentials deleted")
 	}
 
