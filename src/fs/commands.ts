@@ -43,7 +43,7 @@ export const fsCommands: Command[] = [
 		cmd: "upload",
 		aliases: [],
 		arguments: [
-			{ name: "local file", type: "local_file" },
+			{ name: "local file or directory", type: "local_path" },
 			{ name: "cloud path", type: "cloud_path" }
 		]
 	},

@@ -1,7 +1,7 @@
 import { err, out, outJson, prompt, promptConfirm } from "../interface/interface"
 import FilenSDK from "@filen/sdk"
 import pathModule from "path"
-import { doNothing, formatBytes, formatTimestamp, hashFile } from "../util"
+import { directorySize, doNothing, formatBytes, formatTimestamp, hashFile } from "../util"
 import { CloudPath } from "../cloudPath"
 import cliProgress from "cli-progress"
 import * as fsModule from "node:fs"
@@ -194,7 +194,8 @@ export class FS {
 	 */
 	private async _upload(params: CommandParameters) {
 		const source = params.args[0]!
-		const size = fsModule.statSync(source).size
+		const stat =  fsModule.statSync(source)
+		const size = stat.isDirectory() ? (await directorySize(source)) : stat.size
 		const path = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(this.filen, params.args[1]!, source.split(/[/\\]/)[source.split(/[/\\]/).length - 1]!)
 		const progressBar = params.quiet ? null : this.displayTransferProgressBar("Uploading", path.getLastSegment(), size)
 		try {

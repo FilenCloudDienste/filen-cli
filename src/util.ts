@@ -5,6 +5,7 @@ import path from "path"
 import os from "os"
 import { isDevelopment } from "./index"
 import * as https from "node:https"
+import pathModule from "path"
 
 /**
  * Formats a timestamp as yyyy-MM-dd.hh.mm.ss.SSS
@@ -81,6 +82,16 @@ export async function exists(path: PathLike): Promise<boolean> {
 	} catch (e) {
 		return false
 	}
+}
+
+/**
+ * Determine the accumulated size of all files inside a directory.
+ */
+export async function directorySize(path: PathLike) {
+	// see https://stackoverflow.com/a/69418940/13164753
+	const files = await fsModule.promises.readdir(path)
+	const stats = files.map(file => fsModule.promises.stat(pathModule.join(path.toString(), file)))
+	return (await Promise.all(stats)).reduce((accumulator, {size}) => accumulator + size, 0)
 }
 
 /**
