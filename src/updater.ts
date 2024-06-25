@@ -1,4 +1,4 @@
-import { version } from "./buildInfo"
+import { version, disableAutomaticUpdates } from "./buildInfo"
 import { errExit, out, prompt } from "./interface/interface"
 import path from "path"
 import { spawn } from "node:child_process"
@@ -36,6 +36,11 @@ export class Updater {
 		if (process.platform === "darwin") platformStr = "macos"
 		const downloadUrl = releaseInfo.assets.find(asset => asset.name.includes(platformStr) && asset.name.includes(process.arch))?.browser_download_url ?? undefined
 		if (downloadUrl !== undefined && currentVersion !== publishedVersion) {
+			if (disableAutomaticUpdates) {
+				out(`Update available: ${currentVersion} -> ${publishedVersion}`)
+				return
+			}
+
 			if ((await prompt(`Update from ${currentVersion} to ${publishedVersion}? [y/N] `)).toLowerCase() === "y") {
 				await this.update(downloadUrl, releaseInfo.tag_name)
 			}

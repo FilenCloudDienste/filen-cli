@@ -55,6 +55,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Set version
+        uses: jacobtomlinson/gha-find-replace@v3
+        with:
+          include: "package.json"
+          find: "\"version\": \"0.0.0\""
+          replace: "\"version\": \"${{ github.event.release.tag_name }}\""
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:

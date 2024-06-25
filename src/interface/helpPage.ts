@@ -24,6 +24,8 @@ export class HelpPage {
 		return this.interactiveModeHelpPage
 	}
 
+	private readonly versionUrlSegment = version === "0.0.0" ? "" : `/tree/${version}`
+
 	private readonly commands = [
 		["ls [dir]", "list items inside a directory"],
 		["cat <file>", "print content of a text file"],
@@ -70,7 +72,7 @@ export class HelpPage {
 			["s3", "S3 mirror server"],
 		])}
 		
-		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli/tree/${version}#readme
+		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#readme
 		`
 
 	private readonly fsHelpPage: string = dedent`
@@ -91,7 +93,7 @@ export class HelpPage {
 		Invoke the Filen CLI with no command specified to enter interactive mode. 
 		${formatTable(this.interactiveModeCommands)}
 		
-		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli/tree/${version}#access-your-filen-drive
+		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#access-your-filen-drive
 		`
 
 	private readonly webdavHelpPage: string = dedent`
@@ -107,7 +109,7 @@ export class HelpPage {
 			["--w-auth-scheme", "the authentication scheme the server should use, \"basic\" or \"digest\" (default is basic)"],
 		])}
 		
-		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli/tree/${version}#webdav-server
+		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#webdav-server
 		`
 
 	private readonly s3HelpPage: string = dedent`
@@ -120,7 +122,7 @@ export class HelpPage {
 			["--s3-port", "which port the server should be started on (default is 80 or 443)"],
 		])}
 		
-		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli/tree/${version}#s3-server
+		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#s3-server
 		`
 }
 
