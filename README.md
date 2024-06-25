@@ -26,7 +26,7 @@ $ filen [options...]
 Options:
 - `--help`, `-h`: display usage information
 - `--verbose`, `-v`: display additional information
-- `--email <email>` and `--password <password>` (optionally `--two-factor-code`, `-c`): specify credentials
+- `--email <email>` and `--password <password>` (optionally `--two-factor-code <code>`, `-c <code>`): specify credentials
 - `--quiet`, `-q`: hide things like progress bars
 - `--json`: format output as JSON
 
