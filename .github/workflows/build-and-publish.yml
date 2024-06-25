@@ -69,4 +69,4 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: filen/cli:${{ github.event.release.tag_name }}
+          tags: filen/cli:latest,filen/cli:${{ github.event.release.tag_name }}
