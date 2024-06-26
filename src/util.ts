@@ -1,7 +1,6 @@
 import crypto from "crypto"
 import * as fsModule from "node:fs"
 import { PathLike } from "node:fs"
-import path from "path"
 import os from "os"
 import { isDevelopment } from "./index"
 import * as https from "node:https"
@@ -89,9 +88,12 @@ export async function exists(path: PathLike): Promise<boolean> {
  */
 export async function directorySize(path: PathLike) {
 	// see https://stackoverflow.com/a/69418940/13164753
-	const files = await fsModule.promises.readdir(path)
+	const files = await fsModule.promises.readdir(path, {
+		recursive: true,
+		encoding: "utf-8"
+	})
 	const stats = files.map(file => fsModule.promises.stat(pathModule.join(path.toString(), file)))
-	return (await Promise.all(stats)).reduce((accumulator, {size}) => accumulator + size, 0)
+	return (await Promise.all(stats)).reduce((accumulator, { size }) => accumulator + size, 0)
 }
 
 /**
@@ -108,15 +110,15 @@ export function platformConfigPath(): string {
 
 	switch (process.platform) {
 		case "win32":
-			configPath = path.resolve(process.env.APPDATA!)
+			configPath = pathModule.resolve(process.env.APPDATA!)
 			break
 		case "darwin":
-			configPath = path.resolve(path.join(os.homedir(), "Library/Application Support/"))
+			configPath = pathModule.resolve(pathModule.join(os.homedir(), "Library/Application Support/"))
 			break
 		default:
 			configPath = process.env.XDG_CONFIG_HOME
-				? path.resolve(process.env.XDG_CONFIG_HOME)
-				: path.resolve(path.join(os.homedir(), ".config/"))
+				? pathModule.resolve(process.env.XDG_CONFIG_HOME)
+				: pathModule.resolve(pathModule.join(os.homedir(), ".config/"))
 			break
 	}
 
@@ -124,7 +126,7 @@ export function platformConfigPath(): string {
 		throw new Error("Could not find homedir path.")
 	}
 
-	configPath = !isDevelopment ? path.join(configPath, "filen-cli") : path.join(configPath, "filen-cli", "dev")
+	configPath = !isDevelopment ? pathModule.join(configPath, "filen-cli") : pathModule.join(configPath, "filen-cli", "dev")
 
 	if (!fsModule.existsSync(configPath)) {
 		fsModule.mkdirSync(configPath, {
@@ -143,7 +145,7 @@ export function platformConfigPath(): string {
 export function downloadFile(url: string, file: PathLike) {
 	return new Promise<void>((resolve, reject) => {
 		const stream = fsModule.createWriteStream(file)
-		https.get(url, function(response) {
+		https.get(url, function (response) {
 			if (response.statusCode === 302) {
 				downloadFile(response.headers.location!, file).then(() => resolve())
 			} else {
