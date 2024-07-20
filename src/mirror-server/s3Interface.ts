@@ -4,7 +4,6 @@ import { InterruptHandler } from "../interface/interrupt"
 import S3Server from "@filen/s3"
 
 export const s3Options = {
-	"--s3": Boolean,
 	"--s3-hostname": String,
 	"--s3-port": Number,
 	"--s3-https": Boolean,

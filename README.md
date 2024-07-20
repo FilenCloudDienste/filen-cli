@@ -88,10 +88,10 @@ For more information, see als [FilenCloudDienste/filen-webdav](https://github.co
 ### Single user
 
 ```
-$ filen [options...] --webdav --w-user <...> --w-password <...> [options...]
+$ filen webdav --w-user <...> --w-password <...> [options...]
 ```
 
-Invoke the Filen CLI with the `--webdav` flag to start a local WebDAV server that mirrors your personal Filen Drive. 
+Invoke `filen webdav` to start a local WebDAV server that mirrors your personal Filen Drive. 
 This might be useful for allowing local applications to access your Filen Drive via WebDAV.
 
 You must specify login credentials for connecting to the server using the `--w-user` and `--w-password` options (these credentials should be different from your Filen account credentials).
@@ -106,10 +106,10 @@ Options:
 ### Proxy mode
 
 ```
-$ filen [options...] --webdav-proxy [options...]
+$ filen webdav-proxy [options...]
 ```
 
-Invoke the Filen CLI with the `--webdav-proxy` flag to start a WebDAV server that allows any user to connect using their Filen account credentials and access their own Filen Drive.
+Invoke the `filen webdav-proxy` to start a WebDAV server that allows any user to connect using their Filen account credentials and access their own Filen Drive.
 This might be useful when hosting a proxy server for multiple users. 
 Digest auth is not available for proxy mode.
 
@@ -121,10 +121,10 @@ Options: `--w-https`, `--w-hostname`, `--w-port` as above
 ## S3 server
 
 ```
-$ filen --s3 --s3-access-key-id <...> --s3-secret-access-key <...> [options...]
+$ filen s3 --s3-access-key-id <...> --s3-secret-access-key <...> [options...]
 ```
 
-Invoke the Filen CLI with the `--s3` flag to start an S3 server that acts as a mirror server of your Filen Drive.
+Invoke `filen s3` to start an S3 server that acts as a mirror server of your Filen Drive.
 You must specify credentials (Access Key ID and Secret Access Key) for connecting to the server using the `--s3-access-key-id` and `--s3-secret-access-key` options (these credentials should be different from your Filen account credentials).
 
 **Important:** When connecting to the S3 server, you need to enable `s3ForcePathStyle` and set the region to `filen`.

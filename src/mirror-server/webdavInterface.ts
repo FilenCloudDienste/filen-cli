@@ -4,7 +4,6 @@ import { err, errExit, out } from "../interface/interface"
 import { InterruptHandler } from "../interface/interrupt"
 
 export const webdavOptions = {
-	"--webdav": Boolean,
 	"--webdav-proxy": Boolean,
 	"--w-hostname": String,
 	"--w-port": Number,

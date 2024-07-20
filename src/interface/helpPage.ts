@@ -98,8 +98,8 @@ export class HelpPage {
 
 	private readonly webdavHelpPage: string = dedent`
 		Usage:
-		  Single user: filen [options...] --webdav --w-user <...> --w-password <...> [options...]
-		  Proxy mode:  filen [options...] --webdav-proxy [options...]
+		  Single user: filen webdav --w-user <...> --w-password <...> [options...]
+		  Proxy mode:  filen webdav-proxy [options...]
 		
 		Additional options:
 		${formatTable([
@@ -113,7 +113,7 @@ export class HelpPage {
 		`
 
 	private readonly s3HelpPage: string = dedent`
-		Usage: filen --s3 --s3-access-key-id <...> --s3-secret-access-key <...> [options...]
+		Usage: filen --s3-access-key-id <...> --s3-secret-access-key <...> [options...]
 		
 		Additional options:
 		${formatTable([

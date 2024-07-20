@@ -73,11 +73,11 @@ if (args["--help"]) {
 	if (args["--delete-credentials"]) await authentication.deleteStoredCredentials()
 	await authentication.authenticate(args["--email"], args["--password"], args["--two-factor-code"])
 
-	if (args["--webdav"] !== undefined || args["--webdav-proxy"] !== undefined) {
+	if (args["_"][0] === "webdav" || args["_"][0] === "webdav-proxy") {
 
 		// webdav
 		const webdavInterface = new WebDAVInterface(filen)
-		const proxyMode = args["--webdav-proxy"] ?? false
+		const proxyMode = args["_"][0] === "webdav-proxy"
 		await webdavInterface.invoke(proxyMode, {
 			username: args["--w-user"],
 			password: args["--w-password"],
@@ -87,7 +87,7 @@ if (args["--help"]) {
 			authScheme: args["--w-auth-scheme"],
 		})
 
-	} else if (args["--s3"] !== undefined) {
+	} else if (args["_"][0] === "s3") {
 
 		// s3
 		const s3Interface = new S3Interface(filen)
