@@ -1,5 +1,5 @@
 import FilenSDK, { APIError } from "@filen/sdk"
-import { errExit, out, prompt } from "../interface/interface"
+import { err, errExit, out, prompt } from "../interface/interface"
 import fsModule from "node:fs"
 import { exists, platformConfigPath } from "../util"
 import path from "path"
@@ -49,13 +49,15 @@ export class Authentication {
 			const encryptedConfig = await fsModule.promises.readFile(this.credentialsFile, { encoding: "utf-8" })
 			try {
 				const config = await this.crypto.decrypt(encryptedConfig)
-				if (this.verbose) {
-					out(`Logging in as ${config.email} (using saved credentials)`)
-				}
+				if (this.verbose) out(`Logging in as ${config.email} (using saved credentials)`)
 				this.filen.init(config)
-				return
+				if (await this.filen.user().checkAPIKeyValidity()) {
+					return
+				} else {
+					if (this.verbose) err("Invalid api key! Need to log in again.")
+				}
 			} catch (e) {
-				errExit("Cannot login from saved credentials: " + e + "(try --delete-credentials)")
+				errExit("Cannot login from saved credentials: " + e + " (try `filen --delete-credentials`)")
 			}
 		}
 
