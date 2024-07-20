@@ -246,7 +246,7 @@ export class FS {
 		try {
 			const path = params.cloudWorkingPath.navigate(params.args[0]!)
 			const stat = await this.filen.fs().stat({ path: path.toString() })
-			const size = stat.isFile() ? stat.size : await this.filen.cloud().directorySize({ uuid: stat.uuid })
+			const size = stat.isFile() ? stat.size : (await this.filen.cloud().directorySize({ uuid: stat.uuid })).size
 
 			if (params.formatJson) {
 				outJson({
