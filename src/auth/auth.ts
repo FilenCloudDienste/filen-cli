@@ -45,22 +45,32 @@ export class Authentication {
 	 * @param twoFactorCodeArg the `--two-factor-code` CLI argument
 	 */
 	public async authenticate(emailArg: string | undefined, passwordArg: string | undefined, twoFactorCodeArg: string | undefined) {
-		const authenticationMethods = [
-			async () => await this.authenticateUsingArguments(emailArg, passwordArg, twoFactorCodeArg),
-			async () => await this.authenticateUsingEnvironment(),
-			async () => await this.authenticateUsingStoredCredentials(),
-			async () => await this.authenticateUsingFile(),
-		]
-
-		let credentials: Credentials | undefined = undefined
-		for (const authenticate of authenticationMethods) {
-			const result = await authenticate()
-			if (result !== undefined) {
-				credentials = result
-				break
+		if (await exists(this.credentialsFile)) {
+			const encryptedConfig = await fsModule.promises.readFile(this.credentialsFile, { encoding: "utf-8" })
+			try {
+				const config = await this.crypto.decrypt(encryptedConfig)
+				if (this.verbose) {
+					out(`Logging in as ${config.email} (using saved credentials)`)
+				}
+				this.filen.init(config)
+				return
+			} catch (e) {
+				errExit("Cannot login from saved credentials: " + e + "(try --delete-credentials)")
 			}
 		}
 
+		// try to get credentials from args, environment and file
+		let credentials: Credentials | undefined = undefined
+		for (const authenticate of [
+			async () => await this.authenticateUsingArguments(emailArg, passwordArg, twoFactorCodeArg),
+			async () => await this.authenticateUsingEnvironment(),
+			async () => await this.authenticateUsingFile()
+		]) {
+			credentials = await authenticate()
+			if (credentials !== undefined) break
+		}
+
+		// get credentials from prompt
 		const authenticateUsingPrompt = credentials === undefined
 		if (authenticateUsingPrompt) {
 			out("Please enter your Filen credentials:")
@@ -70,6 +80,7 @@ export class Authentication {
 			credentials = { email, password }
 		}
 
+		// try to log in, optionally prompt for 2FA
 		try {
 			await this.filen.login(credentials!)
 		} catch (e) {
@@ -85,10 +96,11 @@ export class Authentication {
 			}
 		}
 
+		// save credentials from prompt
 		if (authenticateUsingPrompt) {
 			const saveCredentials = (await prompt("Save credentials locally for future invocations? [y/N] ")).toLowerCase() === "y"
 			if (saveCredentials) {
-				const encryptedCredentials = await this.crypto.encrypt(credentials!)
+				const encryptedCredentials = await this.crypto.encrypt(this.filen.config)
 				if (!(await exists(this.credentialsDirectory))) await fsModule.promises.mkdir(this.credentialsDirectory)
 				await fsModule.promises.writeFile(this.credentialsFile, encryptedCredentials)
 				out("You can delete these credentials using `filen --delete-credentials`")
@@ -122,28 +134,6 @@ export class Authentication {
 			email: process.env.FILEN_EMAIL,
 			password: process.env.FILEN_PASSWORD,
 			twoFactorCode: process.env.FILEN_2FA_CODE
-		}
-	}
-
-	/**
-	 * Authenticate using the credentials stored a file, if applicable.
-	 */
-	private async authenticateUsingStoredCredentials(): Promise<Credentials | undefined> {
-		if (!(await exists(this.credentialsFile))) {
-			return
-		}
-
-		const encryptedCredentials = await fsModule.promises.readFile(this.credentialsFile, {
-			encoding: "utf-8"
-		})
-		try {
-			const credentials = await this.crypto.decrypt(encryptedCredentials)
-			if (this.verbose) {
-				out(`Logging in as ${credentials.email} (using saved credentials)`)
-			}
-			return credentials
-		} catch (e) {
-			return
 		}
 	}
 

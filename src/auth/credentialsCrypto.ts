@@ -2,8 +2,8 @@ import path from "path"
 import fsModule from "node:fs"
 import crypto from "node:crypto"
 import { platformConfigPath } from "../util"
-import { type Credentials } from "./auth"
 import { key } from "../buildInfo"
+import { FilenSDKConfig } from "@filen/sdk"
 
 /**
  * Handles cryptography for securely storing credentials in a file.
@@ -39,7 +39,7 @@ export class CredentialsCrypto {
 	/**
 	 * Encrypt credentials.
 	 */
-	public async encrypt(credentials: Credentials): Promise<string> {
+	public async encrypt(credentials: FilenSDKConfig): Promise<string> {
 		const derivedKey = await this.deriveEncryptionKey()
 		const iv = crypto.randomBytes(12)
 		const cipher = crypto.createCipheriv("aes-256-gcm", derivedKey, iv)
@@ -51,7 +51,7 @@ export class CredentialsCrypto {
 	/**
 	 * Decrypt credentials.
 	 */
-	public async decrypt(encrypted: string): Promise<Credentials> {
+	public async decrypt(encrypted: string): Promise<FilenSDKConfig> {
 		const derivedKey = await this.deriveEncryptionKey()
 		const data = Buffer.from(encrypted, "hex")
 		const iv = data.subarray(0, 12)
@@ -61,6 +61,6 @@ export class CredentialsCrypto {
 		const decipher = crypto.createDecipheriv("aes-256-gcm", derivedKey, iv)
 		decipher.setAuthTag(authTag)
 		const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf-8")
-		return JSON.parse(decrypted)
+		return JSON.parse(decrypted) as FilenSDKConfig
 	}
 }
