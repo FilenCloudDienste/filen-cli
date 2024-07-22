@@ -10,6 +10,7 @@ import { HelpPage } from "./interface/helpPage"
 import { FSInterface, fsOptions } from "./fs/fsInterface"
 import { WebDAVInterface, webdavOptions } from "./mirror-server/webdavInterface"
 import { S3Interface, s3Options } from "./mirror-server/s3Interface"
+import { SyncInterface } from "./sync/syncInterface"
 
 const args = arg({
 	"--dev": Boolean,
@@ -98,6 +99,12 @@ if (args["--help"]) {
 			accessKeyId: args["--s3-access-key-id"],
 			secretAccessKey: args["--s3-secret-access-key"],
 		})
+
+	} else if (args["_"][0] === "sync") {
+
+		// sync
+		const syncInterface = new SyncInterface(filen)
+		await syncInterface.invoke(args["_"].slice(1))
 
 	} else {
 
