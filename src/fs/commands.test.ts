@@ -10,4 +10,8 @@ describe("splitCommandSegments()", () => {
 		expect(splitCommandSegments("cd \"folder name\"")).toEqual(["cd", "\"folder name\""])
 	})
 
+	test("multiple segments with quites", () => {
+		expect(splitCommandSegments("cd \"folder name\" to \"other folder\"")).toEqual(["cd", "\"folder name\"", "to", "\"other folder\""])
+	})
+
 })
