@@ -77,7 +77,11 @@ export class SyncInterface {
 			sdkConfig: this.filen.config,
 			onMessage: msg => {
 				if (verbose) console.log(msg)
-				if (msg.type.toLowerCase().includes("error") && (msg as {data: {errors: unknown[]}}).data.errors.length > 0) err(JSON.stringify(msg))
+				if (msg.type === "taskErrors" || msg.type === "localTreeErrors") {
+					if (msg.data.errors.length > 0) err(JSON.stringify(msg))
+				} else {
+					if (msg.type.toLowerCase().includes("error")) err(JSON.stringify(msg))
+				}
 				if ((continuous && msg.type === "cycleSuccess") || (!continuous && msg.type === "cycleExited")) {
 					out(`Done syncing ${msg.syncPair.localPath} to ${msg.syncPair.remotePath} (${msg.syncPair.mode})`)
 				}
