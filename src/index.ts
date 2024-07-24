@@ -10,7 +10,7 @@ import { HelpPage } from "./interface/helpPage"
 import { FSInterface, fsOptions } from "./fs/fsInterface"
 import { WebDAVInterface, webdavOptions } from "./mirror-server/webdavInterface"
 import { S3Interface, s3Options } from "./mirror-server/s3Interface"
-import { SyncInterface } from "./sync/syncInterface"
+import { SyncInterface, syncOptions } from "./sync/syncInterface"
 
 const args = arg({
 	"--dev": Boolean,
@@ -38,6 +38,7 @@ const args = arg({
 	...fsOptions,
 	...webdavOptions,
 	...s3Options,
+	...syncOptions,
 })
 
 /**
@@ -104,7 +105,7 @@ if (args["--help"]) {
 
 		// sync
 		const syncInterface = new SyncInterface(filen)
-		await syncInterface.invoke(args["_"].slice(1))
+		await syncInterface.invoke(args["_"].slice(1), args["--continuous"] ?? false, args["--verbose"] ?? false)
 
 	} else {
 

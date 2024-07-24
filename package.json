@@ -32,7 +32,8 @@
 		"arg": "^5.0.2",
 		"cli-progress": "^3.12.0",
 		"dedent": "^1.5.3",
-		"open": "^7.4.2"
+		"open": "^7.4.2",
+		"uuid-by-string": "^4.0.0"
 	},
 	"devDependencies": {
 		"@types/cli-progress": "^3.11.6",

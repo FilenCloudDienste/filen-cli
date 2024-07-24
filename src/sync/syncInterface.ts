@@ -1,11 +1,15 @@
 import FilenSDK from "@filen/sdk"
 import SyncWorker from "@filen/sync"
-import { randomUUID } from "node:crypto"
 import pathModule from "path"
 import { SyncMode, SyncPair } from "@filen/sync/dist/types"
 import { err, errExit, out } from "../interface/interface"
 import fsModule, { PathLike } from "node:fs"
 import { exists, platformConfigPath } from "../util"
+import getUuidByString from "uuid-by-string"
+
+export const syncOptions = {
+	"--continuous": Boolean,
+}
 
 export type RawSyncPair = {
 	local: string
@@ -47,7 +51,7 @@ export class SyncInterface {
 		this.filen = filen
 	}
 
-	public async invoke(locationsStr: string[]) {
+	public async invoke(locationsStr: string[], continuous: boolean, verbose: boolean) {
 		const syncPairs = await this.resolveSyncPairs(locationsStr)
 		for (const syncPair of syncPairs) {
 			out(`Syncing ${syncPair.local} to ${syncPair.remote} (${syncPair.syncMode})...`)
@@ -57,7 +61,7 @@ export class SyncInterface {
 		for (const syncPair of syncPairs) {
 			fullSyncPairs.push({
 				name: `${syncPair.local}:${syncPair.remote}`,
-				uuid: randomUUID(),
+				uuid: getUuidByString(`${syncPair.local}:${syncPair.remote}`, getUuidByString("filen-cli"), 3),
 				localPath: syncPair.local,
 				remotePath: syncPair.remote,
 				remoteParentUUID: (await this.filen.fs().stat({ path: syncPair.remote })).uuid,
@@ -66,15 +70,23 @@ export class SyncInterface {
 				paused: false
 			})
 		}
+		const syncPairsExited = new Set<string>()
 		const worker = new SyncWorker({
 			syncPairs: fullSyncPairs,
-			dbPath: pathModule.join(__dirname, "db"),
+			dbPath: pathModule.join(platformConfigPath(), "sync"),
 			sdkConfig: this.filen.config,
 			onMessage: msg => {
-				if (msg.type.includes("error")) err(msg.toString())
-				if (msg.type === "cycleExited") process.exit()
+				if (verbose) console.log(msg)
+				if (msg.type.toLowerCase().includes("error") && (msg as {data: {errors: unknown[]}}).data.errors.length > 0) err(JSON.stringify(msg))
+				if ((continuous && msg.type === "cycleSuccess") || (!continuous && msg.type === "cycleExited")) {
+					out(`Done syncing ${msg.syncPair.localPath} to ${msg.syncPair.remotePath} (${msg.syncPair.mode})`)
+				}
+				if (!continuous && msg.type === "cycleExited") {
+					syncPairsExited.add(msg.syncPair.uuid)
+					if (syncPairsExited.size >= syncPairs.length) process.exit()
+				}
 			},
-			runOnce: true,
+			runOnce: !continuous,
 		})
 		await worker.initialize()
 	}
