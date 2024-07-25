@@ -113,7 +113,7 @@ export class HelpPage {
 		`
 
 	private readonly s3HelpPage: string = dedent`
-		Usage: filen --s3-access-key-id <...> --s3-secret-access-key <...> [options...]
+		Usage: filen s3 --s3-access-key-id <...> --s3-secret-access-key <...> [options...]
 		
 		Additional options:
 		${formatTable([
