@@ -12,6 +12,7 @@ export class HelpPage {
 	getHelpPage(topic: string): string | undefined {
 		if (topic === "general") return this.generalHelpPage
 		if (topic === "fs") return this.fsHelpPage
+		if (topic === "sync") return this.syncHelpPage
 		if (topic === "webdav") return this.webdavHelpPage
 		if (topic === "s3") return this.s3HelpPage
 		return undefined
@@ -68,6 +69,7 @@ export class HelpPage {
 		View the topic pages via \`filen -h <topic>\` for more information:
 		${formatTable([
 			["fs", "Access your Filen Drive"],
+			["sync", "Syncing locations with the cloud"],
 			["webdav", "WebDAV mirror server with single user or proxy mode"],
 			["s3", "S3 mirror server"],
 		])}
@@ -94,6 +96,24 @@ export class HelpPage {
 		${formatTable(this.interactiveModeCommands)}
 		
 		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#access-your-filen-drive
+		`
+
+	private readonly syncHelpPage: string = dedent`
+		Usage: filen sync [sync pairs...] [--continuous]
+		
+		Examples:
+		${formatTable([
+			["filen sync", "read sync pairs from $APP_DATA/filen_cli/syncPairs.json of type {local: string, remote: string, syncMode: string, alias?: string}[]"],
+			["filen sync <file>", "read sync pairs from custom JSON file"],
+			["filen sync mypair myotherpair", "use aliases as defined in syncPairs.json"],
+			["filen sync /local/path:/cloud/path", "sync a local path with a cloud path in two-way sync"],
+			["filen sync /local1::/cloud1 /local2:twoWay:/cloud2", "other ways to specify two-way sync"],
+			["filen sync /local1:localToCloud:/cloud1 /local2:ltc:/cloud2", "localToCloud sync (other sync modes: cloudBackup, cloudToLocal, cloudBackup)"]
+	    ])}
+	    
+		Set the --continuous flag to keep syncing (instead of only syncing once).
+	    
+		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#syncing 
 		`
 
 	private readonly webdavHelpPage: string = dedent`
