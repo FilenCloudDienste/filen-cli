@@ -51,10 +51,10 @@ export class SyncInterface {
 		this.filen = filen
 	}
 
-	public async invoke(locationsStr: string[], continuous: boolean, verbose: boolean) {
+	public async invoke(locationsStr: string[], continuous: boolean, verbose: boolean, quiet: boolean) {
 		const syncPairs = await this.resolveSyncPairs(locationsStr)
 		for (const syncPair of syncPairs) {
-			out(`Syncing ${syncPair.local} to ${syncPair.remote} (${syncPair.syncMode})...`)
+			if (!quiet) out(`Syncing ${syncPair.local} to ${syncPair.remote} (${syncPair.syncMode})...`)
 		}
 
 		const fullSyncPairs: SyncPair[] = []
@@ -83,7 +83,7 @@ export class SyncInterface {
 					if (msg.type.toLowerCase().includes("error")) err(JSON.stringify(msg))
 				}
 				if ((continuous && msg.type === "cycleSuccess") || (!continuous && msg.type === "cycleExited")) {
-					out(`Done syncing ${msg.syncPair.localPath} to ${msg.syncPair.remotePath} (${msg.syncPair.mode})`)
+					if (!quiet) out(`Done syncing ${msg.syncPair.localPath} to ${msg.syncPair.remotePath} (${msg.syncPair.mode})`)
 				}
 				if (!continuous && msg.type === "cycleExited") {
 					syncPairsExited.add(msg.syncPair.uuid)

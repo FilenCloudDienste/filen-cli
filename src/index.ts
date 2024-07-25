@@ -105,7 +105,7 @@ if (args["--help"]) {
 
 		// sync
 		const syncInterface = new SyncInterface(filen)
-		await syncInterface.invoke(args["_"].slice(1), args["--continuous"] ?? false, args["--verbose"] ?? false)
+		await syncInterface.invoke(args["_"].slice(1), args["--continuous"] ?? false, args["--verbose"] ?? false, args["--quiet"] ?? false)
 
 	} else {
 
