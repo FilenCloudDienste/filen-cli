@@ -97,6 +97,9 @@ export class SyncInterface {
 
 	private async resolveSyncPairs(locationsStr: string[]): Promise<RawSyncPair[]> {
 		if (locationsStr.length === 0) {
+			if (!await exists(this.defaultSyncPairsRegistry)) {
+				errExit(`Cannot find central sync pairs registry at ${this.defaultSyncPairsRegistry}.\nCreate it with JSON of type {local: string, remote: string, syncMode: string, alias?: string}[]`)
+			}
 			return (await this.getSyncPairsFromFile(this.defaultSyncPairsRegistry)).syncPairs
 		} else if (
 			locationsStr.length === 1
