@@ -26,6 +26,21 @@ process.stdin.on("keypress", () => {
 })
 
 /**
+ * `--quiet` flag is set
+ */
+export let quiet = false
+
+/**
+ * `--verbose` flag is set
+ */
+export let verbose = false
+
+export function setOutputFlags(quietFlag: boolean, verboseFlag: boolean) {
+	quiet = quietFlag
+	verbose = verboseFlag
+}
+
+/**
  * Global output method
  * @param message
  */

@@ -1,5 +1,5 @@
 import FilenSDK, { APIError } from "@filen/sdk"
-import { err, errExit, out, prompt } from "../interface/interface"
+import { err, errExit, out, prompt, verbose } from "../interface/interface"
 import fsModule from "node:fs"
 import { exists, platformConfigPath } from "../util"
 import path from "path"
@@ -16,15 +16,13 @@ export type Credentials = {
  */
 export class Authentication {
 	private readonly filen: FilenSDK
-	private readonly verbose: boolean
 
 	private readonly crypto = new CredentialsCrypto()
 	private readonly credentialsDirectory = platformConfigPath()
 	private readonly credentialsFile = path.join(this.credentialsDirectory, ".credentials")
 
-	public constructor(filen: FilenSDK, verbose: boolean) {
+	public constructor(filen: FilenSDK) {
 		this.filen = filen
-		this.verbose = verbose
 	}
 
 	/**
@@ -49,12 +47,12 @@ export class Authentication {
 			const encryptedConfig = await fsModule.promises.readFile(this.credentialsFile, { encoding: "utf-8" })
 			try {
 				const config = await this.crypto.decrypt(encryptedConfig)
-				if (this.verbose) out(`Logging in as ${config.email} (using saved credentials)`)
+				if (verbose) out(`Logging in as ${config.email} (using saved credentials)`)
 				this.filen.init(config)
 				if (await this.filen.user().checkAPIKeyValidity()) {
 					return
 				} else {
-					if (this.verbose) err("Invalid api key! Need to log in again.")
+					if (verbose) err("Invalid api key! Need to log in again.")
 				}
 			} catch (e) {
 				errExit("Cannot login from saved credentials: " + e + " (try `filen --delete-credentials`)")
@@ -121,7 +119,7 @@ export class Authentication {
 	): Promise<Credentials | undefined> {
 		if (email === undefined) return
 		if (password === undefined) return errExit("Need to also specify argument --password")
-		if (this.verbose) out(`Logging in as ${email} (using arguments)`)
+		if (verbose) out(`Logging in as ${email} (using arguments)`)
 		return { email, password, twoFactorCode: twoFactorCodeArg }
 	}
 
@@ -131,7 +129,7 @@ export class Authentication {
 	private async authenticateUsingEnvironment(): Promise<Credentials | undefined> {
 		if (process.env.FILEN_EMAIL === undefined) return
 		if (process.env.FILEN_PASSWORD === undefined) errExit("Need to also specify environment variable FILEN_PASSWORD")
-		if (this.verbose) out(`Logging in as ${process.env.FILEN_EMAIL} (using environment variables)`)
+		if (verbose) out(`Logging in as ${process.env.FILEN_EMAIL} (using environment variables)`)
 		return {
 			email: process.env.FILEN_EMAIL,
 			password: process.env.FILEN_PASSWORD,
@@ -147,7 +145,7 @@ export class Authentication {
 		const lines = fsModule.readFileSync(".filen-cli-credentials").toString().split("\n")
 		if (lines.length < 2) errExit("Invalid .filen-cli-credentials!")
 		const twoFactorCode = lines.length > 2 ? lines[2] : undefined
-		if (this.verbose) out(`Logging in as ${lines[0]} (using .filen-cli-credentials)`)
+		if (verbose) out(`Logging in as ${lines[0]} (using .filen-cli-credentials)`)
 		return { email: lines[0]!, password: lines[1]!, twoFactorCode }
 	}
 }

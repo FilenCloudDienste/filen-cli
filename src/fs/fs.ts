@@ -1,4 +1,4 @@
-import { err, out, outJson, prompt, promptConfirm } from "../interface/interface"
+import { err, out, outJson, prompt, promptConfirm, quiet } from "../interface/interface"
 import FilenSDK from "@filen/sdk"
 import pathModule from "path"
 import { directorySize, doNothing, formatBytes, formatTimestamp, hashFile } from "../util"
@@ -14,7 +14,6 @@ type CommandParameters = {
 	cloudWorkingPath: CloudPath
 	args: string[]
 	formatJson: boolean
-	quiet: boolean
 }
 
 /**
@@ -34,15 +33,13 @@ export class FS {
 	 * @param cmd
 	 * @param args
 	 * @param formatJson Whether to format the output as JSON.
-	 * @param quiet Whether to hide things like progress bars
 	 * @returns Whether to exit the interactive environment, and where to navigate (via `cd` command)
 	 */
 	public async executeCommand(
 		cloudWorkingPath: CloudPath,
 		cmd: string,
 		args: string[],
-		formatJson: boolean,
-		quiet: boolean
+		formatJson: boolean
 	): Promise<{
 		exit?: boolean
 		cloudWorkingPath?: CloudPath
@@ -54,7 +51,7 @@ export class FS {
 			return {}
 		}
 
-		const params = { cloudWorkingPath, args, formatJson, quiet }
+		const params = { cloudWorkingPath, args, formatJson }
 
 		const command = fsCommands.find(command => [command.cmd, ...command.aliases].includes(cmd))
 
@@ -197,13 +194,13 @@ export class FS {
 		const stat =  fsModule.statSync(source)
 		const size = stat.isDirectory() ? (await directorySize(source)) : stat.size
 		const path = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(this.filen, params.args[1]!, source.split(/[/\\]/)[source.split(/[/\\]/).length - 1]!)
-		const progressBar = params.quiet ? null : this.displayTransferProgressBar("Uploading", path.getLastSegment(), size)
+		const progressBar = quiet ? null : this.displayTransferProgressBar("Uploading", path.getLastSegment(), size)
 		try {
 			const abortSignal = InterruptHandler.instance.createAbortSignal()
 			await this.filen.fs().upload({
 				path: path.toString(),
 				source,
-				onProgress: params.quiet ? doNothing : progressBar!.onProgress,
+				onProgress: quiet ? doNothing : progressBar!.onProgress,
 				abortSignal
 			})
 		} catch (e) {
@@ -221,7 +218,7 @@ export class FS {
 			const rawPath = params.args[1] === undefined || params.args[1] === "." ? process.cwd() + "/" : params.args[1]
 			const path = rawPath.endsWith("/") || rawPath.endsWith("\\") ? pathModule.join(rawPath, source.cloudPath[source.cloudPath.length - 1]!) : rawPath
 			const size = (await this.filen.fs().stat({ path: source.toString() })).size
-			const progressBar = params.quiet ? null : this.displayTransferProgressBar("Downloading", source.getLastSegment(), size)
+			const progressBar = quiet ? null : this.displayTransferProgressBar("Downloading", source.getLastSegment(), size)
 			try {
 				const abortSignal = InterruptHandler.instance.createAbortSignal()
 				await this.filen.fs().download({
@@ -320,9 +317,9 @@ export class FS {
 				from.cloudPath[from.cloudPath.length - 1]!
 			)
 			const fromSize = (await this.filen.fs().stat({ path: from.toString() })).size
-			let progressBar = params.quiet ? null : this.displayTransferProgressBar("Downloading", from.getLastSegment(), fromSize, true)
+			let progressBar = quiet ? null : this.displayTransferProgressBar("Downloading", from.getLastSegment(), fromSize, true)
 			let stillDownloading = true
-			const onProgress = params.quiet
+			const onProgress = quiet
 				? doNothing
 				: (transferred: number) => {
 					progressBar!.onProgress(transferred)

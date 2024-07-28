@@ -1,5 +1,5 @@
 import { version, disableAutomaticUpdates } from "./buildInfo"
-import { errExit, out, prompt } from "./interface/interface"
+import { errExit, out, prompt, verbose } from "./interface/interface"
 import path from "path"
 import { spawn } from "node:child_process"
 import { downloadFile } from "./util"
@@ -19,7 +19,7 @@ export class Updater {
 	/**
 	 * Check for updates and prompt the user on whether to update.
 	 */
-	public async checkForUpdates(verbose: boolean): Promise<void> {
+	public async checkForUpdates(): Promise<void> {
 		if (version === "0.0.0") {
 			if (verbose) out("Skipping updates in development environment")
 			return

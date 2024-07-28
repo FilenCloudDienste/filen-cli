@@ -2,7 +2,7 @@ import FilenSDK from "@filen/sdk"
 import SyncWorker from "@filen/sync"
 import pathModule from "path"
 import { SyncMode, SyncPair } from "@filen/sync/dist/types"
-import { err, errExit, out } from "../interface/interface"
+import { err, errExit, out, quiet, verbose } from "../interface/interface"
 import fsModule, { PathLike } from "node:fs"
 import { exists, platformConfigPath } from "../util"
 import getUuidByString from "uuid-by-string"
@@ -51,7 +51,7 @@ export class SyncInterface {
 		this.filen = filen
 	}
 
-	public async invoke(locationsStr: string[], continuous: boolean, verbose: boolean, quiet: boolean) {
+	public async invoke(locationsStr: string[], continuous: boolean) {
 		const syncPairs = await this.resolveSyncPairs(locationsStr)
 		for (const syncPair of syncPairs) {
 			if (!quiet) out(`Syncing ${syncPair.local} to ${syncPair.remote} (${syncPair.syncMode})...`)

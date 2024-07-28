@@ -2,7 +2,7 @@ import arg from "arg"
 import FilenSDK from "@filen/sdk"
 import path from "path"
 import os from "os"
-import { errExit, out } from "./interface/interface"
+import { errExit, out, setOutputFlags } from "./interface/interface"
 import { Authentication } from "./auth/auth"
 import { version } from "./buildInfo"
 import { Updater } from "./updater"
@@ -69,9 +69,11 @@ if (args["--help"]) {
 		tmpPath: path.join(os.tmpdir(), "filen-cli")
 	})
 
-	await new Updater().checkForUpdates(args["--verbose"] ?? false)
+	setOutputFlags(args["--quiet"] ?? false, args["--verbose"] ?? false)
 
-	const authentication = new Authentication(filen, args["--verbose"] ?? false)
+	await new Updater().checkForUpdates()
+
+	const authentication = new Authentication(filen)
 	if (args["--delete-credentials"]) await authentication.deleteStoredCredentials()
 	await authentication.authenticate(args["--email"], args["--password"], args["--two-factor-code"])
 
@@ -105,14 +107,13 @@ if (args["--help"]) {
 
 		// sync
 		const syncInterface = new SyncInterface(filen)
-		await syncInterface.invoke(args["_"].slice(1), args["--continuous"] ?? false, args["--verbose"] ?? false, args["--quiet"] ?? false)
+		await syncInterface.invoke(args["_"].slice(1), args["--continuous"] ?? false)
 
 	} else {
 
 		// fs commands
 		const fsInterface = new FSInterface(filen)
 		await fsInterface.invoke({
-			quiet: args["--quiet"]!,
 			formatJson: args["--json"]!,
 			root: args["--root"],
 			noAutocomplete: args["--no-autocomplete"] ?? false,
