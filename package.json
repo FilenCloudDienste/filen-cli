@@ -10,6 +10,7 @@
 		"generateKey": "node generateKey.mjs",
 		"build": "tsc && node injectBuildInfo.mjs && esbuild build/index.js --bundle --outfile=dist/bundle.js --format=cjs --platform=node",
 		"package-dev": "npm run build && pkg -t node18 -o dist/filen-cli dist/bundle.js",
+		"package-dev-all": "npm run build && node packageAllPlatforms.mjs dev",
 		"package-all": "npm run build && node packageAllPlatforms.mjs"
 	},
 	"engines": {
