@@ -7,6 +7,7 @@
 
 The Filen CLI provides a set of useful tools for interacting with the cloud:
 - [Accessing your Filen Drive](#access-your-filen-drive) in a stateless environment or [interactive mode](#interactive-mode)
+- [Syncing](#syncing) locations with the cloud (just like the Desktop app)
 - Running a [WebDAV mirror server](#webdav-server) of your [personal drive](#single-user), or multiple drives in [proxy mode](#proxy-mode)
 - Running an [S3 mirror server](#s3-server)
 
@@ -79,11 +80,33 @@ Additional available commands:
 - `exit`: exit interactive mode
 
 
+## Syncing
+
+```
+$ filen sync [sync pairs...] [--continuous]
+```
+
+Invoke `filen sync` to sync any locations with your Filen Drive. This is the same functionality you get with the Desktop app.
+
+You must specify the sync pairs (`[sync pairs...]` above) as follows:
+- **(central registry)** `filen sync`: Read the sync pairs from `$APP_DATA/filen_cli/syncPairs.json`. 
+  This file must contain JSON of the type `{local: string, remote: string, syncMode: string, alias?: string}[]`.
+  `syncMode` can be `twoWay`, `localToCloud`, `localBackup`, `cloudToLocal` or `cloudBackup` (see the FAQ [here](https://filen.io/apps/desktop) on what that means).
+- **(custom registry)** `filen sync <file>`: Read the sync pairs from a custom JSON file (same type as above).
+- **(aliases)** `filen sync mypair myotherpair`: Sync the sync pairs from the central registry that were given the aliases `mypair` and `myotherpair`.
+- **(literal pair)** `filen sync /local/path:twoWay:/cloud/path`: Sync the local path `/local/path` with the cloud path `/cloud/path` in two-way sync.
+- **(simplified two-way pairs)** `filen sync /local:/cloud`: Sync `/local` with `/cloud` in two-way sync (also possible to use `::`, if cloud path contains `:`).
+- **(other sync modes and abbreviations)** `filen sync /local1:localToCloud:/cloud1 /local2:ltc:/cloud2`: Sync `/local1` with `/cloud1` (and `/local2` with `/cloud2`) in local-to-cloud sync
+  (other abbreviations are `tw` = `twoWay`, `ltc` = `localToCloud`, `lb` = `localBackup`, `ctl` = `cloudToLocal`, `cb` = `cloudBackup`).
+
+You can set the `--continuous` flag to keep syncing (instead of only syncing once).
+
+
 ## WebDAV server
 
 You can use the Filen CLI to start a WebDAV server that acts as a mirror server of your Filen Drive.
 
-For more information, see als [FilenCloudDienste/filen-webdav](https://github.com/FilenCloudDienste/filen-webdav).
+For more information, see also [FilenCloudDienste/filen-webdav](https://github.com/FilenCloudDienste/filen-webdav).
 
 ### Single user
 

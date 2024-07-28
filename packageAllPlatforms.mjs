@@ -1,0 +1,56 @@
+import { spawn } from "child_process"
+import pkg from "@yao-pkg/pkg"
+import * as fs from "node:fs"
+
+const local = process.argv.includes("dev")
+const bundleFile = "dist/bundle.js"
+
+const targets = [
+	{ name: "win-x64", pkgTarget: "win32-x64", dependencies: [ "@parcel/watcher-win32-x64" ] },
+	{ name: "win-arm64", pkgTarget: "win32-arm64", dependencies: [ "@parcel/watcher-win32-arm64" ] },
+	{ name: "linux-x64", pkgTarget: "linux-x64", dependencies: [ "@parcel/watcher-linux-x64-glibc", "@parcel/watcher-linux-x64-musl" ] },
+	{ name: "linux-arm64", pkgTarget: "linux-arm64", dependencies: [ "@parcel/watcher-linux-arm64-glibc", "@parcel/watcher-linux-arm64-musl" ] },
+	{ name: "macos-x64", pkgTarget: "macos-x64", dependencies: [ "@parcel/watcher-darwin-x64" ] },
+	{ name: "macos-arm64", pkgTarget: "macos-arm64", dependencies: [ "@parcel/watcher-darwin-arm64" ] },
+].filter(t => !local || t.name.includes(process.arch))
+
+// install temporary dependencies
+await new Promise((resolve, _) => {
+	spawn("npm", ["install", "--save-dev", "--force", ...targets.flatMap(t => t.dependencies)], { shell: true })
+		.on("error", err => console.error(err))
+		.on("close", () => resolve())
+})
+
+const placeholderStart = "/* INJECTED DEPENDENCIES PLACEHOLDER >>>>> */"
+const placeholderEnd = "/* <<<<< INJECTED DEPENDENCIES PLACEHOLDER */"
+const placeholderRegex = /\/\* INJECTED DEPENDENCIES PLACEHOLDER >>>>> \*\/.*\/\* <<<<< INJECTED DEPENDENCIES PLACEHOLDER \*\//s
+
+// prepare bundle file
+let bundle = fs.readFileSync(bundleFile).toString()
+bundle = bundle.replace("\"use strict\";", `"use strict";\n\n${placeholderStart}\n${placeholderEnd}\n`)
+fs.writeFileSync(bundleFile, bundle)
+
+// build binaries
+for (const target of targets) {
+	console.log(`Packaging for ${target.name}...`)
+
+	// inject require statements
+	let bundle = fs.readFileSync(bundleFile).toString()
+	bundle = bundle.replace(placeholderRegex, `${placeholderStart}\n${target.dependencies.map(d => `if (false) require("${d}");`).join("\n")}\n${placeholderEnd}`)
+	fs.writeFileSync(bundleFile, bundle)
+
+	await pkg.exec(`-t ${target.pkgTarget} -o dist/filen-cli-${target.name} dist/bundle.js`.split(" "))
+}
+
+if (local) {
+	// remove require statements
+	bundle = fs.readFileSync(bundleFile).toString().replace(placeholderRegex, "")
+	fs.writeFileSync(bundleFile, bundle)
+
+	// remove temporary dependencies
+	await new Promise((resolve, _) => {
+		spawn("npm", ["remove", ...targets.flatMap(t => t.dependencies)], { shell: true })
+			.on("error", err => console.error(err))
+			.on("close", () => resolve())
+	})
+}
