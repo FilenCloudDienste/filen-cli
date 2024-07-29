@@ -35,7 +35,6 @@ const syncModeMappings = new Map<string, SyncMode>([
 	[":ctl:", "cloudToLocal"],
 	[":cloudBackup:", "cloudBackup"],
 	[":cb:", "cloudBackup"],
-	["::", "twoWay"],
 	[":", "twoWay"],
 ])
 
@@ -56,6 +55,8 @@ export class SyncInterface {
 		for (const syncPair of syncPairs) {
 			if (!quiet) out(`Syncing ${syncPair.local} to ${syncPair.remote} (${syncPair.syncMode})...`)
 		}
+
+		console.log(syncPairs)
 
 		const fullSyncPairs: SyncPair[] = []
 		for (const syncPair of syncPairs) {
@@ -110,6 +111,7 @@ export class SyncInterface {
 		} else {
 			const syncPairs: RawSyncPair[] = []
 			for (const str of locationsStr) {
+				console.log(str)
 				syncPairs.push(this.resolveSyncPairLiteral(str) ?? await this.resolveSyncPairAlias(str))
 			}
 			return syncPairs

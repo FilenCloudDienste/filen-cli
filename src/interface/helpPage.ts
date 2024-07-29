@@ -107,8 +107,8 @@ export class HelpPage {
 			["filen sync <file>", "read sync pairs from custom JSON file"],
 			["filen sync mypair myotherpair", "use aliases as defined in syncPairs.json"],
 			["filen sync /local/path:/cloud/path", "sync a local path with a cloud path in two-way sync"],
-			["filen sync /local1::/cloud1 /local2:twoWay:/cloud2", "other ways to specify two-way sync"],
-			["filen sync /local1:localToCloud:/cloud1 /local2:ltc:/cloud2", "localToCloud sync (other sync modes: cloudBackup, cloudToLocal, cloudBackup)"]
+			["filen sync /local1:twoWay:/cloud1", "other way to specify two-way sync"],
+			["filen sync /local1:localToCloud:/cloud1 /local2:ltc:/cloud2", "local-to-cloud sync (other sync modes: `cloudBackup`, `cloudToLocal`, `cloudBackup`, all with similar abbreviations)"]
 	    ])}
 	    
 		Set the --continuous flag to keep syncing (instead of only syncing once).

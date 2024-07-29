@@ -95,7 +95,7 @@ You must specify the sync pairs (`[sync pairs...]` above) as follows:
 - **(custom registry)** `filen sync <file>`: Read the sync pairs from a custom JSON file (same type as above).
 - **(aliases)** `filen sync mypair myotherpair`: Sync the sync pairs from the central registry that were given the aliases `mypair` and `myotherpair`.
 - **(literal pair)** `filen sync /local/path:twoWay:/cloud/path`: Sync the local path `/local/path` with the cloud path `/cloud/path` in two-way sync.
-- **(simplified two-way pairs)** `filen sync /local:/cloud`: Sync `/local` with `/cloud` in two-way sync (also possible to use `::`, if cloud path contains `:`).
+- **(shorthand for two-way pairs)** `filen sync /local:/cloud`: Sync `/local` with `/cloud` in two-way sync.
 - **(other sync modes and abbreviations)** `filen sync /local1:localToCloud:/cloud1 /local2:ltc:/cloud2`: Sync `/local1` with `/cloud1` (and `/local2` with `/cloud2`) in local-to-cloud sync
   (other abbreviations are `tw` = `twoWay`, `ltc` = `localToCloud`, `lb` = `localBackup`, `ctl` = `cloudToLocal`, `cb` = `cloudBackup`).
 
