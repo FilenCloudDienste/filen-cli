@@ -114,6 +114,9 @@ export class FS {
 			case "edit":
 				await this._openOrEdit(params, true)
 				break
+			case "view":
+				await this._view(params)
+				break
 		}
 		return {}
 	}
@@ -368,5 +371,31 @@ export class FS {
 			err("No such file")
 		}
 		return {}
+	}
+
+	/**
+	 * Execute a `view` command (reveal path in Web Drive)
+	 */
+	private async _view(params: CommandParameters) {
+		try {
+			let path = params.args[0] === undefined ? params.cloudWorkingPath : params.cloudWorkingPath.navigate(params.args[0])
+			if ((await this.filen.fs().stat({ path: path.toString() })).isFile()) {
+				path = path.navigate("..")
+			}
+			const getUrlSegments = async (path: CloudPath): Promise<string[]> => {
+				const uuid = await this.filen.fs().pathToItemUUID({ path: path.toString() })
+				if (path.cloudPath.length > 0) return [ ...await getUrlSegments(path.navigate("..")), uuid!.toString() ]
+				else return [ uuid!.toString() ]
+			}
+			const urlSegments = await getUrlSegments(path)
+			const url = `https://drive.filen.io/#/${urlSegments.join("/")}`
+			if (!quiet) {
+				if (params.formatJson) outJson({ url })
+				else out(url)
+			}
+			await open(url, { wait: true })
+		} catch (e) {
+			err("No such file or directory")
+		}
 	}
 }

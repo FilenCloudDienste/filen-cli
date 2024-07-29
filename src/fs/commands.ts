@@ -103,6 +103,11 @@ export const fsCommands: Command[] = [
 		cmd: "edit",
 		aliases: [],
 		arguments: [{ name: "file", type: "cloud_file" }]
+	},
+	{
+		cmd: "view",
+		aliases: ["reveal", "drive"],
+		arguments: [{ name: "path", type: "cloud_path", optional: true }]
 	}
 ]
 
