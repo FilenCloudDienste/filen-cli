@@ -68,6 +68,7 @@ Options:
 - `write <file> <content...>`: write text to a file
 - `open <file>`: open a file locally in the associated application
 - `edit <file>`: edit a file locally in the associated application (save and close to re-upload)
+- `view <path>`: view a directory in the Web Drive (you can also invoke `filen drive` to quickly open the Web Drive)
 
 ### Interactive mode
 
