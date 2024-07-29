@@ -3,12 +3,12 @@ import FilenSDK from "@filen/sdk"
 import pathModule from "path"
 import { directorySize, doNothing, formatBytes, formatTimestamp, hashFile } from "../util"
 import { CloudPath } from "../cloudPath"
-import cliProgress from "cli-progress"
 import * as fsModule from "node:fs"
 import { InterruptHandler } from "../interface/interrupt"
 import open from "open"
 import { fsCommands } from "./commands"
 import { HelpPage } from "../interface/helpPage"
+import { displayTransferProgressBar } from "../interface/util"
 
 type CommandParameters = {
 	cloudWorkingPath: CloudPath
@@ -194,7 +194,7 @@ export class FS {
 		const stat =  fsModule.statSync(source)
 		const size = stat.isDirectory() ? (await directorySize(source)) : stat.size
 		const path = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(this.filen, params.args[1]!, source.split(/[/\\]/)[source.split(/[/\\]/).length - 1]!)
-		const progressBar = quiet ? null : this.displayTransferProgressBar("Uploading", path.getLastSegment(), size)
+		const progressBar = quiet ? null : displayTransferProgressBar("Uploading", path.getLastSegment(), size)
 		try {
 			const abortSignal = InterruptHandler.instance.createAbortSignal()
 			await this.filen.fs().upload({
@@ -218,7 +218,7 @@ export class FS {
 			const rawPath = params.args[1] === undefined || params.args[1] === "." ? process.cwd() + "/" : params.args[1]
 			const path = rawPath.endsWith("/") || rawPath.endsWith("\\") ? pathModule.join(rawPath, source.cloudPath[source.cloudPath.length - 1]!) : rawPath
 			const size = (await this.filen.fs().stat({ path: source.toString() })).size
-			const progressBar = quiet ? null : this.displayTransferProgressBar("Downloading", source.getLastSegment(), size)
+			const progressBar = quiet ? null : displayTransferProgressBar("Downloading", source.getLastSegment(), size)
 			try {
 				const abortSignal = InterruptHandler.instance.createAbortSignal()
 				await this.filen.fs().download({
@@ -317,7 +317,7 @@ export class FS {
 				from.cloudPath[from.cloudPath.length - 1]!
 			)
 			const fromSize = (await this.filen.fs().stat({ path: from.toString() })).size
-			let progressBar = quiet ? null : this.displayTransferProgressBar("Downloading", from.getLastSegment(), fromSize, true)
+			let progressBar = quiet ? null : displayTransferProgressBar("Downloading", from.getLastSegment(), fromSize, true)
 			let stillDownloading = true
 			const onProgress = quiet
 				? doNothing
@@ -325,7 +325,7 @@ export class FS {
 					progressBar!.onProgress(transferred)
 					if (progressBar!.progressBar.getProgress() >= 1 && stillDownloading) {
 						stillDownloading = false
-						progressBar = this.displayTransferProgressBar("Uploading", from.getLastSegment(), fromSize, true)
+						progressBar = displayTransferProgressBar("Uploading", from.getLastSegment(), fromSize, true)
 					}
 				}
 			try {
@@ -368,39 +368,5 @@ export class FS {
 			err("No such file")
 		}
 		return {}
-	}
-
-	// ---
-
-	/**
-	 * Display a progress bar for a file transfer.
-	 * @param action The action (like "Downloading", "Uploading")
-	 * @param file The file's name
-	 * @param total Total size of the file (in bytes)
-	 * @param isApproximate Whether to display an approximate symbol "~" before the current total
-	 */
-	private displayTransferProgressBar(
-		action: string,
-		file: string,
-		total: number,
-		isApproximate: boolean = false
-	): {
-		progressBar: cliProgress.SingleBar
-		onProgress: (transferred: number) => void
-	} {
-		const progressBar = new cliProgress.SingleBar(
-			{
-				format: `${action} ${file} [{bar}] {percentage}% | ETA: {eta_formatted} | ${isApproximate ? "~ " : ""}{value} / {total}`,
-				// of a number is <= 100, it is likely a percentage; otherwise format as byte (library used here doesn't provide other options)
-				formatValue: n => (n <= 100 ? n.toString() : formatBytes(n))
-			},
-			cliProgress.Presets.legacy
-		)
-		progressBar.start(total, 0)
-		const onProgress = (transferred: number) => {
-			progressBar.increment(transferred)
-			if (progressBar.getProgress() >= 1.0) progressBar.stop()
-		}
-		return { progressBar, onProgress }
 	}
 }

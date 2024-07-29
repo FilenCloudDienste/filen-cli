@@ -2,10 +2,11 @@ import FilenSDK from "@filen/sdk"
 import SyncWorker from "@filen/sync"
 import pathModule from "path"
 import { SyncMode, SyncPair } from "@filen/sync/dist/types"
-import { err, errExit, out, quiet, verbose } from "../interface/interface"
+import { err, errExit, out, outJson, quiet, verbose } from "../interface/interface"
 import fsModule, { PathLike } from "node:fs"
 import { exists, platformConfigPath } from "../util"
 import getUuidByString from "uuid-by-string"
+import { displayTransferProgressBar } from "../interface/util"
 
 export const syncOptions = {
 	"--continuous": Boolean,
@@ -56,8 +57,6 @@ export class SyncInterface {
 			if (!quiet) out(`Syncing ${syncPair.local} to ${syncPair.remote} (${syncPair.syncMode})...`)
 		}
 
-		console.log(syncPairs)
-
 		const fullSyncPairs: SyncPair[] = []
 		for (const syncPair of syncPairs) {
 			fullSyncPairs.push({
@@ -72,23 +71,36 @@ export class SyncInterface {
 			})
 		}
 		const syncPairsExited = new Set<string>()
+		const progressBar = continuous ? null : displayTransferProgressBar("Transferring", "files", 0)
 		const worker = new SyncWorker({
 			syncPairs: fullSyncPairs,
 			dbPath: pathModule.join(platformConfigPath(), "sync"),
 			sdkConfig: this.filen.config,
 			onMessage: msg => {
-				if (verbose) console.log(msg)
+				if (verbose) outJson(msg)
+				if (progressBar !== null && msg.type === "transfer") {
+					if (msg.data.type === "queued") {
+						progressBar.progressBar.setTotal(progressBar.progressBar.getTotal() + msg.data.size)
+					}
+					if (msg.data.type === "progress") {
+						progressBar.onProgress(msg.data.bytes)
+					}
+				}
 				if (msg.type === "taskErrors" || msg.type === "localTreeErrors") {
 					if (msg.data.errors.length > 0) err(JSON.stringify(msg))
 				} else {
 					if (msg.type.toLowerCase().includes("error")) err(JSON.stringify(msg))
 				}
-				if ((continuous && msg.type === "cycleSuccess") || (!continuous && msg.type === "cycleExited")) {
+				if (continuous && msg.type === "cycleSuccess") {
 					if (!quiet) out(`Done syncing ${msg.syncPair.localPath} to ${msg.syncPair.remotePath} (${msg.syncPair.mode})`)
 				}
 				if (!continuous && msg.type === "cycleExited") {
 					syncPairsExited.add(msg.syncPair.uuid)
-					if (syncPairsExited.size >= syncPairs.length) process.exit()
+					if (syncPairsExited.size >= syncPairs.length) {
+						if (progressBar !== null) progressBar.progressBar.stop()
+						if (!quiet) out("Done.")
+						process.exit()
+					}
 				}
 			},
 			runOnce: !continuous,
@@ -111,7 +123,6 @@ export class SyncInterface {
 		} else {
 			const syncPairs: RawSyncPair[] = []
 			for (const str of locationsStr) {
-				console.log(str)
 				syncPairs.push(this.resolveSyncPairLiteral(str) ?? await this.resolveSyncPairAlias(str))
 			}
 			return syncPairs
