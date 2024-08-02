@@ -32,7 +32,7 @@ export class HelpPage {
 		["ls [dir]", "list items inside a directory (`-l` for more detailed output)"],
 		["cat <file>", "print content of a text file"],
 		["mkdir <dir>", "create a directory"],
-		["rm <path>", "delete a file or directory"],
+		["rm <path>", "delete a file or directory (`--no-trash` to delete permanently)"],
 		["download <cloud path> <local path>", "download a file or directory from the cloud into a local destination"],
 		["upload <local file> <cloud path>", "upload a local file into the cloud at a specified path"],
 		["stat <path>", "display information about a file or directory"],

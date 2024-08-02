@@ -9,6 +9,7 @@ import open from "open"
 import { fsCommands } from "./commands"
 import { HelpPage } from "../interface/helpPage"
 import { displayTransferProgressBar, formatBytes, formatTable, formatTimestamp } from "../interface/util"
+import arg from "arg"
 
 type CommandParameters = {
 	cloudWorkingPath: CloudPath
@@ -140,14 +141,10 @@ export class FS {
 	 * Execute an `ls` command
 	 */
 	private async _ls(params: CommandParameters) {
-		let longOutput = false
-		if (params.args.includes("-l")) {
-			longOutput = true
-			params.args.splice(params.args.indexOf("-l"), 1)
-		}
-		const path = params.args.length > 0 ? params.cloudWorkingPath.navigate(params.args[0]!) : params.cloudWorkingPath
+		const args = arg({ "-l": Boolean }, { argv: params.args })
+		const path = args["_"].length > 0 ? params.cloudWorkingPath.navigate(args["_"][0]!) : params.cloudWorkingPath
 		try {
-			if (longOutput) {
+			if (args["-l"]) {
 				const uuid = (await this.filen.fs().pathToItemUUID({ path: path.toString() }))
 				if (uuid === null) throw new Error()
 				const items = await this.filen.cloud().listDirectory({ uuid })
@@ -207,10 +204,12 @@ export class FS {
 	 * Execute a `rm` command
 	 */
 	private async _rm(params: CommandParameters) {
+		const args = arg({ "--no-trash": Boolean }, { argv: params.args })
 		try {
-			const path = params.cloudWorkingPath.navigate(params.args[0]!).toString()
-			if (!await promptConfirm(`delete ${path}`)) return
-			await this.filen.fs().rm({ path })
+			const path = params.cloudWorkingPath.navigate(args["_"][0]!).toString()
+			if (!await promptConfirm(`${args["--no-trash"] ? "permanently delete": "delete"} ${path}`)) return
+			if (args["--no-trash"]) if (!await promptConfirm(undefined)) return
+			await this.filen.fs().rm({ path, permanent: args["--no-trash"] ?? false })
 		} catch (e) {
 			err("No such file or directory")
 		}
