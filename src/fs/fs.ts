@@ -1,14 +1,14 @@
 import { err, out, outJson, prompt, promptConfirm, quiet } from "../interface/interface"
 import FilenSDK from "@filen/sdk"
 import pathModule from "path"
-import { directorySize, doNothing, formatBytes, formatTimestamp, hashFile } from "../util"
+import { directorySize, doNothing, hashFile } from "../util"
 import { CloudPath } from "../cloudPath"
 import * as fsModule from "node:fs"
 import { InterruptHandler } from "../interface/interrupt"
 import open from "open"
 import { fsCommands } from "./commands"
 import { HelpPage } from "../interface/helpPage"
-import { displayTransferProgressBar, formatTable } from "../interface/util"
+import { displayTransferProgressBar, formatBytes, formatTable, formatTimestamp } from "../interface/util"
 
 type CommandParameters = {
 	cloudWorkingPath: CloudPath
@@ -163,6 +163,7 @@ export class FS {
 				} else {
 					out(formatTable(items.map(item => [
 						item.type === "file" ? formatBytes(item.size) : "",
+						formatTimestamp(item.lastModified),
 						item.name
 					]), 2, true))
 				}
