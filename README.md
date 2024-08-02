@@ -55,7 +55,7 @@ Options:
 
 ### Available commands
 
-- `ls <path to directory>`: list items inside a directory
+- `ls <path to directory>`: list items inside a directory (pass `-l` for more detailed output)
 - `cat <path to file>`: print content of a text file
 - `mkdir <path to directory>`: create a directory
 - `rm <path>`: delete a file or directory

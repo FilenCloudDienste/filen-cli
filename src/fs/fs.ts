@@ -8,7 +8,7 @@ import { InterruptHandler } from "../interface/interrupt"
 import open from "open"
 import { fsCommands } from "./commands"
 import { HelpPage } from "../interface/helpPage"
-import { displayTransferProgressBar } from "../interface/util"
+import { displayTransferProgressBar, formatTable } from "../interface/util"
 
 type CommandParameters = {
 	cloudWorkingPath: CloudPath
@@ -140,11 +140,37 @@ export class FS {
 	 * Execute an `ls` command
 	 */
 	private async _ls(params: CommandParameters) {
+		let longOutput = false
+		if (params.args.includes("-l")) {
+			longOutput = true
+			params.args.splice(params.args.indexOf("-l"), 1)
+		}
 		const path = params.args.length > 0 ? params.cloudWorkingPath.navigate(params.args[0]!) : params.cloudWorkingPath
 		try {
-			const output = await this.filen.fs().readdir({ path: path.toString() })
-			if (params.formatJson) outJson(output)
-			else out(output.join("  "))
+			if (longOutput) {
+				const uuid = (await this.filen.fs().pathToItemUUID({ path: path.toString() }))
+				if (uuid === null) throw new Error()
+				const items = await this.filen.cloud().listDirectory({ uuid })
+				if (params.formatJson) {
+					outJson(items.map(item => {
+						return {
+							name: item.name,
+							type: item.type,
+							size: item.type === "file" ? item.size : undefined,
+							modified: item.lastModified
+						}
+					}))
+				} else {
+					out(formatTable(items.map(item => [
+						item.type === "file" ? formatBytes(item.size) : "",
+						item.name
+					]), 2, true))
+				}
+			} else {
+				const output = await this.filen.fs().readdir({ path: path.toString() })
+				if (params.formatJson) outJson(output)
+				else out(output.join("  "))
+			}
 		} catch (e) {
 			err("No such directory")
 		}

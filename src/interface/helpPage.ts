@@ -1,5 +1,6 @@
 import dedent from "dedent"
 import { version } from "../buildInfo"
+import { formatTable } from "./util"
 
 /**
  * Provides general and specific help pages.
@@ -28,7 +29,7 @@ export class HelpPage {
 	private readonly versionUrlSegment = version === "0.0.0" ? "" : `/tree/${version}`
 
 	private readonly commands = [
-		["ls [dir]", "list items inside a directory"],
+		["ls [dir]", "list items inside a directory (`-l` for more detailed output)"],
 		["cat <file>", "print content of a text file"],
 		["mkdir <dir>", "create a directory"],
 		["rm <path>", "delete a file or directory"],
@@ -145,35 +146,4 @@ export class HelpPage {
 		
 		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#s3-server
 		`
-}
-
-/**
- * Formats a two-dimensional array as a table.
- * @param table An array of rows
- * @param spacing Amount of whitespaces between columns
- */
-function formatTable(table: string[][], spacing: number = 3): string {
-	let columns = 0
-	table.forEach(row => {
-		if (row.length > columns) columns = row.length
-	})
-
-	const columnWidths: number[] = []
-	for (let i = 0; i < columns; i++) {
-		columnWidths.push(0)
-		table.forEach(row => {
-			const cell = row[i]
-			if (cell !== undefined && cell.length > columnWidths[i]!) columnWidths[i] = cell.length
-		})
-	}
-
-	const lines: string[] = []
-	table.forEach(row => {
-		const line: string[] = []
-		for (let column = 0; column < row.length; column++) {
-			line.push(row[column] + " ".repeat(columnWidths[column]! - row[column]!.length))
-		}
-		lines.push(line.join(" ".repeat(spacing)))
-	})
-	return lines.join("\n")
 }

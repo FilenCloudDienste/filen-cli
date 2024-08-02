@@ -63,10 +63,10 @@ export function hashFile(path: string): Promise<string> {
  */
 export function formatBytes(bytes: number, decimals: number = 2): string {
 	// see https://stackoverflow.com/a/18650828
-	if (!+bytes) return "0 Bytes"
+	if (!+bytes) return "0 B"
 	const base = 1024
 	decimals = decimals < 0 ? 0 : decimals
-	const sizes = ["Bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"]
+	const sizes = ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"]
 	const i = Math.floor(Math.log(bytes) / Math.log(base))
 	return `${parseFloat((bytes / Math.pow(base, i)).toFixed(decimals))} ${sizes[i]}`
 }

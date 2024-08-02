@@ -32,3 +32,38 @@ export function displayTransferProgressBar(
 	}
 	return { progressBar, onProgress }
 }
+
+/**
+ * Formats a two-dimensional array as a table.
+ * @param table An array of rows
+ * @param spacing Amount of whitespaces between columns
+ */
+export function formatTable(table: string[][], spacing: number = 3, rightAlignFirstColumn: boolean = false): string {
+	let columns = 0
+	table.forEach(row => {
+		if (row.length > columns) columns = row.length
+	})
+
+	const columnWidths: number[] = []
+	for (let i = 0; i < columns; i++) {
+		columnWidths.push(0)
+		table.forEach(row => {
+			const cell = row[i]
+			if (cell !== undefined && cell.length > columnWidths[i]!) columnWidths[i] = cell.length
+		})
+	}
+
+	const lines: string[] = []
+	table.forEach(row => {
+		const line: string[] = []
+		for (let column = 0; column < row.length; column++) {
+			if (rightAlignFirstColumn && column === 0) {
+				line.push(" ".repeat(columnWidths[column]! - row[column]!.length) + row[column])
+			} else {
+				line.push(row[column] + " ".repeat(columnWidths[column]! - row[column]!.length))
+			}
+		}
+		lines.push(line.join(" ".repeat(spacing)))
+	})
+	return lines.join("\n")
+}
