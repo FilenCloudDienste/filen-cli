@@ -1,6 +1,8 @@
 import { spawn } from "child_process"
 import pkg from "@yao-pkg/pkg"
 import * as fs from "node:fs"
+import * as PELibrary from "pe-library"
+import * as ResEdit from "resedit"
 
 const local = process.argv.includes("dev")
 const bundleFile = "dist/bundle.js"
@@ -40,6 +42,21 @@ for (const target of targets) {
 	fs.writeFileSync(bundleFile, bundle)
 
 	await pkg.exec(`-t ${target.pkgTarget} -o dist/filen-cli-${target.name} dist/bundle.js`.split(" "))
+
+	// replace app icon (Windows)
+	if (target.pkgTarget.includes("win")) {
+		const exe = PELibrary.NtExecutable.from(fs.readFileSync(`dist/filen-cli-${target.name}.exe`))
+		const res = PELibrary.NtExecutableResource.from(exe)
+		const iconFile = ResEdit.Data.IconFile.from(fs.readFileSync("icon.ico"))
+		ResEdit.Resource.IconGroupEntry.replaceIconsForResource(
+			res.entries,
+			ResEdit.Resource.IconGroupEntry.fromEntries(res.entries).map((entry) => entry.id),
+			1033, iconFile.icons.map(item => item.data)
+		)
+		res.outputResource(exe)
+		const newBinary = exe.generate()
+		fs.writeFileSync(`dist/filen-cli-${target.name}.exe`, Buffer.from(newBinary))
+	}
 }
 
 if (local) {
