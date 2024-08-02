@@ -11,6 +11,7 @@ import { FSInterface, fsOptions } from "./fs/fsInterface"
 import { WebDAVInterface, webdavOptions } from "./mirror-server/webdavInterface"
 import { S3Interface, s3Options } from "./mirror-server/s3Interface"
 import { SyncInterface, syncOptions } from "./sync/syncInterface"
+import { TrashInterface } from "./other/trashInterface"
 
 const args = arg({
 	"--dev": Boolean,
@@ -39,7 +40,7 @@ const args = arg({
 	...webdavOptions,
 	...s3Options,
 	...syncOptions,
-})
+}, { permissive: true })
 
 /**
  * Whether the application is run in a development environment (set via the `--dev` flag).
@@ -108,6 +109,12 @@ if (args["--help"]) {
 		// sync
 		const syncInterface = new SyncInterface(filen)
 		await syncInterface.invoke(args["_"].slice(1), args["--continuous"] ?? false)
+
+	} else if (args["_"][0] === "trash") {
+
+		// trash
+		const trashInterface = new TrashInterface(filen)
+		await trashInterface.invoke(args["_"].slice(1))
 
 	} else {
 

@@ -97,6 +97,14 @@ export class HelpPage {
 		Invoke the Filen CLI with no command specified to enter interactive mode. 
 		${formatTable(this.interactiveModeCommands)}
 		
+		Trash:
+		${formatTable([
+			["filen trash", "list trash items"],
+			["filen trash restore", "restore a trash item"],
+			["filen trash delete", "permanently delete a trash item"],
+			["filen trash empty", "permanently delete all trash items"]
+	    ])}
+		
 		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#access-your-filen-drive
 		`
 

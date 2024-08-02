@@ -80,6 +80,13 @@ Additional available commands:
 - `ls`: list items inside current directory
 - `exit`: exit interactive mode
 
+### Trash
+
+- `filen trash`: view trash items
+- `filen trash restore`: restore a trash item
+- `filen trash delete`: permanently delete a trash item
+- `filen trash empty`: permanently delete all trash items
+
 
 ## Syncing
 
