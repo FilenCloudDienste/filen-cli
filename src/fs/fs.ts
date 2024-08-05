@@ -79,6 +79,12 @@ export class FS {
 			case "cat":
 				await this._cat(params)
 				break
+			case "head":
+				await this._headOrTail(params, "head")
+				break
+			case "tail":
+				await this._headOrTail(params, "tail")
+				break
 			case "mkdir":
 				await this._mkdir(params)
 				break
@@ -188,6 +194,24 @@ export class FS {
 			const content = (await this.filen.fs().readFile({ path: path.toString() })).toString()
 			if (params.formatJson) outJson({ text: content })
 			else out(content)
+		} catch (e) {
+			err("No such file")
+		}
+	}
+
+	/**
+	 * Execute a `head` or `tail` command
+	 * @param mode Which command to execute.
+	 */
+	private async _headOrTail(params: CommandParameters, mode: "head" | "tail") {
+		const args = arg({ "-n": Number }, { argv: params.args })
+		const n = args["-n" ] ?? 10
+		const path = params.cloudWorkingPath.navigate(args["_"][0]!)
+		try {
+			const lines = (await this.filen.fs().readFile({ path: path.toString() })).toString().split("\n")
+			const output = (mode === "head" ? lines.slice(0, n) : lines.slice(lines.length - n)).join("\n")
+			if (params.formatJson) outJson({ text: output })
+			else out(output)
 		} catch (e) {
 			err("No such file")
 		}

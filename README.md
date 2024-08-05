@@ -57,6 +57,7 @@ Options:
 
 - `ls <path to directory>`: list items inside a directory (pass `-l` for more detailed output)
 - `cat <path to file>`: print content of a text file
+- `head <path to file>` / `tail <path to file>`: print first / last 10 lines of a text file (pass `-n 3` for only 3 lines etc.)
 - `mkdir <path to directory>`: create a directory
 - `rm <path>`: delete a file or directory (`--no-trash` to delete permanently)
 - `download <cloud path> <local destination>`: download a file or directory from the cloud into a local destination

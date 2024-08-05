@@ -31,6 +31,7 @@ export class HelpPage {
 	private readonly commands = [
 		["ls [dir]", "list items inside a directory (`-l` for more detailed output)"],
 		["cat <file>", "print content of a text file"],
+		["head <file> / tail <file>", "print first/last 10 lines of a text file (pass `-n <n>` to print n lines)"],
 		["mkdir <dir>", "create a directory"],
 		["rm <path>", "delete a file or directory (`--no-trash` to delete permanently)"],
 		["download <cloud path> <local path>", "download a file or directory from the cloud into a local destination"],

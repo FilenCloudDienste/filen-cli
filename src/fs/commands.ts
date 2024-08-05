@@ -30,6 +30,16 @@ export const fsCommands: Command[] = [
 		arguments: [{ name: "file", type: "cloud_file" }]
 	},
 	{
+		cmd: "head",
+		aliases: [],
+		arguments: [{ name: "file", type: "cloud_file" }]
+	},
+	{
+		cmd: "tail",
+		aliases: [],
+		arguments: [{ name: "file", type: "cloud_file" }]
+	},
+	{
 		cmd: "mkdir",
 		aliases: [],
 		arguments: [{ name: "directory name", type: "cloud_directory" }]
