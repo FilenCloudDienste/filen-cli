@@ -105,6 +105,12 @@ export class HelpPage {
 			["filen trash empty", "permanently delete all trash items"]
 	    ])}
 		
+		Public Links:
+		${formatTable([
+			["filen links", "view all public links"],
+			["filen links <path>", "create, view, edit or delete a public link for the given path"]
+	    ])}
+		
 		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#access-your-filen-drive
 		`
 

@@ -87,6 +87,11 @@ Additional available commands:
 - `filen trash delete`: permanently delete a trash item
 - `filen trash empty`: permanently delete all trash items
 
+### Public Links
+
+- `filen links`: view all public links
+- `filen links <path>`: create, view, edit or delete a public link for the given path
+
 
 ## Syncing
 

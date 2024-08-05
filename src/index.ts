@@ -12,6 +12,7 @@ import { WebDAVInterface, webdavOptions } from "./mirror-server/webdavInterface"
 import { S3Interface, s3Options } from "./mirror-server/s3Interface"
 import { SyncInterface, syncOptions } from "./sync/syncInterface"
 import { TrashInterface } from "./other/trashInterface"
+import { PublicLinksInterface } from "./other/publicLinksInterface"
 
 const args = arg({
 	"--dev": Boolean,
@@ -115,6 +116,12 @@ if (args["--help"]) {
 		// trash
 		const trashInterface = new TrashInterface(filen)
 		await trashInterface.invoke(args["_"].slice(1))
+
+	} else if (args["_"][0] === "links" || args["_"][0] === "link") {
+
+		// links
+		const publicLinksInterface = new PublicLinksInterface(filen)
+		await publicLinksInterface.invoke(args["_"].slice(1))
 
 	} else {
 
