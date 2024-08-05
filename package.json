@@ -28,7 +28,7 @@
 	"dependencies": {
 		"@filen/s3": "^0.2.13",
 		"@filen/sdk": "^0.1.137",
-		"@filen/sync": "^0.1.8",
+		"@filen/sync": "^0.1.22",
 		"@filen/webdav": "^0.2.20",
 		"arg": "^5.0.2",
 		"cli-progress": "^3.12.0",
