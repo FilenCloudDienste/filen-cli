@@ -53,17 +53,17 @@ export class PublicLinksInterface {
 		})()
 
 		out(formatTable([
-			["Password:", publicLink.password ?? "<none>"],
+			["Password:", publicLink.password !== null ? "***" : "<none>"],
 			["Download Button:", publicLink.downloadButtonEnabled ? "enabled" : "disabled"],
-			["Expiration:", `${publicLink.expiration !== "never" ? formatTimestamp(publicLink.expirationMs) : "-"} (${publicLink.expiration})`],
+			...(publicLink.downloadButtonEnabled !== undefined ? [ ["Expiration:", `${publicLink.expiration !== "never" ? formatTimestamp(publicLink.expirationMs) : "-"} (${publicLink.expiration})`] ] : []),
 			["Link URL:", publicLink.url],
 		]))
 
 		const selection = await prompt("Quit (Enter) / Edit (e) / Delete (d): ", true)
 		if (selection.toLowerCase() === "e") { // edit
-			const password = await prompt(`Password (current: ${publicLink.password ?? "<none>"}) [<password>/"-" to remove]: `)
-			const downloadButtonEnabled = await prompt(`Download button enabled (current: ${publicLink.downloadButtonEnabled ? "y" : "n"}) [y/n]: `)
-			if (downloadButtonEnabled !== "" && (downloadButtonEnabled.toLowerCase() !== "y" && downloadButtonEnabled.toLowerCase() !== "n")) errExit("Invalid input for download button enabled: needs y/n")
+			const password = await prompt(`Password (current: ${publicLink.password !== null ? "***" : "<none>"}) [<password>/"-" to remove]: `)
+			const downloadButtonEnabled = item.type === "file" ? await prompt(`Download button enabled (current: ${publicLink.downloadButtonEnabled ? "y" : "n"}) [y/n]: `) : undefined
+			if (downloadButtonEnabled !== undefined && downloadButtonEnabled !== "" && (downloadButtonEnabled.toLowerCase() !== "y" && downloadButtonEnabled.toLowerCase() !== "n")) errExit("Invalid input for download button enabled: needs y/n")
 			const expiration = await prompt(`Expiration (current: ${publicLink.expiration}) [never/1h/6h/1d/3d/7d/14d/30d]: `)
 			if (expiration !== "" && !["never", "1h", "6h", "1d", "3d", "7d", "14d", "30d"].includes(expiration)) errExit("Invalid input for expiration: needs never/1h/6h/1d/3d/7d/14d/30d")
 			if (password !== "" || downloadButtonEnabled !== "" || expiration !== "") {
@@ -72,7 +72,7 @@ export class PublicLinksInterface {
 					itemUUID: item.uuid,
 					linkUUID: publicLink.uuid,
 					password: password !== "" ? (password === "-" ? undefined : password) : (publicLink.password ?? undefined),
-					enableDownload: downloadButtonEnabled !== "" ? downloadButtonEnabled.toLowerCase() === "y" : publicLink.downloadButtonEnabled,
+					enableDownload: item.type === "file" ? downloadButtonEnabled !== "" ? downloadButtonEnabled!.toLowerCase() === "y" : publicLink.downloadButtonEnabled : undefined,
 					expiration: expiration !== "" ? expiration as PublicLinkExpiration : publicLink.expiration,
 				})
 				out("Public link updated.")
@@ -92,7 +92,7 @@ export class PublicLinksInterface {
 		type: "file" | "directory"
 		uuid: string
 		password: string | null
-		downloadButtonEnabled: boolean
+		downloadButtonEnabled: boolean | undefined
 		expirationMs: number
 		expiration: PublicLinkExpiration
 		url: string
@@ -105,7 +105,7 @@ export class PublicLinksInterface {
 				type: "directory",
 				uuid: publicLinkStatus.uuid,
 				password: publicLinkStatus.password,
-				downloadButtonEnabled: publicLinkStatus.downloadBtn === 1,
+				downloadButtonEnabled: undefined,
 				expirationMs: publicLinkStatus.expiration! * 1000,
 				expiration: publicLinkStatus.expirationText as PublicLinkExpiration,
 				url: `https://drive.filen.io/f/${publicLinkStatus.uuid}#${key}`
