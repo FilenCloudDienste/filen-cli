@@ -109,7 +109,7 @@ if (args["--help"]) {
 
 		// sync
 		const syncInterface = new SyncInterface(filen)
-		await syncInterface.invoke(args["_"].slice(1), args["--continuous"] ?? false)
+		await syncInterface.invoke(args["_"].slice(1), args["--continuous"] ?? false, args["--disable-local-trash"] ?? false)
 
 	} else if (args["_"][0] === "trash") {
 

@@ -10,12 +10,14 @@ import { displayTransferProgressBar } from "../interface/util"
 
 export const syncOptions = {
 	"--continuous": Boolean,
+	"--disable-local-trash": Boolean,
 }
 
 export type RawSyncPair = {
 	local: string
 	remote: string
 	syncMode: SyncMode
+	disableLocalTrash: boolean
 }
 
 const syncModes = [
@@ -51,8 +53,8 @@ export class SyncInterface {
 		this.filen = filen
 	}
 
-	public async invoke(locationsStr: string[], continuous: boolean) {
-		const syncPairs = await this.resolveSyncPairs(locationsStr)
+	public async invoke(locationsStr: string[], continuous: boolean, disableLocalTrashFlag: boolean) {
+		const syncPairs = await this.resolveSyncPairs(locationsStr, disableLocalTrashFlag)
 		for (const syncPair of syncPairs) {
 			if (!quiet) out(`Syncing ${syncPair.local} to ${syncPair.remote} (${syncPair.syncMode})...`)
 		}
@@ -67,7 +69,8 @@ export class SyncInterface {
 				remoteParentUUID: (await this.filen.fs().stat({ path: syncPair.remote })).uuid,
 				mode: syncPair.syncMode,
 				excludeDotFiles: false,
-				paused: false
+				paused: false,
+				localTrashDisabled: syncPair.disableLocalTrash
 			})
 		}
 		const syncPairsExited = new Set<string>()
@@ -108,10 +111,10 @@ export class SyncInterface {
 		await worker.initialize()
 	}
 
-	private async resolveSyncPairs(locationsStr: string[]): Promise<RawSyncPair[]> {
+	private async resolveSyncPairs(locationsStr: string[], disableLocalTrashFlag: boolean): Promise<RawSyncPair[]> {
 		if (locationsStr.length === 0) {
 			if (!await exists(this.defaultSyncPairsRegistry)) {
-				errExit(`Cannot find central sync pairs registry at ${this.defaultSyncPairsRegistry}.\nCreate it with JSON of type {local: string, remote: string, syncMode: string, alias?: string}[]`)
+				errExit(`Cannot find central sync pairs registry at ${this.defaultSyncPairsRegistry}.\nCreate it with JSON of type {local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean}[]`)
 			}
 			return (await this.getSyncPairsFromFile(this.defaultSyncPairsRegistry)).syncPairs
 		} else if (
@@ -123,7 +126,7 @@ export class SyncInterface {
 		} else {
 			const syncPairs: RawSyncPair[] = []
 			for (const str of locationsStr) {
-				syncPairs.push(this.resolveSyncPairLiteral(str) ?? await this.resolveSyncPairAlias(str))
+				syncPairs.push(this.resolveSyncPairLiteral(str, disableLocalTrashFlag) ?? await this.resolveSyncPairAlias(str))
 			}
 			return syncPairs
 		}
@@ -137,14 +140,14 @@ export class SyncInterface {
 			errExit(`You need to create ${path} or specify another sync pairs registry using \`filen sync <path>\`!`)
 		}
 		const file = JSON.parse((await fsModule.promises.readFile(path)).toString())
-		const exitTypeErr = () => errExit("Invalid sync pairs registry! Needs to be of type: {local: string, remote: string, syncMode: string, alias?: string}[]")
+		const exitTypeErr = () => errExit("Invalid sync pairs registry! Needs to be of type: {local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean}[]")
 		if (!Array.isArray(file)) exitTypeErr()
 		for (const obj of file) {
 			if (typeof obj.local !== "string") exitTypeErr()
 			if (typeof obj.remote !== "string") exitTypeErr()
 			const syncMode: string = typeof obj.syncMode === "string" ? obj.syncMode : "twoWay"
 			if (!syncModes.includes(syncMode)) exitTypeErr()
-			const syncPair = { local: obj.local, remote: obj.remote, syncMode: syncMode as SyncMode }
+			const syncPair = { local: obj.local, remote: obj.remote, syncMode: syncMode as SyncMode, disableLocalTrash: obj.disableLocalTrash }
 			syncPairs.push(syncPair)
 			if (typeof obj.alias === "string") aliases.set(obj.alias, syncPair)
 		}
@@ -152,13 +155,14 @@ export class SyncInterface {
 		return { syncPairs, aliases }
 	}
 
-	private resolveSyncPairLiteral(str: string): RawSyncPair | undefined {
+	private resolveSyncPairLiteral(str: string, disableLocalTrashFlag: boolean): RawSyncPair | undefined {
 		for (const syncModeMapping of syncModeMappings.entries()) {
 			if (str.includes(syncModeMapping[0])) {
 				return {
 					local: str.slice(0, str.lastIndexOf(syncModeMapping[0])),
 					remote: str.slice(str.lastIndexOf(syncModeMapping[0]) + syncModeMapping[0].length),
-					syncMode: syncModeMapping[1]
+					syncMode: syncModeMapping[1],
+					disableLocalTrash: disableLocalTrashFlag
 				}
 			}
 		}

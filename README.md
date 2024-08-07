@@ -112,7 +112,7 @@ Invoke `filen sync` to sync any locations with your Filen Drive. This is the sam
 
 You must specify the sync pairs (`[sync pairs...]` above) as follows:
 - **(central registry)** `filen sync`: Read the sync pairs from `$APP_DATA/filen_cli/syncPairs.json`. 
-  This file must contain JSON of the type `{local: string, remote: string, syncMode: string, alias?: string}[]`.
+  This file must contain JSON of the type `{local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean}[]`.
   `syncMode` can be `twoWay`, `localToCloud`, `localBackup`, `cloudToLocal` or `cloudBackup` (see the FAQ [here](https://filen.io/apps/desktop) on what that means).
 - **(custom registry)** `filen sync <file>`: Read the sync pairs from a custom JSON file (same type as above).
 - **(aliases)** `filen sync mypair myotherpair`: Sync the sync pairs from the central registry that were given the aliases `mypair` and `myotherpair`.
@@ -120,6 +120,7 @@ You must specify the sync pairs (`[sync pairs...]` above) as follows:
 - **(shorthand for two-way pairs)** `filen sync /local:/cloud`: Sync `/local` with `/cloud` in two-way sync.
 - **(other sync modes and abbreviations)** `filen sync /local1:localToCloud:/cloud1 /local2:ltc:/cloud2`: Sync `/local1` with `/cloud1` (and `/local2` with `/cloud2`) in local-to-cloud sync
   (other abbreviations are `tw` = `twoWay`, `ltc` = `localToCloud`, `lb` = `localBackup`, `ctl` = `cloudToLocal`, `cb` = `cloudBackup`).
+- **(disable local trash)** `filen sync /local:/cloud --disable-local-trash`: Disable local trash
 
 You can set the `--continuous` flag to keep syncing (instead of only syncing once).
 
