@@ -28,7 +28,7 @@
 	"dependencies": {
 		"@filen/s3": "^0.2.13",
 		"@filen/sdk": "^0.1.139",
-		"@filen/sync": "^0.1.8",
+		"@filen/sync": "^0.1.29",
 		"@filen/webdav": "^0.2.20",
 		"arg": "^5.0.2",
 		"cli-progress": "^3.12.0",
@@ -39,7 +39,7 @@
 	"devDependencies": {
 		"@types/cli-progress": "^3.11.6",
 		"@types/jest": "^29.5.12",
-		"@types/node": "^20.14.11",
+		"@types/node": "^22.1.0",
 		"@typescript-eslint/eslint-plugin": "^7.0.0",
 		"@typescript-eslint/parser": "^6.20.0",
 		"@yao-pkg/pkg": "^5.12.0",
@@ -49,6 +49,6 @@
 		"pe-library": "^1.0.1",
 		"resedit": "^2.0.2",
 		"ts-jest": "^29.2.3",
-		"typescript": "^5.5.3"
+		"typescript": "^5.5.4"
 	}
 }
