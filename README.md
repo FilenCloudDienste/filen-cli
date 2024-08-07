@@ -27,9 +27,8 @@ $ filen [options...]
 Options:
 - `--help`, `-h`: display usage information
 - `--verbose`, `-v`: display additional information
+- `--quiet`, `-q`: hide things like progress bars and additional logs
 - `--email <email>` and `--password <password>` (optionally `--two-factor-code <code>`, `-c <code>`): specify credentials
-- `--quiet`, `-q`: hide things like progress bars
-- `--json`: format output as JSON
 
 ### Authenticating
 
@@ -51,21 +50,27 @@ $ filen [options...] <cmd...>
 
 Options:
 - `--root <path>`, `-r <path`: execute a stateless command from a different working directory
+- `--json`: format output as JSON
 - `--no-autocomplete`: disable autocompletion (for performance or bandwidth reasons)
 
 ### Available commands
+
+Many common Unix-style commands are available:
 
 - `ls <path to directory>`: list items inside a directory (pass `-l` for more detailed output)
 - `cat <path to file>`: print content of a text file
 - `head <path to file>` / `tail <path to file>`: print first / last 10 lines of a text file (pass `-n 3` for only 3 lines etc.)
 - `mkdir <path to directory>`: create a directory
 - `rm <path>`: delete a file or directory (`--no-trash` to delete permanently)
-- `download <cloud path> <local destination>`: download a file or directory from the cloud into a local destination
-- `upload <local file> <cloud path>`: upload a local file into the cloud at a specified path
 - `stat <path>`: display information about a file or directory
 - `statfs`: display information about your Filen cloud drive
 - `whoami`: print the current user
 - `mv <from> <to>` / `cp <from> <to>`: move or copy a file to a path (parent directory or file)
+
+There are also non-standard commands specific to Filen:
+
+- `download <cloud path> <local destination>`: download a file or directory from the cloud into a local destination
+- `upload <local file> <cloud path>`: upload a local file into the cloud at a specified path
 - `write <file> <content...>`: write text to a file
 - `open <file>`: open a file locally in the associated application
 - `edit <file>`: edit a file locally in the associated application (save and close to re-upload)
@@ -77,6 +82,7 @@ Invoke the Filen CLI without any specified commands to enter interactive mode.
 There you can specify paths as absolute (starting with `/`) or relative to the current working directory (supports `.` and `..`).
 
 Additional available commands:
+- `help`: display available commands
 - `cd <path>`: navigate to a different path
 - `ls`: list items inside current directory
 - `exit`: exit interactive mode

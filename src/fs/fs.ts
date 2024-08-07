@@ -48,7 +48,7 @@ export class FS {
 		if (cmd === "exit") return { exit: true }
 
 		if (cmd === "help" || cmd === "?") {
-			out(new HelpPage().getInteractiveModeHelpPage())
+			out("\n" + new HelpPage().getInteractiveModeHelpPage() + "\n")
 			return {}
 		}
 
