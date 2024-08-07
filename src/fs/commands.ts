@@ -118,7 +118,27 @@ export const fsCommands: Command[] = [
 		cmd: "view",
 		aliases: ["reveal", "drive"],
 		arguments: [{ name: "path", type: "cloud_path", optional: true }]
-	}
+	},
+	{
+		cmd: "favorites",
+		aliases: ["favorited"],
+		arguments: []
+	},
+	{
+		cmd: "favorite",
+		aliases: [],
+		arguments: [{ name: "path", type: "cloud_path", optional: true }]
+	},
+	{
+		cmd: "unfavorite",
+		aliases: [],
+		arguments: [{ name: "path", type: "cloud_path", optional: true }]
+	},
+	{
+		cmd: "recents",
+		aliases: ["recent"],
+		arguments: []
+	},
 ]
 
 /**

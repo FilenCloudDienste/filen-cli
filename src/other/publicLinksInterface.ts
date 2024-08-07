@@ -1,6 +1,7 @@
 import FilenSDK, { PublicLinkExpiration } from "@filen/sdk"
 import { errExit, out, prompt } from "../interface/interface"
 import { formatTable, formatTimestamp } from "../interface/util"
+import { getItemPaths } from "../util"
 
 /**
  * Provides the interface for managing public links.
@@ -24,12 +25,10 @@ export class PublicLinksInterface {
 
 	private async listPublicLinks() {
 		const items = await this.filen.cloud().listPublicLinks()
-		out(formatTable(await Promise.all(items.map(async item => {
+		const itemsWithPath = await getItemPaths(this.filen, items)
+		out(formatTable(await Promise.all(itemsWithPath.map(async item => {
 			const publicLink = (await this.getPublicLinkStatus(item.type, item.uuid, item.type === "file" ? item.key : undefined))!
-			const path = item.type === "file"
-				? await this.filen.cloud().fileUUIDToPath({ uuid: item.uuid })
-				: await this.filen.cloud().directoryUUIDToPath({ uuid: item.uuid })
-			return [path, publicLink.url]
+			return [item.path, publicLink.url]
 		}))))
 	}
 

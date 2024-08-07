@@ -1,7 +1,7 @@
-import { err, out, outJson, prompt, promptConfirm, quiet } from "../interface/interface"
+import { err, out, outJson, prompt, promptConfirm, quiet, verbose } from "../interface/interface"
 import FilenSDK from "@filen/sdk"
 import pathModule from "path"
-import { directorySize, doNothing, hashFile } from "../util"
+import { directorySize, doNothing, getItemPaths, hashFile } from "../util"
 import { CloudPath } from "../cloudPath"
 import * as fsModule from "node:fs"
 import { InterruptHandler } from "../interface/interrupt"
@@ -124,6 +124,18 @@ export class FS {
 			case "view":
 				await this._view(params)
 				break
+			case "favorites":
+				await this._favoritesOrRecents(params, "favorites")
+				break
+			case "favorite":
+				await this._favoriteOrUnfavorite(params, "favorite")
+				break
+			case "unfavorite":
+				await this._favoriteOrUnfavorite(params, "unfavorite")
+				break
+			case "recents":
+				await this._favoritesOrRecents(params, "recents")
+				break
 		}
 		return {}
 	}
@@ -160,14 +172,16 @@ export class FS {
 							name: item.name,
 							type: item.type,
 							size: item.type === "file" ? item.size : undefined,
-							modified: item.lastModified
+							modified: item.lastModified,
+							favorited: item.favorited
 						}
 					}))
 				} else {
 					out(formatTable(items.map(item => [
 						item.type === "file" ? formatBytes(item.size) : "",
 						formatTimestamp(item.lastModified),
-						item.name
+						item.name,
+						item.favorited ? "(*)" : ""
 					]), 2, true))
 				}
 			} else {
@@ -201,15 +215,14 @@ export class FS {
 
 	/**
 	 * Execute a `head` or `tail` command
-	 * @param mode Which command to execute.
 	 */
-	private async _headOrTail(params: CommandParameters, mode: "head" | "tail") {
+	private async _headOrTail(params: CommandParameters, command: "head" | "tail") {
 		const args = arg({ "-n": Number }, { argv: params.args })
 		const n = args["-n" ] ?? 10
 		const path = params.cloudWorkingPath.navigate(args["_"][0]!)
 		try {
 			const lines = (await this.filen.fs().readFile({ path: path.toString() })).toString().split("\n")
-			const output = (mode === "head" ? lines.slice(0, n) : lines.slice(lines.length - n)).join("\n")
+			const output = (command === "head" ? lines.slice(0, n) : lines.slice(lines.length - n)).join("\n")
 			if (params.formatJson) outJson({ text: output })
 			else out(output)
 		} catch (e) {
@@ -444,6 +457,40 @@ export class FS {
 				else out(url)
 			}
 			await open(url, { wait: true })
+		} catch (e) {
+			err("No such file or directory")
+		}
+	}
+
+	/**
+	 * Execute a `favorites` or `recents` command (display all favorites or recents)
+	 */
+	private async _favoritesOrRecents(params: CommandParameters, command: "favorites" | "recents") {
+		const items = command === "favorites"
+			? await this.filen.cloud().listFavorites()
+			: await this.filen.cloud().listRecents()
+		if (params.formatJson) {
+			outJson((await getItemPaths(this.filen, items)).map(item => {
+				return { path: item.path }
+		 	}))
+		} else {
+			out((await getItemPaths(this.filen, items)).map(item => item.path).join("\n"))
+		}
+	}
+
+	/**
+	 * Execute a `favorite` or `unfavorite` command (toggle the favorited status of an item)
+	 */
+	private async _favoriteOrUnfavorite(params: CommandParameters, command: "favorite" | "unfavorite") {
+		try {
+			const path = params.cloudWorkingPath.navigate(params.args[0]!)
+			const item = await this.filen.fs().stat({ path: path.toString() })
+			if (item.type === "file") {
+				await this.filen.cloud().favoriteFile({ uuid: item.uuid, favorite: command === "favorite" })
+			} else {
+				await this.filen.cloud().favoriteDirectory({ uuid: item.uuid, favorite: command === "favorite" })
+			}
+			if (verbose) out(`${path.toString()} ${command}d.`)
 		} catch (e) {
 			err("No such file or directory")
 		}

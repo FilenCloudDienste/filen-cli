@@ -5,6 +5,7 @@ import os from "os"
 import { isDevelopment } from "./index"
 import * as https from "node:https"
 import pathModule from "path"
+import FilenSDK, { CloudItem } from "@filen/sdk"
 
 /**
  * A function that does nothing.
@@ -116,4 +117,16 @@ export function downloadFile(url: string, file: PathLike) {
 			}
 		})
 	})
+}
+
+/**
+ * Fetch the full path for `CloudItem`s.
+ */
+export async function getItemPaths(filen: FilenSDK, items: CloudItem[]): Promise<(CloudItem & {path: string})[]> {
+	return await Promise.all(items.map(async item => {
+		const path = item.type === "file"
+			? await filen.cloud().fileUUIDToPath({ uuid: item.uuid })
+			: await filen.cloud().directoryUUIDToPath({ uuid: item.uuid })
+		return { ...item, path }
+	}))
 }

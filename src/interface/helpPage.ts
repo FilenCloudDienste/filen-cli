@@ -47,6 +47,10 @@ export class HelpPage {
 		["open <file>", "open a file locally in the associated application"],
 		["edit <file>", "edit a file locally in the associated application (save and close to re-upload)"],
 		["view <path>", "view a directory in the Web Drive"],
+		["favorites", "list favorites"],
+		["favorite <path>", "favorite a file or directory"],
+		["unfavorite <path>", "unfavorite a file or directory"],
+		["recents", "list recents"],
 	]
 	private readonly interactiveModeCommands = [
 		["help", "display this help page"],
