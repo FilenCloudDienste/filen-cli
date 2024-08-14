@@ -7,6 +7,8 @@ import * as ResEdit from "resedit"
 const local = process.argv.includes("dev")
 const bundleFile = "dist/bundle.js"
 
+if (local) console.log(`\`dev\` option: building only for ${process.arch}`)
+
 const targets = [
 	{ name: "win-x64", pkgTarget: "win32-x64", dependencies: [ "@parcel/watcher-win32-x64" ] },
 	{ name: "win-arm64", pkgTarget: "win32-arm64", dependencies: [ "@parcel/watcher-win32-arm64" ] },
@@ -17,7 +19,7 @@ const targets = [
 ].filter(t => !local || t.name.includes(process.arch))
 
 // install temporary dependencies
-await new Promise((resolve, _) => {
+await new Promise(resolve => {
 	spawn("npm", ["install", "--save-dev", "--force", ...targets.flatMap(t => t.dependencies)], { shell: true })
 		.on("error", err => console.error(err))
 		.on("close", () => resolve())
@@ -50,7 +52,7 @@ for (const target of targets) {
 		const iconFile = ResEdit.Data.IconFile.from(fs.readFileSync("icon.ico"))
 		ResEdit.Resource.IconGroupEntry.replaceIconsForResource(
 			res.entries,
-			ResEdit.Resource.IconGroupEntry.fromEntries(res.entries).map((entry) => entry.id),
+			ResEdit.Resource.IconGroupEntry.fromEntries(res.entries).map((entry) => entry.id)[0],
 			1033, iconFile.icons.map(item => item.data)
 		)
 		res.outputResource(exe)
@@ -65,7 +67,7 @@ if (local) {
 	fs.writeFileSync(bundleFile, bundle)
 
 	// remove temporary dependencies
-	await new Promise((resolve, _) => {
+	await new Promise(resolve => {
 		spawn("npm", ["remove", ...targets.flatMap(t => t.dependencies)], { shell: true })
 			.on("error", err => console.error(err))
 			.on("close", () => resolve())
