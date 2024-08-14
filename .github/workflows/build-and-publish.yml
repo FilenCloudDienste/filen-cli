@@ -51,12 +51,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/filen-cli-win-x64.exe
-            dist/filen-cli-linux-x64
-            dist/filen-cli-macos-x64
-            dist/filen-cli-win-arm64.exe
-            dist/filen-cli-linux-arm64
-            dist/filen-cli-macos-arm64
+            dist/filen-cli-${{ github.events.release.tag.name }}-win-x64.exe
+            dist/filen-cli-${{ github.events.release.tag.name }}-linux-x64
+            dist/filen-cli-${{ github.events.release.tag.name }}-macos-x64
+            dist/filen-cli-${{ github.events.release.tag.name }}-win-arm64.exe
+            dist/filen-cli-${{ github.events.release.tag.name }}-linux-arm64
+            dist/filen-cli-${{ github.events.release.tag.name }}-macos-arm64
 
   build-and-publish-docker:
     name: Build docker image
