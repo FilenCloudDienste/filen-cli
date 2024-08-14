@@ -43,7 +43,19 @@ export class Authentication {
 	 * @param twoFactorCodeArg the `--two-factor-code` CLI argument
 	 */
 	public async authenticate(emailArg: string | undefined, passwordArg: string | undefined, twoFactorCodeArg: string | undefined) {
-		if (await exists(this.credentialsFile)) {
+		// try to get credentials from args, environment and file
+		let credentials: Credentials | undefined = undefined
+		for (const authenticate of [
+			async () => await this.authenticateUsingArguments(emailArg, passwordArg, twoFactorCodeArg),
+			async () => await this.authenticateUsingEnvironment(),
+			async () => await this.authenticateUsingFile()
+		]) {
+			credentials = await authenticate()
+			if (credentials !== undefined) break
+		}
+
+		// otherwise: get credentials from file
+		if (credentials === undefined && await exists(this.credentialsFile)) {
 			const encryptedConfig = await fsModule.promises.readFile(this.credentialsFile, { encoding: "utf-8" })
 			try {
 				const config = await this.crypto.decrypt(encryptedConfig)
@@ -59,18 +71,7 @@ export class Authentication {
 			}
 		}
 
-		// try to get credentials from args, environment and file
-		let credentials: Credentials | undefined = undefined
-		for (const authenticate of [
-			async () => await this.authenticateUsingArguments(emailArg, passwordArg, twoFactorCodeArg),
-			async () => await this.authenticateUsingEnvironment(),
-			async () => await this.authenticateUsingFile()
-		]) {
-			credentials = await authenticate()
-			if (credentials !== undefined) break
-		}
-
-		// get credentials from prompt
+		// otherwise: get credentials from prompt
 		const authenticateUsingPrompt = credentials === undefined
 		if (authenticateUsingPrompt) {
 			out("Please enter your Filen credentials:")
