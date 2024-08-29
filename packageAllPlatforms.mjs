@@ -20,7 +20,7 @@ const targets = [
 
 // install temporary dependencies
 await new Promise(resolve => {
-	spawn("npm", ["install", "--save-dev", "--force", ...targets.flatMap(t => t.dependencies)], { shell: true })
+	spawn("npm", ["install", "--force", ...targets.flatMap(t => t.dependencies)], { shell: true })
 		.on("error", err => console.error(err))
 		.on("close", () => resolve())
 })

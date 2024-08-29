@@ -78,7 +78,7 @@ export class SyncInterface {
 		const worker = new SyncWorker({
 			syncPairs: fullSyncPairs,
 			dbPath: pathModule.join(platformConfigPath(), "sync"),
-			sdkConfig: this.filen.config,
+			sdk: this.filen,
 			onMessage: msg => {
 				if (verbose) outJson(msg)
 				if (progressBar !== null && msg.type === "transfer") {

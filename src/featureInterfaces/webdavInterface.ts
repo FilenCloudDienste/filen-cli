@@ -10,7 +10,7 @@ export const webdavOptions = {
 	"--w-https": Boolean,
 	"--w-auth-scheme": String,
 	"--w-user": String,
-	"--w-password": String,
+	"--w-password": String
 }
 
 /**
@@ -51,7 +51,7 @@ export class WebDAVInterface {
 			user: proxyMode ? undefined : {
 				username: args.username!,
 				password: args.password!,
-				sdkConfig: this.filen.config
+				sdk: this.filen
 			},
 			https,
 			hostname,

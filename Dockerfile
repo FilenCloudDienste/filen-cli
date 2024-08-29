@@ -1,4 +1,4 @@
-FROM node:18-alpine as build
+FROM node:20-alpine as build
 WORKDIR /filen-cli
 COPY . .
 ENV FILEN_IS_CONTAINER=true
@@ -6,7 +6,7 @@ ENV FILEN_IS_CONTAINER=true
 RUN echo "unset" > key
 RUN npm ci && npm run build
 
-FROM node:18-alpine
+FROM node:20-alpine
 WORKDIR /filen-cli
 COPY --from=build /filen-cli/dist/bundle.js /filen-cli/filen.js
 EXPOSE 80
