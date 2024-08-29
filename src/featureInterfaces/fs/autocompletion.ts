@@ -1,7 +1,7 @@
 import { CompleterResult } from "node:readline"
 import { Command, fsCommands, splitCommandSegments } from "./commands"
 import FilenSDK from "@filen/sdk"
-import { CloudPath } from "../cloudPath"
+import { CloudPath } from "../../util/cloudPath"
 import * as fs from "node:fs"
 import pathModule from "path"
 

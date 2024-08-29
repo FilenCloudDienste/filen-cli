@@ -1,4 +1,4 @@
-import { out, readlineInterface } from "../interface/interface"
+import { out, readlineInterface } from "../../interface/interface"
 
 /**
  * Handles SIGINT signals.

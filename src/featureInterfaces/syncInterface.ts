@@ -4,7 +4,7 @@ import pathModule from "path"
 import { SyncMode, SyncPair } from "@filen/sync/dist/types"
 import { err, errExit, out, outJson, quiet, verbose } from "../interface/interface"
 import fsModule, { PathLike } from "node:fs"
-import { exists, platformConfigPath } from "../util"
+import { exists, platformConfigPath } from "../util/util"
 import getUuidByString from "uuid-by-string"
 import { displayTransferProgressBar } from "../interface/util"
 

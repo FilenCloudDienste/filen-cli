@@ -13,6 +13,12 @@ import { S3Interface, s3Options } from "./mirror-server/s3Interface"
 import { SyncInterface, syncOptions } from "./sync/syncInterface"
 import { TrashInterface } from "./other/trashInterface"
 import { PublicLinksInterface } from "./other/publicLinksInterface"
+import { FSInterface, fsOptions } from "./featureInterfaces/fs/fsInterface"
+import { WebDAVInterface, webdavOptions } from "./featureInterfaces/webdavInterface"
+import { S3Interface, s3Options } from "./featureInterfaces/s3Interface"
+import { SyncInterface, syncOptions } from "./featureInterfaces/syncInterface"
+import { TrashInterface } from "./featureInterfaces/trashInterface"
+import { PublicLinksInterface } from "./featureInterfaces/publicLinksInterface"
 
 const args = arg({
 	"--dev": Boolean,

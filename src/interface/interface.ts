@@ -1,5 +1,5 @@
 import readline from "node:readline"
-import { Autocompletion } from "../fs/autocompletion"
+import { Autocompletion } from "../featureInterfaces/fs/autocompletion"
 import { InterruptHandler } from "./interrupt"
 
 /**

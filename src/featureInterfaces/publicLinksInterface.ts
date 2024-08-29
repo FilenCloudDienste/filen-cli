@@ -1,7 +1,7 @@
 import FilenSDK, { PublicLinkExpiration } from "@filen/sdk"
 import { errExit, out, prompt } from "../interface/interface"
 import { formatTable, formatTimestamp } from "../interface/util"
-import { getItemPaths } from "../util"
+import { getItemPaths } from "../util/util"
 
 /**
  * Provides the interface for managing public links.

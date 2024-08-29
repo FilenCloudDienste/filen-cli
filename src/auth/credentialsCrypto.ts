@@ -1,7 +1,7 @@
 import path from "path"
 import fsModule from "node:fs"
 import crypto from "node:crypto"
-import { platformConfigPath } from "../util"
+import { platformConfigPath } from "../util/util"
 import { key } from "../buildInfo"
 import { FilenSDKConfig } from "@filen/sdk"
 

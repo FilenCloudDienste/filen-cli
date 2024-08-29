@@ -1,5 +1,5 @@
 import { autocomplete, Item } from "./autocompletion"
-import { CloudPath } from "../cloudPath"
+import { CloudPath } from "../../util/cloudPath"
 import { fsCommands } from "./commands"
 
 const rootPath = new CloudPath([])

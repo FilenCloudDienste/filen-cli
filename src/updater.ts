@@ -2,7 +2,7 @@ import { version, disableAutomaticUpdates } from "./buildInfo"
 import { errExit, out, prompt, verbose } from "./interface/interface"
 import path from "path"
 import { spawn } from "node:child_process"
-import { downloadFile } from "./util"
+import { downloadFile } from "./util/util"
 
 type ReleaseInfo = {
 	tag_name: string

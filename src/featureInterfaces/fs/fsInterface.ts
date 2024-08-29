@@ -1,7 +1,7 @@
-import { CloudPath } from "../cloudPath"
+import { CloudPath } from "../../util/cloudPath"
 import { FS } from "./fs"
 import { Autocompletion } from "./autocompletion"
-import { err, errorOccurred, prompt } from "../interface/interface"
+import { err, errorOccurred, prompt } from "../../interface/interface"
 import { splitCommandSegments } from "./commands"
 import FilenSDK from "@filen/sdk"
 
@@ -17,13 +17,13 @@ export const fsOptions = {
  * @see FS
  */
 export class FSInterface {
-  private readonly filen: FilenSDK
+	private readonly filen: FilenSDK
 
 	constructor(filen: FilenSDK) {
 		this.filen = filen
 	}
-  
-  public async invoke(args: {formatJson: boolean, root: string | undefined, noAutocomplete: boolean, commandStr: string[]}) {
+
+	public async invoke(args: { formatJson: boolean, root: string | undefined, noAutocomplete: boolean, commandStr: string[] }) {
 		const cloudRootPath = args.root !== undefined ? new CloudPath([]).navigate(args.root) : new CloudPath([])
 		const fs = new FS(this.filen)
 		if (!args.noAutocomplete) Autocompletion.instance = new Autocompletion(this.filen, cloudRootPath)
