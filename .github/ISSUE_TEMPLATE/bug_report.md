@@ -24,8 +24,10 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **System (please complete the following information):**
- - OS: (e. g. Windows, macOS)
- - Browser (e.g. Chrome, Safari)
+- **Filen CLI version**
+- OS: (e. g. Windows, macOS, Ubuntu)
+- hardware configuration (e. g. CPU, RAM, Disk)
+- filesystem and disk type used (e. g. SSD, NFTS, ext4)
 - VPN or proxy used
 
 **Additional context**
