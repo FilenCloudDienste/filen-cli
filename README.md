@@ -134,6 +134,8 @@ $ filen mount [mount point]
 
 Invoke `filen mount` to mount a virtual drive that mirrors your Filen Drive. The default mount point is `X:` (Windows) / `/tmp/filen` (UNIX).
 
+On Windows, [WinFSP](https://winfsp.dev/rel) needs to be installed. On Linux, [FUSE](https://github.com/libfuse/libfuse) 3 needs to be installed. 
+
 For more information, see also [FilenCloudDienste/filen-virtual-drive](https://github.com/FilenCloudDienste/filen-virtual-drive).
 
 
