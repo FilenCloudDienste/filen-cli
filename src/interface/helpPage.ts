@@ -12,6 +12,7 @@ export class HelpPage {
 	 */
 	getHelpPage(topic: string): string | undefined {
 		if (topic === "general") return this.generalHelpPage
+		if (topic === "auth") return this.authHelpPage
 		if (topic === "fs") return this.fsHelpPage
 		if (topic === "sync") return this.syncHelpPage
 		if (topic === "webdav") return this.webdavHelpPage
@@ -84,6 +85,7 @@ export class HelpPage {
 		View the topic pages via \`filen -h <topic>\` for more information:
 		${formatTable([
 			["fs", "Access your Filen Drive"],
+			["auth", "How to authenticate your Filen account"],
 			["sync", "Syncing locations with the cloud"],
 			["mount", "Mount a virtual drive"],
 			["webdav", "WebDAV mirror server with single user or proxy mode"],
@@ -92,6 +94,14 @@ export class HelpPage {
 		
 		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#readme
 		`
+
+	private readonly authHelpPage: string = dedent`
+		Ways to authenticate:
+		1) Invoke the CLI and specify your Filen email and password when prompted. Optionally, save your credentials.
+		2) Pass the --email and --password (optionally --two-factor-code) arguments.
+		3) Put your credentials in the FILE_EMAIL and FILEN_PASSWORD (optionally FILEN_2FA_CODE) environment variables.
+		4) Store your Filen email and password in a file named .filen-cli-credentials with email and password (optionally 2FA code) in separate plaintext lines.
+	`
 
 	private readonly fsHelpPage: string = dedent`
 		Usage: filen [options...] <cmd...>
