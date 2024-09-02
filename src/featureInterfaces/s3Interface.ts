@@ -53,7 +53,7 @@ export class S3Interface {
 				out(`S3 server for ${this.filen.config.email} started on ${location}`)
 			})
 			.catch(e => {
-				err(`An error occurred: ${e}`)
+				err(`An error occurred: ${e}`) //TODO differentiate error messages
 			})
 		InterruptHandler.instance.addListener(() => {
 			out("Stopping S3 server")

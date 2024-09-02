@@ -61,12 +61,24 @@ export class SyncInterface {
 
 		const fullSyncPairs: SyncPair[] = []
 		for (const syncPair of syncPairs) {
+			const remoteParentStat = await (async () => {
+				try {
+					return await this.filen.fs().stat({ path: syncPair.remote })
+				} catch (e) {
+					if (e instanceof Error && e.name === "FileNotFoundError") {
+						err(`No such cloud file or directory: ${syncPair.remote}`)
+						return undefined
+					}
+					else throw e
+				}
+			})()
+			if (remoteParentStat === undefined) continue
 			fullSyncPairs.push({
 				name: `${syncPair.local}:${syncPair.remote}`,
 				uuid: getUuidByString(`${syncPair.local}:${syncPair.remote}`, getUuidByString("filen-cli"), 3),
 				localPath: syncPair.local,
 				remotePath: syncPair.remote,
-				remoteParentUUID: (await this.filen.fs().stat({ path: syncPair.remote })).uuid,
+				remoteParentUUID: remoteParentStat.uuid,
 				mode: syncPair.syncMode,
 				excludeDotFiles: false,
 				paused: false,
@@ -80,6 +92,8 @@ export class SyncInterface {
 			dbPath: pathModule.join(platformConfigPath(), "sync"),
 			sdk: this.filen,
 			onMessage: msg => {
+				//TODO handle errors correctly
+
 				if (verbose) outJson(msg)
 				if (progressBar !== null && msg.type === "transfer") {
 					if (msg.data.type === "queued") {

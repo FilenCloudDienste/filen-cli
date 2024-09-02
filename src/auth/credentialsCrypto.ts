@@ -4,6 +4,7 @@ import crypto from "node:crypto"
 import { platformConfigPath } from "../util/util"
 import { key } from "../buildInfo"
 import { FilenSDKConfig } from "@filen/sdk"
+import { errExit } from "../interface/interface"
 
 /**
  * Handles cryptography for securely storing credentials in a file.
@@ -15,12 +16,16 @@ export class CredentialsCrypto {
 	public constructor() {
 		this.key = key
 
-		const saltFile = path.join(platformConfigPath(), ".credentials.salt")
-		if (!fsModule.existsSync(saltFile)) {
-			this.salt = crypto.randomBytes(32).toString("hex")
-			fsModule.writeFileSync(saltFile, this.salt)
-		} else {
-			this.salt = fsModule.readFileSync(saltFile).toString()
+		try {
+			const saltFile = path.join(platformConfigPath(), ".credentials.salt")
+			if (!fsModule.existsSync(saltFile)) {
+				this.salt = crypto.randomBytes(32).toString("hex")
+				fsModule.writeFileSync(saltFile, this.salt)
+			} else {
+				this.salt = fsModule.readFileSync(saltFile).toString()
+			}
+		} catch (e) {
+			errExit("initialize salt for credentials cryptography", e)
 		}
 	}
 

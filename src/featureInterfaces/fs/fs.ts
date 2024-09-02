@@ -72,70 +72,74 @@ export class FS {
 			return { cloudWorkingPath }
 		}
 
-		switch (command.cmd) {
-			case "ls":
-				await this._ls(params)
-				break
-			case "cat":
-				await this._cat(params)
-				break
-			case "head":
-				await this._headOrTail(params, "head")
-				break
-			case "tail":
-				await this._headOrTail(params, "tail")
-				break
-			case "mkdir":
-				await this._mkdir(params)
-				break
-			case "rm":
-				await this._rm(params)
-				break
-			case "upload":
-				await this._upload(params)
-				break
-			case "download":
-				await this._download(params)
-				break
-			case "stat":
-				await this._stat(params)
-				break
-			case "statfs":
-				await this._statfs(params)
-				break
-			case "whoami":
-				await this._whoami(params)
-				break
-			case "mv":
-				await this._mv(params)
-				break
-			case "cp":
-				await this._cp(params)
-				break
-			case "write":
-				await this._write(params)
-				break
-			case "open":
-				await this._openOrEdit(params, false)
-				break
-			case "edit":
-				await this._openOrEdit(params, true)
-				break
-			case "view":
-				await this._view(params)
-				break
-			case "favorites":
-				await this._favoritesOrRecents(params, "favorites")
-				break
-			case "favorite":
-				await this._favoriteOrUnfavorite(params, "favorite")
-				break
-			case "unfavorite":
-				await this._favoriteOrUnfavorite(params, "unfavorite")
-				break
-			case "recents":
-				await this._favoritesOrRecents(params, "recents")
-				break
+		try {
+			switch (command.cmd) {
+				case "ls":
+					await this._ls(params)
+					break
+				case "cat":
+					await this._cat(params)
+					break
+				case "head":
+					await this._headOrTail(params, "head")
+					break
+				case "tail":
+					await this._headOrTail(params, "tail")
+					break
+				case "mkdir":
+					await this._mkdir(params)
+					break
+				case "rm":
+					await this._rm(params)
+					break
+				case "upload":
+					await this._upload(params)
+					break
+				case "download":
+					await this._download(params)
+					break
+				case "stat":
+					await this._stat(params)
+					break
+				case "statfs":
+					await this._statfs(params)
+					break
+				case "whoami":
+					await this._whoami(params)
+					break
+				case "mv":
+					await this._mv(params)
+					break
+				case "cp":
+					await this._cp(params)
+					break
+				case "write":
+					await this._write(params)
+					break
+				case "open":
+					await this._openOrEdit(params, false)
+					break
+				case "edit":
+					await this._openOrEdit(params, true)
+					break
+				case "view":
+					await this._view(params)
+					break
+				case "favorites":
+					await this._favoritesOrRecents(params, "favorites")
+					break
+				case "favorite":
+					await this._favoriteOrUnfavorite(params, "favorite")
+					break
+				case "unfavorite":
+					await this._favoriteOrUnfavorite(params, "unfavorite")
+					break
+				case "recents":
+					await this._favoritesOrRecents(params, "recents")
+					break
+			}
+		} catch (e) {
+			err(`execute ${command.cmd} command`, e)
 		}
 		return {}
 	}
@@ -151,7 +155,8 @@ export class FS {
 			if (!directory.isDirectory()) err("Not a directory")
 			else return path
 		} catch (e) {
-			err("No such directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") err("No such directory")
+			else throw e
 		}
 	}
 
@@ -164,7 +169,10 @@ export class FS {
 		try {
 			if (args["-l"]) {
 				const uuid = (await this.filen.fs().pathToItemUUID({ path: path.toString() }))
-				if (uuid === null) throw new Error()
+				if (uuid === null) {
+					err("No such directory")
+					return
+				}
 				const items = await this.filen.cloud().listDirectory({ uuid })
 				if (params.formatJson) {
 					outJson(items.map(item => {
@@ -190,7 +198,8 @@ export class FS {
 				else out(output.join("  "))
 			}
 		} catch (e) {
-			err("No such directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") err("No such directory")
+			else throw e
 		}
 	}
 
@@ -209,7 +218,8 @@ export class FS {
 			if (params.formatJson) outJson({ text: content })
 			else out(content)
 		} catch (e) {
-			err("No such file")
+			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file")
+			else throw e
 		}
 	}
 
@@ -226,7 +236,8 @@ export class FS {
 			if (params.formatJson) outJson({ text: output })
 			else out(output)
 		} catch (e) {
-			err("No such file")
+			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file")
+			else throw e
 		}
 	}
 
@@ -248,7 +259,8 @@ export class FS {
 			if (args["--no-trash"]) if (!await promptConfirm(undefined)) return
 			await this.filen.fs().rm({ path, permanent: args["--no-trash"] ?? false })
 		} catch (e) {
-			err("No such file or directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file or directory")
+			else throw e
 		}
 	}
 
@@ -257,7 +269,11 @@ export class FS {
 	 */
 	private async _upload(params: CommandParameters) {
 		const source = params.args[0]!
-		const stat =  fsModule.statSync(source)
+		const stat = fsModule.statSync(source, { throwIfNoEntry: false })
+		if (stat === undefined) {
+			err("No such source directory")
+			return
+		}
 		const size = stat.isDirectory() ? (await directorySize(source)) : stat.size
 		const path = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(this.filen, params.args[1]!, source.split(/[/\\]/)[source.split(/[/\\]/).length - 1]!)
 		const progressBar = quiet ? null : displayTransferProgressBar("Uploading", path.getLastSegment(), size)
@@ -271,7 +287,8 @@ export class FS {
 			})
 		} catch (e) {
 			if (progressBar) progressBar.progressBar.stop()
-			err("Aborted")
+			if (e instanceof Error && e.message.toLowerCase() === "aborted") err("Aborted")
+			else throw e
 		}
 	}
 
@@ -295,10 +312,12 @@ export class FS {
 				})
 			} catch (e) {
 				if (progressBar) progressBar.progressBar.stop()
-				err("Aborted")
+				if (e instanceof Error && e.message.toLowerCase() === "aborted") err("Aborted")
+				else throw e
 			}
 		} catch (e) {
-			err("No such file")
+			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file")
+			else throw e
 		}
 	}
 
@@ -327,7 +346,8 @@ export class FS {
 				out(` Birth: ${formatTimestamp(stat.birthtimeMs)}`)
 			}
 		} catch (e) {
-			err("No such file")
+			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file")
+			else throw e
 		}
 	}
 
@@ -351,11 +371,11 @@ export class FS {
 	 * Execute a `whoami` command
 	 */
 	private async _whoami(params: CommandParameters) {
-		const email = this.filen.config.email ?? ""
+		const email = this.filen.config.email
 		if (params.formatJson) {
 			outJson({ email })
 		} else {
-			out(email)
+			out(email ?? "")
 		}
 	}
 
@@ -368,7 +388,8 @@ export class FS {
 			const to = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(this.filen, params.args[1]!, from.cloudPath[from.cloudPath.length - 1]!)
 			await this.filen.fs().rename({ from: from.toString(), to: to.toString() })
 		} catch (e) {
-			err("No such file or directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file or directory")
+			else throw e
 		}
 	}
 
@@ -399,10 +420,12 @@ export class FS {
 				await this.filen.fs().copy({ from: from.toString(), to: to.toString(), onProgress, abortSignal })
 			} catch (e) {
 				if (progressBar) progressBar.progressBar.stop()
-				err("Aborted")
+				if (e instanceof Error && e.message.toLowerCase() === "aborted") err("Aborted")
+				else throw e
 			}
 		} catch (e) {
-			err("No such file or directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file or directory")
+			else throw e
 		}
 	}
 
@@ -431,7 +454,8 @@ export class FS {
 			}
 			setTimeout(() => fsModule.unlinkSync(downloadPath), 500)
 		} catch (e) {
-			err("No such file")
+			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file")
+			else throw e
 		}
 		return {}
 	}
@@ -458,7 +482,8 @@ export class FS {
 			}
 			await open(url, { wait: true })
 		} catch (e) {
-			err("No such file or directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file or directory")
+			else throw e
 		}
 	}
 
@@ -492,7 +517,8 @@ export class FS {
 			}
 			if (verbose) out(`${path.toString()} ${command}d.`)
 		} catch (e) {
-			err("No such file or directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file or directory")
+			else throw e
 		}
 	}
 }

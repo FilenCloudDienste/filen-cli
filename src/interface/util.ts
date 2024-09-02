@@ -1,4 +1,5 @@
 import cliProgress from "cli-progress"
+import { errExit } from "./interface"
 
 /**
  * Formats a timestamp as yyyy-MM-dd.hh.mm.ss.SSS
@@ -58,20 +59,24 @@ export function displayTransferProgressBar(
 	progressBar: cliProgress.SingleBar
 	onProgress: (transferred: number) => void
 } {
-	const progressBar = new cliProgress.SingleBar(
-		{
-			format: `${action} ${file} [{bar}] {percentage}% | ETA: {eta_formatted} | ${isApproximate ? "~ " : ""}{value} / {total}`,
-			// of a number is <= 100, it is likely a percentage; otherwise format as byte (library used here doesn't provide other options)
-			formatValue: n => (n <= 100 ? n.toString() : formatBytes(n))
-		},
-		cliProgress.Presets.legacy
-	)
-	progressBar.start(total, 0)
-	const onProgress = (transferred: number) => {
-		progressBar.increment(transferred)
-		if (progressBar.getProgress() >= 1.0) progressBar.stop()
+	try {
+		const progressBar = new cliProgress.SingleBar(
+			{
+				format: `${action} ${file} [{bar}] {percentage}% | ETA: {eta_formatted} | ${isApproximate ? "~ " : ""}{value} / {total}`,
+				// of a number is <= 100, it is likely a percentage; otherwise format as byte (library used here doesn't provide other options)
+				formatValue: n => (n <= 100 ? n.toString() : formatBytes(n))
+			},
+			cliProgress.Presets.legacy
+		)
+		progressBar.start(total, 0)
+		const onProgress = (transferred: number) => {
+			progressBar.increment(transferred)
+			if (progressBar.getProgress() >= 1.0) progressBar.stop()
+		}
+		return { progressBar, onProgress }
+	} catch (e) {
+		errExit("display a progress bar", e)
 	}
-	return { progressBar, onProgress }
 }
 
 /**

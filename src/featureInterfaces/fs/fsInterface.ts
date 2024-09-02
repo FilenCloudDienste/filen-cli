@@ -1,7 +1,7 @@
 import { CloudPath } from "../../util/cloudPath"
 import { FS } from "./fs"
 import { Autocompletion } from "./autocompletion"
-import { err, errorOccurred, prompt } from "../../interface/interface"
+import { err, errorOccurred, prompt, resetErrorOccurred } from "../../interface/interface"
 import { splitCommandSegments } from "./commands"
 import FilenSDK from "@filen/sdk"
 
@@ -45,6 +45,7 @@ export class FSInterface {
 				}
 			}
 		} else {
+			resetErrorOccurred()
 			const result = await fs.executeCommand(cloudRootPath, args.commandStr[0]!, args.commandStr.slice(1), args.formatJson)
 			if (errorOccurred) process.exit(1)
 			if (result.cloudWorkingPath !== undefined)

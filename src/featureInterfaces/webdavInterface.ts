@@ -65,7 +65,7 @@ export class WebDAVInterface {
 				out(`WebDAV ${proxyMode ? "proxy server" : "server for " + this.filen.config.email} started on ${location}`)
 			})
 			.catch(e => {
-				err(`An error occurred: ${e}`)
+				err(`An error occurred: ${e}`) //TODO differentiate error messages
 			})
 		InterruptHandler.instance.addListener(() => {
 			out("Stopping WebDAV server")

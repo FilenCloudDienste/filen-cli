@@ -65,7 +65,7 @@ export async function directorySize(path: PathLike) {
 export function platformConfigPath(): string {
 	// see https://github.com/jprichardson/ospath/blob/master/index.js
 
-	let configPath = ""
+	let configPath
 
 	switch (process.platform) {
 		case "win32":
@@ -107,13 +107,15 @@ export function downloadFile(url: string, file: PathLike) {
 		https.get(url, function (response) {
 			if (response.statusCode === 302) {
 				downloadFile(response.headers.location!, file).then(() => resolve())
-			} else {
+			} else if (response.statusCode === 200) {
 				response.pipe(stream)
 				stream.on("finish", () => {
 					stream.close()
 					resolve()
 				})
 				stream.on("error", reject)
+			} else {
+				reject(new Error(`HTTP response ${response.statusCode}`))
 			}
 		})
 	})

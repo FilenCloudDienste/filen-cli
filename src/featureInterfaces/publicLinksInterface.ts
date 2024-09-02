@@ -15,10 +15,18 @@ export class PublicLinksInterface {
 
 	public async invoke(args: string[]) {
 		if (args.length === 0 || args[0] === "list" || args[0] === "ls") {
-			await this.listPublicLinks()
+			try {
+				await this.listPublicLinks()
+			} catch (e) {
+				errExit("list public links", e)
+			}
 		} else {
 			if (args.length > 1) errExit("Invalid command! See `filen -h fs` for more info.")
-			await this.editPublicLink(args[0]!)
+			try {
+				await this.editPublicLink(args[0]!)
+			} catch (e) {
+				errExit("edit public link", e)
+			}
 		}
 		process.exit()
 	}
@@ -37,7 +45,8 @@ export class PublicLinksInterface {
 			try {
 				return await this.filen.fs().stat({ path })
 			} catch (e) {
-				errExit("No such file or directory.")
+				if (e instanceof Error && e.name === "FileNotFoundError") errExit("No such file or directory")
+				else throw e
 			}
 		})()
 		const publicLink = await (async () => {

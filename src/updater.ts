@@ -25,7 +25,13 @@ export class Updater {
 			return
 		}
 
-		const releaseInfoResponse = await fetch("https://api.github.com/repos/FilenCloudDienste/filen-cli/releases/latest")
+		const releaseInfoResponse = await (async () => {
+			try {
+				return await fetch("https://api.github.com/repos/FilenCloudDienste/filen-cli/releases/latest")
+			} catch (e) {
+				errExit("fetch update info", e)
+			}
+		})()
 		const releaseInfo: ReleaseInfo = await releaseInfoResponse.json()
 
 		const currentVersion = version
@@ -54,7 +60,11 @@ export class Updater {
 		const downloadedFile = path.join(path.dirname(selfApplicationFile), `filen_update_${publishedVersion}`)
 
 		out("Downloading update...")
-		await downloadFile(downloadUrl, downloadedFile)
+		try {
+			await downloadFile(downloadUrl, downloadedFile)
+		} catch (e) {
+			errExit("download update", e)
+		}
 
 		out("Installing update...")
 		if (process.platform === "win32") {

@@ -7,3 +7,9 @@ export const version: string = "{{INJECT: VERSION}}"
 export const disableAutomaticUpdates: boolean = "{{INJECT: IS_CONTAINER}}"
 
 export const key: string = "{{INJECT: CRYPTO_BASE_KEY}}"
+
+export function checkInjectedBuildInfo() {
+	return version !== "{{INJECT: VERSION}}"
+		&& (disableAutomaticUpdates.toString() === "true" || disableAutomaticUpdates.toString() === "false")
+		&& key !== "{{INJECT: CRYPTO_BASE_KEY}}"
+}

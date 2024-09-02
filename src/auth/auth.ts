@@ -64,10 +64,10 @@ export class Authentication {
 				if (await this.filen.user().checkAPIKeyValidity()) {
 					return
 				} else {
-					if (verbose) err("Invalid api key! Need to log in again.")
+					if (verbose) err("Invalid saved API key! Need to log in again.")
 				}
 			} catch (e) {
-				errExit("Cannot login from saved credentials: " + e + " (try `filen --delete-credentials`)")
+				err("login from saved credentials", e, "try `filen --delete-credentials`")
 			}
 		}
 
@@ -83,17 +83,21 @@ export class Authentication {
 
 		// try to log in, optionally prompt for 2FA
 		try {
-			await this.filen.login(credentials!)
-		} catch (e) {
-			if (e instanceof APIError && e.code === "enter_2fa") {
-				const twoFactorCode = await prompt("Please enter your 2FA code: ")
-				try {
+			try {
+				await this.filen.login(credentials!)
+			} catch (e) {
+				if (e instanceof APIError && e.code === "enter_2fa") {
+					const twoFactorCode = await prompt("Please enter your 2FA code: ")
 					await this.filen.login({ ...credentials!, twoFactorCode })
-				} catch (e) {
-					errExit("Invalid credentials!")
+				} else {
+					throw e
 				}
-			} else {
+			}
+		} catch (e) {
+			if (e instanceof APIError && e.code === "email_or_password_wrong") {
 				errExit("Invalid credentials!")
+			} else {
+				errExit("login", e)
 			}
 		}
 
@@ -101,10 +105,14 @@ export class Authentication {
 		if (authenticateUsingPrompt) {
 			const saveCredentials = (await prompt("Save credentials locally for future invocations? [y/N] ")).toLowerCase() === "y"
 			if (saveCredentials) {
-				const encryptedCredentials = await this.crypto.encrypt(this.filen.config)
-				if (!(await exists(this.credentialsDirectory))) await fsModule.promises.mkdir(this.credentialsDirectory)
-				await fsModule.promises.writeFile(this.credentialsFile, encryptedCredentials)
-				out("You can delete these credentials using `filen --delete-credentials`")
+				try {
+					const encryptedCredentials = await this.crypto.encrypt(this.filen.config)
+					if (!(await exists(this.credentialsDirectory))) await fsModule.promises.mkdir(this.credentialsDirectory)
+					await fsModule.promises.writeFile(this.credentialsFile, encryptedCredentials)
+					out("You can delete these credentials using `filen --delete-credentials`")
+				} catch (e) {
+					errExit("save credentials", e)
+				}
 			}
 			out("")
 		}
