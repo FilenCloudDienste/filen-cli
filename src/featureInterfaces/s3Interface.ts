@@ -1,5 +1,5 @@
 import FilenSDK from "@filen/sdk"
-import { err, errExit, out } from "../interface/interface"
+import { errExit, out } from "../interface/interface"
 import { InterruptHandler } from "../interface/interrupt"
 import S3Server from "@filen/s3"
 
@@ -36,7 +36,7 @@ export class S3Interface {
 		const hostname = args.hostname ?? "0.0.0.0"
 		const port = args.port ?? (args.https ? 443 : 80)
 
-		new S3Server({
+		const s3Server = new S3Server({
 			hostname,
 			port,
 			https,
@@ -46,18 +46,14 @@ export class S3Interface {
 				sdkConfig: this.filen.config
 			}
 		})
-			.start()
-			.then(() => {
-				let location = `${https ? "https" : "http"}://${hostname}:${port}`
-				if (hostname === "127.0.0.1" || hostname === "0.0.0.0") location += ` or ${https ? "https" : "http"}://local.webdav.filen.io:${port}`
-				out(`S3 server for ${this.filen.config.email} started on ${location}`)
-			})
-			.catch(e => {
-				err(`An error occurred: ${e}`) //TODO differentiate error messages
-			})
+		await s3Server.start()
+		let location = `${https ? "https" : "http"}://${hostname}:${port}`
+		if (hostname === "127.0.0.1" || hostname === "0.0.0.0") location += ` or ${https ? "https" : "http"}://local.s3.filen.io:${port}`
+		out(`S3 server for ${this.filen.config.email} started on ${location}`)
 		InterruptHandler.instance.addListener(() => {
 			out("Stopping S3 server")
-			process.exit()
+			s3Server.stop()
+				.then(() => process.exit())
 		})
 	}
 }

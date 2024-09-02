@@ -16,6 +16,7 @@ export class HelpPage {
 		if (topic === "sync") return this.syncHelpPage
 		if (topic === "webdav") return this.webdavHelpPage
 		if (topic === "s3") return this.s3HelpPage
+		if (topic === "mount") return this.driveMountingHelpPage
 		return undefined
 	}
 
@@ -84,6 +85,7 @@ export class HelpPage {
 		${formatTable([
 			["fs", "Access your Filen Drive"],
 			["sync", "Syncing locations with the cloud"],
+			["mount", "Mount a virtual drive"],
 			["webdav", "WebDAV mirror server with single user or proxy mode"],
 			["s3", "S3 mirror server"],
 		])}
@@ -145,6 +147,14 @@ export class HelpPage {
 		Set the --continuous flag to keep syncing (instead of only syncing once).
 	    
 		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#syncing 
+		`
+
+	private readonly driveMountingHelpPage: string = dedent`
+		Usage: filen mount [mount point]
+		
+		The default mount point is "X:" or "/tmp/filen".
+		
+		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#virtual-drive-mounting
 		`
 
 	private readonly webdavHelpPage: string = dedent`

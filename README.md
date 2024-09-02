@@ -8,6 +8,7 @@
 The Filen CLI provides a set of useful tools for interacting with the cloud:
 - [Accessing your Filen Drive](#access-your-filen-drive) in a stateless environment or [interactive mode](#interactive-mode)
 - [Syncing](#syncing) locations with the cloud (just like the Desktop app)
+- Mounting a [virtual drive](#virtual-drive-mounting)
 - Running a [WebDAV mirror server](#webdav-server) of your [personal drive](#single-user), or multiple drives in [proxy mode](#proxy-mode)
 - Running an [S3 mirror server](#s3-server)
 
@@ -123,6 +124,17 @@ You must specify the sync pairs (`[sync pairs...]` above) as follows:
 - **(disable local trash)** `filen sync /local:/cloud --disable-local-trash`: Disable local trash
 
 You can set the `--continuous` flag to keep syncing (instead of only syncing once).
+
+
+## Virtual drive mounting
+
+```
+$ filen mount [mount point]
+```
+
+Invoke `filen mount` to mount a virtual drive that mirrors your Filen Drive. The default mount point is `X:` (Windows) / `/tmp/filen` (UNIX).
+
+For more information, see also [FilenCloudDienste/filen-virtual-drive](https://github.com/FilenCloudDienste/filen-virtual-drive).
 
 
 ## WebDAV server

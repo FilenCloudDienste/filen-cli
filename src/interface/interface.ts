@@ -78,7 +78,7 @@ export function err(messageOrAction: string, underlyingError?: unknown, addition
 	if (underlyingError === undefined) {
 		str += messageOrAction
 	} else {
-		const errorStr = underlyingError instanceof Error ? underlyingError.message : String(underlyingError)
+		const errorStr = underlyingError instanceof Error && underlyingError.name === "Error" ? underlyingError.message : String(underlyingError)
 		str += `Error trying to ${messageOrAction}: ${errorStr}`
 	}
 	if (additionalMessage !== undefined) {
@@ -89,7 +89,7 @@ export function err(messageOrAction: string, underlyingError?: unknown, addition
 	console.error("\x1b[31m" + str + "\x1b[0m")
 
 	if (underlyingError !== undefined) {
-		console.error(underlyingError)
+		console.error(underlyingError instanceof Error ? underlyingError.stack : underlyingError)
 	}
 }
 

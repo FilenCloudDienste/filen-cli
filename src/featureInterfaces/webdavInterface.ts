@@ -1,6 +1,6 @@
 import WebDAVServer from "@filen/webdav"
 import FilenSDK from "@filen/sdk"
-import { err, errExit, out } from "../interface/interface"
+import { errExit, out } from "../interface/interface"
 import { InterruptHandler } from "../interface/interrupt"
 
 export const webdavOptions = {
@@ -47,7 +47,7 @@ export class WebDAVInterface {
 		}
 		const authScheme = args.authScheme ?? "basic"
 
-		new WebDAVServer({
+		const webdavServer = new WebDAVServer({
 			user: proxyMode ? undefined : {
 				username: args.username!,
 				password: args.password!,
@@ -58,18 +58,14 @@ export class WebDAVInterface {
 			port,
 			authMode: authScheme
 		})
-			.start()
-			.then(() => {
-				let location = `${https ? "https" : "http"}://${hostname}:${port}`
-				if (hostname === "127.0.0.1" || hostname === "0.0.0.0") location += ` or ${https ? "https" : "http"}://local.webdav.filen.io:${port}`
-				out(`WebDAV ${proxyMode ? "proxy server" : "server for " + this.filen.config.email} started on ${location}`)
-			})
-			.catch(e => {
-				err(`An error occurred: ${e}`) //TODO differentiate error messages
-			})
+		await webdavServer.start()
+		let location = `${https ? "https" : "http"}://${hostname}:${port}`
+		if (hostname === "127.0.0.1" || hostname === "0.0.0.0") location += ` or ${https ? "https" : "http"}://local.webdav.filen.io:${port}`
+		out(`WebDAV ${proxyMode ? "proxy server" : "server for " + this.filen.config.email} started on ${location}`)
 		InterruptHandler.instance.addListener(() => {
 			out("Stopping WebDAV server")
-			process.exit()
+			webdavServer.stop()
+				.then(() => process.exit())
 		})
 	}
 }

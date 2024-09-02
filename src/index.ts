@@ -154,6 +154,16 @@ if (args["--help"]) {
 		const publicLinksInterface = new PublicLinksInterface(filen)
 		await publicLinksInterface.invoke(args["_"].slice(1))
 
+	} else if (args["_"][0] === "mount") {
+
+		// mount
+		const driveMountingInterface = new DriveMountingInterface(filen)
+		try {
+			await driveMountingInterface.invoke(args["_"][1])
+		} catch (e) {
+			errExit("execute mount command", e)
+		}
+
 	} else {
 
 		// fs commands
