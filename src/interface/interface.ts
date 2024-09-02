@@ -89,8 +89,7 @@ export function err(messageOrAction: string, underlyingError?: unknown, addition
 	console.error("\x1b[31m" + str + "\x1b[0m")
 
 	if (underlyingError !== undefined) {
-		if (verbose) console.error(underlyingError)
-		else err("Invoke the CLI with the `-v` flag for a complete error report.")
+		console.error(underlyingError)
 	}
 }
 
