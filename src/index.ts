@@ -2,7 +2,7 @@ import arg from "arg"
 import FilenSDK from "@filen/sdk"
 import path from "path"
 import os from "os"
-import { err, errExit, out, setOutputFlags } from "./interface/interface"
+import { err, errExit, out, setOutputFlags, setupLogs } from "./interface/interface"
 import { Authentication } from "./auth/auth"
 import { checkInjectedBuildInfo, version } from "./buildInfo"
 import { Updater } from "./updater"
@@ -78,7 +78,8 @@ if (args["--help"]) {
 		tmpPath: path.join(os.tmpdir(), "filen-cli")
 	})
 
-	await setOutputFlags(args["--quiet"] ?? false, args["--verbose"] ?? false, args["--log-file"])
+	setOutputFlags(args["--quiet"] ?? false, args["--verbose"] ?? false)
+	setupLogs(args["--log-file"])
 
 	await new Updater().checkForUpdates()
 

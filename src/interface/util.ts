@@ -13,7 +13,7 @@ export function formatTimestamp(ms: number): string {
 
 	const padDecimals3 = (n: number) => {
 		const str = n.toString()
-		return str.length === 3 ? str : str + "0"
+		return str + "0".repeat(3 - str.length)
 	}
 
 	const date = new Date(ms)

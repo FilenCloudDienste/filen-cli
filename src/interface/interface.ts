@@ -3,7 +3,6 @@ import { Autocompletion } from "../featureInterfaces/fs/autocompletion"
 import { InterruptHandler } from "./interrupt"
 import * as fs from "node:fs"
 import { formatTimestamp } from "./util"
-import { Semaphore } from "../util/semaphore"
 import { version } from "../buildInfo"
 
 /**
@@ -43,37 +42,31 @@ export let quiet = false
  */
 export let verbose = false
 
-/**
- * File to print logs (set via `--logs-file` flag)
- */
-export let logsFile: string | undefined = undefined
-
-export async function setOutputFlags(quietFlag: boolean, verboseFlag: boolean, logsFileFlag: string | undefined) {
+export function setOutputFlags(quietFlag: boolean, verboseFlag: boolean) {
 	quiet = quietFlag
 	verbose = verboseFlag
-	logsFile = logsFileFlag
-
-	if (logsFile === undefined) return
-	try {
-		if ((await fs.promises.readFile(logsFile)).length > 1) {
-			await writeLog("", "newlines")
-		}
-	} catch (e) {
-		// do nothing
-	}
-	await writeLog(`Filen CLI ${version}\n> ${process.argv.join(" ")}\n`, "log")
 }
 
-const writeLogSemaphore = new Semaphore(1)
-async function writeLog(message: string, type: "newlines" | "log" | "input" | "error") {
+/**
+ * Setup later writing of logs.
+ * @param logsFile Where to write logs, or undefined if logs shall not be written.
+ */
+export function setupLogs(logsFile: string | undefined = undefined) {
 	if (logsFile === undefined) return
-	await writeLogSemaphore.acquire()
-	try {
-		const str = type === "newlines" ? "\n\n" : message.split("\n").map(line => `[${formatTimestamp(new Date().getTime())}] ${type === "log" ? "[LOG]" : type === "error" ? "[ERR]" : "[IN ]"} ${line}\n`).join("")
-		await fs.promises.appendFile(logsFile, str)
-	} finally {
-		writeLogSemaphore.release()
-	}
+	process.on("exit", () => {
+		try {
+			if (fs.readFileSync(logsFile).length > 1) logs = "\n\n" + logs
+		} catch (e) {
+			// do nothing
+		}
+		logs = `${formatTimestamp(new Date().getTime())}       Filen CLI ${version}\n${formatTimestamp(new Date().getTime())}       > ${process.argv.join(" ")}\n` + logs
+		fs.appendFileSync(logsFile, logs)
+	})
+}
+
+let logs = ""
+function writeLog(message: string, type: "log" | "input" | "error") {
+	logs += message.split("\n").map(line => `${formatTimestamp(new Date().getTime())} ${type === "log" ? "[LOG]" : type === "error" ? "[ERR]" : "[IN ]"} ${line}\n`).join("")
 }
 
 /**
@@ -132,6 +125,9 @@ export function err(messageOrAction: string, underlyingError?: unknown, addition
 	if (underlyingError !== undefined) {
 		console.error(underlyingError instanceof Error ? underlyingError.stack : underlyingError)
 	}
+
+	writeLog(str, "error")
+	if (underlyingError !== undefined) writeLog((underlyingError instanceof Error ? underlyingError.stack : undefined) ?? String(underlyingError), "error")
 }
 
 /**
@@ -160,7 +156,7 @@ export async function prompt(message: string, allowExit: boolean = false, obfusc
 					// eslint-disable-next-line @typescript-eslint/no-explicit-any
 					(readlineInterface as any).history = (readlineInterface as any).history.slice(1)
 				}
-				writeLog(message, "input")
+				writeLog(message, "log")
 				writeLog(" ".repeat(message.length-1) + "> " + (obfuscate ? "***" : input), "input")
 				resolve(input)
 			})
