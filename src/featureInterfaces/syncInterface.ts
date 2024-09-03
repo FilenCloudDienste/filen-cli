@@ -2,7 +2,7 @@ import FilenSDK from "@filen/sdk"
 import SyncWorker from "@filen/sync"
 import pathModule from "path"
 import { SyncMode, SyncPair } from "@filen/sync/dist/types"
-import { err, errExit, out, outJson, quiet, verbose } from "../interface/interface"
+import { err, errExit, out, outVerbose, quiet } from "../interface/interface"
 import fsModule, { PathLike } from "node:fs"
 import { exists, platformConfigPath } from "../util/util"
 import getUuidByString from "uuid-by-string"
@@ -94,7 +94,7 @@ export class SyncInterface {
 			onMessage: msg => {
 				//TODO handle errors correctly
 
-				if (verbose) outJson(msg)
+				outVerbose(JSON.stringify(msg, null, 2))
 				if (progressBar !== null && msg.type === "transfer") {
 					if (msg.data.type === "queued") {
 						progressBar.progressBar.setTotal(progressBar.progressBar.getTotal() + msg.data.size)

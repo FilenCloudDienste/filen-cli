@@ -1,5 +1,5 @@
-import { version, disableAutomaticUpdates } from "./buildInfo"
-import { errExit, out, prompt, verbose } from "./interface/interface"
+import { disableAutomaticUpdates, version } from "./buildInfo"
+import { errExit, out, outVerbose, prompt } from "./interface/interface"
 import path from "path"
 import { spawn } from "node:child_process"
 import { downloadFile } from "./util/util"
@@ -21,7 +21,7 @@ export class Updater {
 	 */
 	public async checkForUpdates(): Promise<void> {
 		if (version === "0.0.0") {
-			if (verbose) out("Skipping updates in development environment")
+			outVerbose("Skipping updates in development environment")
 			return
 		}
 
@@ -51,7 +51,7 @@ export class Updater {
 				await this.update(downloadUrl, releaseInfo.tag_name)
 			}
 		} else {
-			if (verbose) out(`${currentVersion} is up to date.`)
+			outVerbose(`${currentVersion} is up to date.`)
 		}
 	}
 

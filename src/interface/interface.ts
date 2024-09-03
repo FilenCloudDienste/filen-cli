@@ -1,6 +1,10 @@
 import readline from "node:readline"
 import { Autocompletion } from "../featureInterfaces/fs/autocompletion"
 import { InterruptHandler } from "./interrupt"
+import * as fs from "node:fs"
+import { formatTimestamp } from "./util"
+import { Semaphore } from "../util/semaphore"
+import { version } from "../buildInfo"
 
 /**
  * amount of output calls until input should be obfuscated (-1 = don't obfuscate, 0 = obfuscate, 1 = obfuscate except first output, ...)
@@ -39,9 +43,37 @@ export let quiet = false
  */
 export let verbose = false
 
-export function setOutputFlags(quietFlag: boolean, verboseFlag: boolean) {
+/**
+ * File to print logs (set via `--logs-file` flag)
+ */
+export let logsFile: string | undefined = undefined
+
+export async function setOutputFlags(quietFlag: boolean, verboseFlag: boolean, logsFileFlag: string | undefined) {
 	quiet = quietFlag
 	verbose = verboseFlag
+	logsFile = logsFileFlag
+
+	if (logsFile === undefined) return
+	try {
+		if ((await fs.promises.readFile(logsFile)).length > 1) {
+			await writeLog("", "newlines")
+		}
+	} catch (e) {
+		// do nothing
+	}
+	await writeLog(`Filen CLI ${version}\n> ${process.argv.join(" ")}\n`, "log")
+}
+
+const writeLogSemaphore = new Semaphore(1)
+async function writeLog(message: string, type: "newlines" | "log" | "input" | "error") {
+	if (logsFile === undefined) return
+	await writeLogSemaphore.acquire()
+	try {
+		const str = type === "newlines" ? "\n\n" : message.split("\n").map(line => `[${formatTimestamp(new Date().getTime())}] ${type === "log" ? "[LOG]" : type === "error" ? "[ERR]" : "[IN ]"} ${line}\n`).join("")
+		await fs.promises.appendFile(logsFile, str)
+	} finally {
+		writeLogSemaphore.release()
+	}
 }
 
 /**
@@ -50,6 +82,15 @@ export function setOutputFlags(quietFlag: boolean, verboseFlag: boolean) {
  */
 export function out(message: string) {
 	console.log(message)
+	writeLog(message, "log")
+}
+
+/**
+ * Global output method, only prints if `--verbose` flag is set
+ */
+export function outVerbose(message: string) {
+	if (verbose) console.log(message)
+	writeLog(message, "log")
 }
 
 /**
@@ -119,6 +160,8 @@ export async function prompt(message: string, allowExit: boolean = false, obfusc
 					// eslint-disable-next-line @typescript-eslint/no-explicit-any
 					(readlineInterface as any).history = (readlineInterface as any).history.slice(1)
 				}
+				writeLog(message, "input")
+				writeLog(" ".repeat(message.length-1) + "> " + (obfuscate ? "***" : input), "input")
 				resolve(input)
 			})
 		} catch (e) {

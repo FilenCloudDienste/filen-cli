@@ -15,8 +15,6 @@ import { TrashInterface } from "./featureInterfaces/trashInterface"
 import { PublicLinksInterface } from "./featureInterfaces/publicLinksInterface"
 import { DriveMountingInterface } from "./featureInterfaces/driveMountingInterface"
 
-//TODO handle err in this file (?)
-
 const args = arg({
 	"--dev": Boolean,
 
@@ -39,6 +37,8 @@ const args = arg({
 
 	"--two-factor-code": String,
 	"-c": "--two-factor-code",
+
+	"--log-file": String,
 
 	...fsOptions,
 	...webdavOptions,
@@ -78,7 +78,7 @@ if (args["--help"]) {
 		tmpPath: path.join(os.tmpdir(), "filen-cli")
 	})
 
-	setOutputFlags(args["--quiet"] ?? false, args["--verbose"] ?? false)
+	await setOutputFlags(args["--quiet"] ?? false, args["--verbose"] ?? false, args["--log-file"])
 
 	await new Updater().checkForUpdates()
 

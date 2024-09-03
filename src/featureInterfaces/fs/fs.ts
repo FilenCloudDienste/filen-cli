@@ -1,4 +1,4 @@
-import { err, out, outJson, prompt, promptConfirm, quiet, verbose } from "../../interface/interface"
+import { err, out, outJson, outVerbose, prompt, promptConfirm, quiet } from "../../interface/interface"
 import FilenSDK from "@filen/sdk"
 import pathModule from "path"
 import { directorySize, doNothing, getItemPaths, hashFile } from "../../util/util"
@@ -515,7 +515,7 @@ export class FS {
 			} else {
 				await this.filen.cloud().favoriteDirectory({ uuid: item.uuid, favorite: command === "favorite" })
 			}
-			if (verbose) out(`${path.toString()} ${command}d.`)
+			outVerbose(`${path.toString()} ${command}d.`)
 		} catch (e) {
 			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file or directory")
 			else throw e

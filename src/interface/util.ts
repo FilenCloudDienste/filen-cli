@@ -11,6 +11,11 @@ export function formatTimestamp(ms: number): string {
 		return n < 10 ? "0" + n : n
 	}
 
+	const padDecimals3 = (n: number) => {
+		const str = n.toString()
+		return str.length === 3 ? str : str + "0"
+	}
+
 	const date = new Date(ms)
 
 	return (
@@ -26,7 +31,7 @@ export function formatTimestamp(ms: number): string {
 		":" +
 		pad2(date.getSeconds()) +
 		"." +
-		pad2(date.getMilliseconds())
+		padDecimals3(date.getMilliseconds())
 	)
 }
 
