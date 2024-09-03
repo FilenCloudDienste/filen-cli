@@ -30,6 +30,7 @@ Options:
 - `--verbose`, `-v`: display additional information
 - `--quiet`, `-q`: hide things like progress bars and additional logs
 - `--email <email>` and `--password <password>` (optionally `--two-factor-code <code>`, `-c <code>`): specify credentials
+- `--log-file <file>`: write logs to a file
 
 ### Authenticating
 

@@ -80,6 +80,7 @@ export class HelpPage {
 			["--email <email>", "specify credentials"],
 			["--password <password>", ""],
 			["--two-factor-code <code>, -c <code>", "(optional)"],
+			["--log-file <file>", "write logs to a file"],
 		])}
 		
 		View the topic pages via \`filen -h <topic>\` for more information:
