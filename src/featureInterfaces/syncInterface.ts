@@ -1,12 +1,13 @@
 import FilenSDK from "@filen/sdk"
-import SyncWorker from "@filen/sync"
+import SyncWorker, { SerializedError } from "@filen/sync"
 import pathModule from "path"
-import { SyncMode, SyncPair } from "@filen/sync/dist/types"
+import { SyncMessage, SyncMode, SyncPair } from "@filen/sync/dist/types"
 import { err, errExit, out, outVerbose, quiet } from "../interface/interface"
 import fsModule, { PathLike } from "node:fs"
 import { exists, platformConfigPath } from "../util/util"
 import getUuidByString from "uuid-by-string"
 import { displayTransferProgressBar } from "../interface/util"
+import { InterruptHandler } from "../interface/interrupt"
 
 export const syncOptions = {
 	"--continuous": Boolean,
@@ -92,9 +93,9 @@ export class SyncInterface {
 			dbPath: pathModule.join(platformConfigPath(), "sync"),
 			sdk: this.filen,
 			onMessage: msg => {
-				//TODO handle errors correctly
-
 				outVerbose(JSON.stringify(msg, null, 2))
+
+				// update progress
 				if (progressBar !== null && msg.type === "transfer") {
 					if (msg.data.type === "queued") {
 						progressBar.progressBar.setTotal(progressBar.progressBar.getTotal() + msg.data.size)
@@ -103,11 +104,13 @@ export class SyncInterface {
 						progressBar.onProgress(msg.data.bytes)
 					}
 				}
-				if (msg.type === "taskErrors" || msg.type === "localTreeErrors") {
-					if (msg.data.errors.length > 0) err(JSON.stringify(msg))
-				} else {
-					if (msg.type.toLowerCase().includes("error")) err(JSON.stringify(msg))
-				}
+
+				// print error
+				let isError = msg.type.toLowerCase().includes("error")
+				if (msg.type === "taskErrors" || msg.type === "localTreeErrors") isError = msg.data.errors.length > 0
+				if (isError) this.printErrorMessage(msg)
+
+				// success messages
 				if (continuous && msg.type === "cycleSuccess") {
 					if (!quiet) out(`Done syncing ${msg.syncPair.localPath} to ${msg.syncPair.remotePath} (${msg.syncPair.mode})`)
 				}
@@ -123,6 +126,10 @@ export class SyncInterface {
 			runOnce: !continuous,
 		})
 		await worker.initialize()
+		InterruptHandler.instance.addListener(() => {
+			out("Stop syncing")
+			process.exit()
+		})
 	}
 
 	private async resolveSyncPairs(locationsStr: string[], disableLocalTrashFlag: boolean): Promise<RawSyncPair[]> {
@@ -190,5 +197,86 @@ export class SyncInterface {
 		const syncPair = this._aliases.get(str)
 		if (syncPair === undefined) errExit("Unknown sync pair alias: " + str)
 		return syncPair
+	}
+
+	// see https://github.com/FilenCloudDienste/filen-web/blob/main/src/components/syncs/content/issues/issue.tsx
+	private readonly errorTypes: Record<string, string> = {
+		EPERM: "permission",
+		EACCES: "permission",
+		EEXIST: "fileOrDirExists",
+		ENOENT: "fileOrDirNotFound",
+		ENOTDIR: "notDir",
+		ECONNREFUSED: "badConnection",
+		ENOTFOUND: "badConnection",
+		EPIPE: "badConnection",
+		ETIMEDOUT: "badConnection",
+		EAGAIN: "fileOrDirTemporarilyUnavailable",
+		EBUSY: "fileOrDirTemporarilyUnavailable",
+		EDESTADDRREQ: "badConnection",
+		EFAULT: "io",
+		EHOSTUNREACH: "badConnection",
+		EINTR: "io",
+		EINVAL: "unknown",
+		EIO: "io",
+		EISCONN: "badConnection",
+		EMSGSIZE: "unknown",
+		ENETDOWN: "badConnection",
+		ENETRESET: "badConnection",
+		ENETUNREACH: "badConnection",
+		EDOM: "unknown",
+		ENOTEMPTY: "dirNotEmpty",
+		EMFILE: "openFiles",
+		ENAMETOOLONG: "fileOrDirNameTooLong",
+		EISFILE: "isFile",
+		ENFILE: "io",
+		ENOMEM: "io",
+		ETXTBSY: "io",
+		EAI_SYSTEM: "io",
+		EAI_CANCELED: "io",
+		EUNKNOWN: "unknown",
+		ENODEV: "io",
+		ENOBUFS: "io",
+		ENOSPC: "noSpace",
+		EROFS: "io",
+		ECANCELED: "io",
+		EBADF: "io",
+	}
+	private readonly errorMessages: Record<string, string[]> = {
+		permission: ["Permissions", "Please ensure the client has all needed permissions to access the local sync directory"],
+		io: ["I/O", "Please ensure your local sync directory and underlying storage media works. The client is not able to properly access it"],
+		noSpace: ["Not enough space or file watchers available", "You do not have enough local storage space left, or the system ran out of available file watchers"],
+		openFiles: ["Open files limit", "The client has hit the limit of open files. Please increase the limit"],
+		fileOrDirExists: ["File or directory exists", "This is most likely a temporary issue, try restarting the client"],
+		fileOrDirNotFound: ["File or directory not found", "This is most likely a temporary issue, try restarting the client"],
+		isFile: ["File", "This is most likely a temporary issue, try restarting the client"],
+		isDir: ["Directory", "This is most likely a temporary issue, try restarting the client"],
+		notDir: ["Not a directory", "This is most likely a temporary issue, try restarting the client"],
+		badConnection: ["Connection", "Please ensure you are connected to the internet and can access Filen without issues"],
+		fileOrDirTemporarilyUnavailable: ["File or directory temporarily unavailable", "This is most likely a temporary issue, try restarting the client"],
+		unknown: ["Unknown error", "Try restarting the client"],
+		dirNotEmpty: ["Directory not empty", "This is most likely a temporary issue, try restarting the client"],
+		fileOrDirNameTooLong: ["File or directory name/path too long", "Path too long for your local filesystem"],
+	}
+
+	private printErrorMessage(msg: SyncMessage) {
+		const error = (() => {
+			if (msg.type === "localDirectoryWatcherError") return msg.data.error
+			if (msg.type === "cycleError") return msg.data.error
+			if (msg.type === "cycleLocalSmokeTestFailed" && Object.prototype.hasOwnProperty.call(msg, "data")) return (msg as {data: {error: SerializedError}}).data.error
+			if (msg.type === "cycleRemoteSmokeTestFailed" && Object.prototype.hasOwnProperty.call(msg, "data")) return (msg as {data: {error: SerializedError}}).data.error
+			if (msg.type === "error") return msg.data.error
+			return undefined
+		})()
+		if (error !== undefined) {
+			for (const errorName of Object.keys(this.errorTypes)) {
+				if ((error.name + error.message).includes(errorName)) {
+					const errorType = this.errorTypes[errorName]!
+					const [title, message] = this.errorMessages[errorType]!
+					err(`Error: ${title} (${message})`)
+					return
+				}
+			}
+		}
+		out(JSON.stringify(msg, null, 2))
 	}
 }
