@@ -27,7 +27,7 @@
 	"author": "Filen",
 	"license": "AGPLv3",
 	"dependencies": {
-		"@filen/s3": "^0.2.30",
+		"@filen/s3": "^0.2.32",
 		"@filen/sdk": "^0.1.163",
 		"@filen/sync": "^0.1.55",
 		"@filen/virtual-drive": "^0.1.8",
