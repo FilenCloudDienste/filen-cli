@@ -43,7 +43,7 @@ for (const target of targets) {
 	bundle = bundle.replace(placeholderRegex, `${placeholderStart}\n${target.dependencies.map(d => `if (false) require("${d}");`).join("\n")}\n${placeholderEnd}`)
 	fs.writeFileSync(bundleFile, bundle)
 
-	await pkg.exec(`-t ${target.pkgTarget} -o dist/filen-cli-${target.name} dist/bundle.js`.split(" "))
+	await pkg.exec(`-t ${target.pkgTarget} -o dist/filen-cli-${target.name} dist/bundle.js --options max-old-space-size=16384`.split(" "))
 
 	// replace app icon (Windows)
 	if (target.pkgTarget.includes("win")) {
