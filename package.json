@@ -12,7 +12,7 @@
 		"package-dev": "npm run build && pkg -t node20 -o dist/filen-cli dist/bundle.js",
 		"package-dev-all": "npm run build && node packageAllPlatforms.mjs dev",
 		"package-all": "npm run build && node packageAllPlatforms.mjs",
-		"bump-filen-dependencies": "npm i @filen/sdk@latest @filen/sync@latest @filen/webdav@latest @filen/s3@latest @filen/virtual-drive@latest"
+		"bump-filen-dependencies": "npm i @filen/sdk@latest @filen/sync@latest @filen/webdav@latest @filen/s3@latest @filen/network-drive@latest"
 	},
 	"engines": {
 		"node": "20"
@@ -27,11 +27,11 @@
 	"author": "Filen",
 	"license": "AGPLv3",
 	"dependencies": {
-		"@filen/s3": "^0.2.30",
-		"@filen/sdk": "^0.1.163",
-		"@filen/sync": "^0.1.55",
-		"@filen/virtual-drive": "^0.1.8",
-		"@filen/webdav": "^0.2.38",
+		"@filen/network-drive": "^0.9.8",
+		"@filen/s3": "^0.2.38",
+		"@filen/sdk": "^0.1.165",
+		"@filen/sync": "^0.1.60",
+		"@filen/webdav": "^0.2.50",
 		"arg": "^5.0.2",
 		"cli-progress": "^3.12.0",
 		"dedent": "^1.5.3",
