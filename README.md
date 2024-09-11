@@ -163,6 +163,7 @@ Options:
 - `--w-hostname`: which hostname the server should be started on (default is 0.0.0.0)
 - `--w-port`: which port the server should be started on (default is 80 or 443)
 - `--w-auth-scheme`: the authentication scheme the server should use, "basic" or "digest" (default is basic)
+- `--threads`: enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count)
 
 ### Proxy mode
 
@@ -176,7 +177,7 @@ Digest auth is not available for proxy mode.
 
 **Important:** In proxy mode, the password has to be formatted as `password=yoursecretpassword&twoFactorAuthentication=<RECOVERY_CODE_OR_6_DIGIT_OTP_CODE>` (you can also leave out the `&twoFactorAuthentication=...` part if 2FA is disabled for your account).
 
-Options: `--w-https`, `--w-hostname`, `--w-port` as above
+Options: `--w-https`, `--w-hostname`, `--w-port`, `--threads` as above
 
 
 ## S3 server
@@ -197,3 +198,4 @@ Options:
 - `--s3-https`: run the server on HTTPS instead of HTTP (using a self-signed certificate)
 - `--s3-hostname`: which hostname the server should be started on (default is 0.0.0.0)
 - `--s3-port`: which port the server should be started on (default is 80 or 443)
+- `--threads`: enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count)

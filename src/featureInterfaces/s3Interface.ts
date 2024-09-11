@@ -1,7 +1,7 @@
 import FilenSDK from "@filen/sdk"
 import { errExit, out } from "../interface/interface"
 import { InterruptHandler } from "../interface/interrupt"
-import S3Server from "@filen/s3"
+import S3Server, { S3ServerCluster } from "@filen/s3"
 
 export const s3Options = {
 	"--s3-hostname": String,
@@ -27,6 +27,7 @@ export class S3Interface {
 		https: boolean,
 		accessKeyId: string | undefined,
 		secretAccessKey: string | undefined,
+		threads: number | undefined,
 	}) {
 		if (args.accessKeyId === undefined || args.secretAccessKey === undefined) {
 			errExit("Need to specify --s3-access-key-id and --s3-secret-access-key")
@@ -36,7 +37,7 @@ export class S3Interface {
 		const hostname = args.hostname ?? "0.0.0.0"
 		const port = args.port ?? (args.https ? 443 : 80)
 
-		const s3Server = new S3Server({
+		const configuration = {
 			hostname,
 			port,
 			https,
@@ -45,7 +46,10 @@ export class S3Interface {
 				secretKeyId: args.secretAccessKey,
 				sdkConfig: this.filen.config
 			}
-		})
+		}
+		const s3Server = args.threads === undefined
+			? new S3Server(configuration)
+			: new S3ServerCluster({ ...configuration, threads: args.threads !== 0 ? args.threads : undefined })
 		await s3Server.start()
 		let location = `${https ? "https" : "http"}://${hostname}:${port}`
 		if (hostname === "127.0.0.1" || hostname === "0.0.0.0") location += ` or ${https ? "https" : "http"}://local.s3.filen.io:${port}`

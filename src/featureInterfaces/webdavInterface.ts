@@ -1,4 +1,4 @@
-import WebDAVServer from "@filen/webdav"
+import WebDAVServer, { WebDAVServerCluster } from "@filen/webdav"
 import FilenSDK from "@filen/sdk"
 import { errExit, out } from "../interface/interface"
 import { InterruptHandler } from "../interface/interrupt"
@@ -30,6 +30,7 @@ export class WebDAVInterface {
 		hostname: string | undefined,
 		port: number | undefined,
 		authScheme: string | undefined,
+		threads: number | undefined,
 	}) {
 		if (!proxyMode && (args.username === undefined || args.password === undefined)) {
 			errExit("Need to specify --w-user and --w-password")
@@ -47,7 +48,7 @@ export class WebDAVInterface {
 		}
 		const authScheme = args.authScheme ?? "basic"
 
-		const webdavServer = new WebDAVServer({
+		const configuration = {
 			user: proxyMode ? undefined : {
 				username: args.username!,
 				password: args.password!,
@@ -56,8 +57,11 @@ export class WebDAVInterface {
 			https,
 			hostname,
 			port,
-			authMode: authScheme
-		})
+			authMode: authScheme as "basic" | "digest"
+		}
+		const webdavServer = args.threads === undefined
+			? new WebDAVServer(configuration)
+			: new WebDAVServerCluster({ ...configuration, threads: args.threads !== 0 ? args.threads : undefined })
 		await webdavServer.start()
 		let location = `${https ? "https" : "http"}://${hostname}:${port}`
 		if (hostname === "127.0.0.1" || hostname === "0.0.0.0") location += ` or ${https ? "https" : "http"}://local.webdav.filen.io:${port}`

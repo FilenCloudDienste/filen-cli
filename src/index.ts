@@ -39,6 +39,7 @@ const args = arg({
 	"-c": "--two-factor-code",
 
 	"--log-file": String,
+	"--threads": Number, // for s3 and webdav
 
 	...fsOptions,
 	...webdavOptions,
@@ -108,6 +109,7 @@ if (args["--help"]) {
 				hostname: args["--w-hostname"],
 				port: args["--w-port"],
 				authScheme: args["--w-auth-scheme"],
+				threads: args["--threads"],
 			})
 		} catch (e) {
 			errExit("start WebDAV server", e)
@@ -124,6 +126,7 @@ if (args["--help"]) {
 				https: args["--s3-https"] ?? false,
 				accessKeyId: args["--s3-access-key-id"],
 				secretAccessKey: args["--s3-secret-access-key"],
+				threads: args["--threads"],
 			})
 		} catch (e) {
 			errExit("start S3 server", e)
