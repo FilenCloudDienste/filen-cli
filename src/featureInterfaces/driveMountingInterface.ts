@@ -1,5 +1,5 @@
 import FilenSDK from "@filen/sdk"
-import VirtualDrive, { isFUSEInstalledOnLinux, isWinFSPInstalled } from "@filen/virtual-drive"
+import VirtualDrive, { isFUSE3InstalledOnLinux, isWinFSPInstalled } from "@filen/network-drive"
 import { InterruptHandler } from "../interface/interrupt"
 import { errExit, out } from "../interface/interface"
 
@@ -21,7 +21,7 @@ export class DriveMountingInterface {
 			if (!await isWinFSPInstalled()) errExit("WinFSP is needed on Windows for virtual drive mounting. WinFSP could not be found.")
 		}
 		if (process.platform === "linux") {
-			if (!await isFUSEInstalledOnLinux()) errExit("FUSE 3 is needed in Linux for virtual drive mounting. FUSE 3 could not be found.")
+			if (!await isFUSE3InstalledOnLinux()) errExit("FUSE 3 is needed in Linux for virtual drive mounting. FUSE 3 could not be found.")
 		}
 
 		const virtualDrive = new VirtualDrive({
