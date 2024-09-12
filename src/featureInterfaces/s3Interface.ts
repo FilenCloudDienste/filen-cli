@@ -44,7 +44,7 @@ export class S3Interface {
 			user: {
 				accessKeyId: args.accessKeyId,
 				secretKeyId: args.secretAccessKey,
-				sdkConfig: this.filen.config
+				sdk: this.filen
 			}
 		}
 		const s3Server = args.threads === undefined
