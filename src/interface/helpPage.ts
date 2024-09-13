@@ -88,7 +88,7 @@ export class HelpPage {
 			["fs", "Access your Filen Drive"],
 			["auth", "How to authenticate your Filen account"],
 			["sync", "Syncing locations with the cloud"],
-			["mount", "Mount a virtual drive"],
+			["mount", "Mount a network drive"],
 			["webdav", "WebDAV mirror server with single user or proxy mode"],
 			["s3", "S3 mirror server"],
 		])}
@@ -165,7 +165,7 @@ export class HelpPage {
 		
 		The default mount point is "X:" or "/tmp/filen".
 		
-		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#virtual-drive-mounting
+		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#network-drive-mounting
 		`
 
 	private readonly webdavHelpPage: string = dedent`

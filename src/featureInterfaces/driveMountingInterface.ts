@@ -15,13 +15,13 @@ export class DriveMountingInterface {
 
 	public async invoke(mountPoint: string | undefined) {
 		mountPoint = mountPoint ?? process.platform === "win32" ? "X:" : "/tmp/filen"
-		out(`Mounting virtual drive for ${this.filen.config.email} at ${mountPoint}`)
+		out(`Mounting network drive for ${this.filen.config.email} at ${mountPoint}`)
 
 		if (process.platform === "win32") {
-			if (!await isWinFSPInstalled()) errExit("WinFSP is needed on Windows for virtual drive mounting. WinFSP could not be found.")
+			if (!await isWinFSPInstalled()) errExit("WinFSP is needed on Windows for network drive mounting. WinFSP could not be found.")
 		}
 		if (process.platform === "linux") {
-			if (!await isFUSE3InstalledOnLinux()) errExit("FUSE 3 is needed in Linux for virtual drive mounting. FUSE 3 could not be found.")
+			if (!await isFUSE3InstalledOnLinux()) errExit("FUSE 3 is needed in Linux for network drive mounting. FUSE 3 could not be found.")
 		}
 
 		const virtualDrive = new VirtualDrive({

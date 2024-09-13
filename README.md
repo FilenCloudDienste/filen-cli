@@ -8,7 +8,7 @@
 The Filen CLI provides a set of useful tools for interacting with the cloud:
 - [Accessing your Filen Drive](#access-your-filen-drive) in a stateless environment or [interactive mode](#interactive-mode)
 - [Syncing](#syncing) locations with the cloud (just like the Desktop app)
-- Mounting a [virtual drive](#virtual-drive-mounting)
+- Mounting a [network drive](#network-drive-mounting)
 - Running a [WebDAV mirror server](#webdav-server) of your [personal drive](#single-user), or multiple drives in [proxy mode](#proxy-mode)
 - Running an [S3 mirror server](#s3-server)
 
@@ -127,17 +127,17 @@ You must specify the sync pairs (`[sync pairs...]` above) as follows:
 You can set the `--continuous` flag to keep syncing (instead of only syncing once).
 
 
-## Virtual drive mounting
+## Network drive mounting
 
 ```
 $ filen mount [mount point]
 ```
 
-Invoke `filen mount` to mount a virtual drive that mirrors your Filen Drive. The default mount point is `X:` (Windows) / `/tmp/filen` (UNIX).
+Invoke `filen mount` to mount a network drive that mirrors your Filen Drive. The default mount point is `X:` (Windows) / `/tmp/filen` (UNIX).
 
 On Windows, [WinFSP](https://winfsp.dev/rel) needs to be installed. On Linux, [FUSE](https://github.com/libfuse/libfuse) 3 needs to be installed. 
 
-For more information, see also [FilenCloudDienste/filen-virtual-drive](https://github.com/FilenCloudDienste/filen-virtual-drive).
+For more information, see also [FilenCloudDienste/filen-network-drive](https://github.com/FilenCloudDienste/filen-virtual-drive).
 
 
 ## WebDAV server
