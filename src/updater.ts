@@ -1,8 +1,9 @@
 import { disableAutomaticUpdates, version } from "./buildInfo"
-import { errExit, out, outVerbose, prompt } from "./interface/interface"
+import { err, errExit, out, outVerbose, prompt } from "./interface/interface"
 import path from "path"
 import { spawn } from "node:child_process"
-import { downloadFile } from "./util/util"
+import { downloadFile, exists, platformConfigPath } from "./util/util"
+import * as fs from "node:fs"
 
 type ReleaseInfo = {
 	tag_name: string
@@ -16,13 +17,50 @@ type ReleaseInfo = {
  * Checks for updates and installs updates.
  */
 export class Updater {
+	private readonly updateCacheDirectory = platformConfigPath()
+	private readonly updateCacheFile = path.join(this.updateCacheDirectory, "updateCache.json")
+	private readonly updateCheckExpiration = 10 * 60 * 1000 // check again after 10min
+
 	/**
 	 * Check for updates and prompt the user on whether to update.
 	 */
-	public async checkForUpdates(): Promise<void> {
+	public async checkForUpdates(force: boolean): Promise<void> {
 		if (version === "0.0.0") {
 			outVerbose("Skipping updates in development environment")
 			return
+		}
+
+		// skip if already recently checked
+		if (!force) {
+			if (await exists(this.updateCacheFile)) {
+				try {
+					const content = (await fs.promises.readFile(this.updateCacheFile)).toString()
+					const updateCache = (() => {
+						try {
+							return JSON.parse(content)
+						} catch (e) {
+							throw new Error("unable to parse update cache file")
+						}
+					})()
+					if (typeof updateCache.lastCheckedUpdate !== "number") throw new Error("malformed update cache file")
+					if (Date.now() - updateCache.lastCheckedUpdate < this.updateCheckExpiration) {
+						outVerbose("Checked for updates not long ago, not checking again")
+						return
+					} else {
+						outVerbose("Last update check is too long ago, checking again")
+					}
+				} catch (e) {
+					err("read recent update checks", e, "invoke the CLI again to retry updating")
+					try {
+						await fs.promises.rm(this.updateCacheFile)
+					} catch (e) {
+						errExit("delete update cache file", e)
+					}
+					return
+				}
+			}
+		} else {
+			outVerbose("Update check forced")
 		}
 
 		const releaseInfoResponse = await (async () => {
@@ -53,6 +91,14 @@ export class Updater {
 		} else {
 			outVerbose(`${currentVersion} is up to date.`)
 		}
+
+		// save update cache
+		(async () => {
+			if (!await exists(this.updateCacheDirectory)) {
+				await fs.promises.mkdir(this.updateCacheDirectory)
+			}
+			await fs.promises.writeFile(this.updateCacheFile, JSON.stringify({ lastCheckedUpdate: Date.now() }))
+		})()
 	}
 
 	private async update(downloadUrl: string, publishedVersion: string) {

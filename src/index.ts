@@ -2,7 +2,7 @@ import arg from "arg"
 import FilenSDK from "@filen/sdk"
 import path from "path"
 import os from "os"
-import { err, errExit, out, setOutputFlags, setupLogs } from "./interface/interface"
+import { err, errExit, out, outVerbose, setOutputFlags, setupLogs } from "./interface/interface"
 import { Authentication } from "./auth/auth"
 import { checkInjectedBuildInfo, version } from "./buildInfo"
 import { Updater } from "./updater"
@@ -40,6 +40,8 @@ const args = arg({
 
 	"--log-file": String,
 	"--threads": Number, // for s3 and webdav
+	"--skip-update": Boolean,
+	"--force-update": Boolean,
 
 	...fsOptions,
 	...webdavOptions,
@@ -82,7 +84,15 @@ if (args["--help"]) {
 	setOutputFlags(args["--quiet"] ?? false, args["--verbose"] ?? false)
 	setupLogs(args["--log-file"])
 
-	await new Updater().checkForUpdates()
+	if (args["--skip-update"] !== true) {
+		try {
+			await new Updater().checkForUpdates(args["--force-update"] ?? false)
+		} catch (e) {
+			errExit("check for updates", e)
+		}
+	} else {
+		outVerbose("Update check skipped")
+	}
 
 	const authentication = new Authentication(filen)
 	try {
