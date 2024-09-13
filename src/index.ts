@@ -84,6 +84,7 @@ if (args["--help"]) {
 	setOutputFlags(args["--quiet"] ?? false, args["--verbose"] ?? false)
 	setupLogs(args["--log-file"])
 
+	// check for updates
 	if (args["--skip-update"] !== true) {
 		try {
 			await new Updater().checkForUpdates(args["--force-update"] ?? false)
@@ -94,16 +95,19 @@ if (args["--help"]) {
 		outVerbose("Update check skipped")
 	}
 
-	const authentication = new Authentication(filen)
-	try {
-		if (args["--delete-credentials"]) { await authentication.deleteStoredCredentials() }
-	} catch (e) {
-		err("delete credentials", e)
-	}
-	try {
-		await authentication.authenticate(args["--email"], args["--password"], args["--two-factor-code"])
-	} catch (e) {
-		errExit("authenticate", e)
+	// authentication
+	if (args["_"][0] !== "webdav-proxy") { // skip authentication for webdav proxy mode
+		const authentication = new Authentication(filen)
+		try {
+			if (args["--delete-credentials"]) { await authentication.deleteStoredCredentials() }
+		} catch (e) {
+			err("delete credentials", e)
+		}
+		try {
+			await authentication.authenticate(args["--email"], args["--password"], args["--two-factor-code"])
+		} catch (e) {
+			errExit("authenticate", e)
+		}
 	}
 
 	if (args["_"][0] === "webdav" || args["_"][0] === "webdav-proxy") {
