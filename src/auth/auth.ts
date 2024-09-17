@@ -67,7 +67,7 @@ export class Authentication {
 					err("Invalid saved API key! Need to log in again.")
 				}
 			} catch (e) {
-				err("login from saved credentials", e, "try `filen --delete-credentials`")
+				err("login from saved credentials", e, "try `filen delete-credentials`")
 			}
 		}
 
@@ -109,7 +109,7 @@ export class Authentication {
 					const encryptedCredentials = await this.crypto.encrypt(this.filen.config)
 					if (!(await exists(this.credentialsDirectory))) await fsModule.promises.mkdir(this.credentialsDirectory)
 					await fsModule.promises.writeFile(this.credentialsFile, encryptedCredentials)
-					out("You can delete these credentials using `filen --delete-credentials`")
+					out("You can delete these credentials using `filen delete-credentials`")
 				} catch (e) {
 					errExit("save credentials", e)
 				}

@@ -20,8 +20,7 @@ const args = arg({
 
 	"--help": Boolean,
 	"-h": "--help",
-
-	"--delete-credentials": Boolean,
+	"--version": Boolean,
 
 	"--verbose": Boolean,
 	"-v": "--verbose",
@@ -58,31 +57,29 @@ if (!checkInjectedBuildInfo()) {
  */
 export const isDevelopment = args["--dev"] ?? false
 
-if (args["--help"] || args["--verbose"]) {
-	out(`Filen CLI ${version}`)
-	if (isDevelopment) out("Running in development environment")
-}
-
-if (args["--help"]) {
-	const topic = args["_"][0]?.toLowerCase() ?? "general"
-	const helpPage = new HelpPage().getHelpPage(topic)
-	if (helpPage !== undefined) {
-		out("\n" + helpPage)
-	} else {
-		errExit(`Unknown help page ${topic}`)
-	}
-	process.exit()
-}
-
 // eslint-disable-next-line no-extra-semi
 ;(async () => {
-	const filen = new FilenSDK({
-		metadataCache: true,
-		tmpPath: path.join(os.tmpdir(), "filen-cli")
-	})
+	if ((args["--version"] ?? false) || args["_"][0] === "version") {
+		out(`v${version}`)
+		process.exit()
+	}
 
-	setOutputFlags(args["--quiet"] ?? false, args["--verbose"] ?? false)
+	setOutputFlags(args["--quiet"] ?? false, (args["--help"] ?? false) || (args["--verbose"] ?? false))
 	setupLogs(args["--log-file"])
+
+	outVerbose(`Filen CLI v${version}`)
+	if (isDevelopment) outVerbose("Running in development environment")
+
+	if ((args["--help"] ?? false) || args["_"][0] === "help") {
+		const topic = args["_"][0]?.toLowerCase() ?? "general"
+		const helpPage = new HelpPage().getHelpPage(topic)
+		if (helpPage !== undefined) {
+			out("\n" + helpPage)
+		} else {
+			errExit(`Unknown help page ${topic}`)
+		}
+		process.exit()
+	}
 
 	// check for updates
 	if (args["--skip-update"] !== true) {
@@ -95,11 +92,19 @@ if (args["--help"]) {
 		outVerbose("Update check skipped")
 	}
 
+	const filen = new FilenSDK({
+		metadataCache: true,
+		tmpPath: path.join(os.tmpdir(), "filen-cli")
+	})
+
 	// authentication
 	if (args["_"][0] !== "webdav-proxy") { // skip authentication for webdav proxy mode
 		const authentication = new Authentication(filen)
 		try {
-			if (args["--delete-credentials"]) { await authentication.deleteStoredCredentials() }
+			if (args["_"][0] === "delete-credentials") {
+				await authentication.deleteStoredCredentials()
+				process.exit()
+			}
 		} catch (e) {
 			err("delete credentials", e)
 		}
