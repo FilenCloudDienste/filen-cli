@@ -81,6 +81,8 @@ export class HelpPage {
 			["--password <password>", ""],
 			["--two-factor-code <code>, -c <code>", "(optional)"],
 			["--log-file <file>", "write logs to a file"],
+			["--skip-update", "skip checking for updates"],
+			["--force-update", "check for updates even if it was recently checked"],
 		])}
 		
 		View the topic pages via \`filen -h <topic>\` for more information:
