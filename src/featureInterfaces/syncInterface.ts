@@ -125,7 +125,10 @@ export class SyncInterface {
 					syncPairsExited.add(msg.syncPair.uuid)
 					if (syncPairsExited.size >= syncPairs.length) {
 						if (progressBar !== null) progressBar.progressBar.stop()
-						if (!quiet) out("Done.")
+						if (!quiet) {
+							if (progressBar?.progressBar.getTotal() ?? 0 > 0) out("Done.")
+							else out("Done (no files to transfer).")
+						}
 						process.exit()
 					}
 				}
