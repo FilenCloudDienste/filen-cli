@@ -60,14 +60,14 @@ export const isDevelopment = args["--dev"] ?? false
 // eslint-disable-next-line no-extra-semi
 ;(async () => {
 	if ((args["--version"] ?? false) || args["_"][0] === "version") {
-		out(`v${version}`)
+		out(version)
 		process.exit()
 	}
 
 	setOutputFlags(args["--quiet"] ?? false, (args["--help"] ?? false) || (args["--verbose"] ?? false))
 	setupLogs(args["--log-file"])
 
-	outVerbose(`Filen CLI v${version}`)
+	outVerbose(`Filen CLI ${version}`)
 	if (isDevelopment) outVerbose("Running in development environment")
 
 	if ((args["--help"] ?? false) || args["_"][0] === "help") {
