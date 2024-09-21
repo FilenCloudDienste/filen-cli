@@ -8,7 +8,8 @@ export const s3Options = {
 	"--s3-port": Number,
 	"--s3-https": Boolean,
 	"--s3-access-key-id": String,
-	"--s3-secret-access-key": String
+	"--s3-secret-access-key": String,
+	"--s3-threads": Number,
 }
 
 /**

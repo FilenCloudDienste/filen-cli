@@ -181,7 +181,7 @@ export class HelpPage {
 			["--w-hostname", "which hostname the server should be started on (default is 0.0.0.0)"],
 			["--w-port", "which port the server should be started on (default is 80 or 443)"],
 			["--w-auth-scheme", "the authentication scheme the server should use, \"basic\" or \"digest\" (default is basic)"],
-			["--threads", "enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count)"],
+			["--w-threads", "enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count)"],
 		])}
 		
 		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#webdav-server
@@ -195,7 +195,7 @@ export class HelpPage {
 			["--s3-https", "use HTTPS instead of HTTP (using a self-signed certificate)"],
 			["--s3-hostname", "which hostname the server should be started on (default is 0.0.0.0)"],
 			["--s3-port", "which port the server should be started on (default is 80 or 443)"],
-		["--threads", "enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count)"],
+			["--s3-threads", "enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count)"],
 		])}
 		
 		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#s3-server

@@ -10,7 +10,8 @@ export const webdavOptions = {
 	"--w-https": Boolean,
 	"--w-auth-scheme": String,
 	"--w-user": String,
-	"--w-password": String
+	"--w-password": String,
+	"--w-threads": Number,
 }
 
 /**
