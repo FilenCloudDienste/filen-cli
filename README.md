@@ -140,7 +140,7 @@ $ filen mount [mount point]
 
 Invoke `filen mount` to mount a network drive that mirrors your Filen Drive. The default mount point is `X:` (Windows) / `/tmp/filen` (UNIX).
 
-On Windows, [WinFSP](https://winfsp.dev/rel) needs to be installed. On Linux, [FUSE](https://github.com/libfuse/libfuse) 3 needs to be installed. 
+On Windows, [WinFSP](https://winfsp.dev/rel) needs to be installed. On Linux, [FUSE3](https://github.com/libfuse/libfuse) needs to be installed. On macOS, [FUSE-T](https://www.fuse-t.org/) or [macFUSE](https://osxfuse.github.io/) needs to be installed.
 
 For more information, see also [FilenCloudDienste/filen-network-drive](https://github.com/FilenCloudDienste/filen-virtual-drive).
 
