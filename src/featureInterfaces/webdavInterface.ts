@@ -2,9 +2,9 @@ import WebDAVServer, { WebDAVServerCluster } from "@filen/webdav"
 import FilenSDK from "@filen/sdk"
 import { errExit, out } from "../interface/interface"
 import { InterruptHandler } from "../interface/interrupt"
+import cluster from "node:cluster"
 
 export const webdavOptions = {
-	"--webdav-proxy": Boolean,
 	"--w-hostname": String,
 	"--w-port": Number,
 	"--w-https": Boolean,
@@ -59,6 +59,10 @@ export class WebDAVInterface {
 			hostname,
 			port,
 			authMode: authScheme as "basic" | "digest"
+		}
+		if (args.threads !== undefined && cluster.isPrimary) {
+			// work around bug with pkg that interprets execArgv as module name
+			cluster.setupPrimary({ execArgv: [] })
 		}
 		const webdavServer = args.threads === undefined
 			? new WebDAVServer(configuration)
