@@ -45,6 +45,9 @@ There are several ways to authenticate:
 - Invoke the CLI with the `--email` and `--password` (optionally `--two-factor-code`) arguments set.
 - Put your credentials in the `FILEN_EMAIL` and `FILEN_PASSWORD` (optionally `FILEN_2FA_CODE`) environment variables.
 - Store your Filen email and password in a file named `.filen-cli-credentials` where you invoke the CLI. Put your email and password in separate lines, in plain text (optionally 2FA code in third line).
+- Export an "auth config" (which includes your Filen email, password and other details) using `filen export-auth-config`.
+  This will produce a file named `.filen-cli-auth-config`, which you can need to where you invoke the CLI.
+  This option can be useful especially for clustered WebDAV/S3 servers, where otherwise too many login requests result in rate limiting.
 
 If you have 2FA enabled and don't specify a 2FA code, you will be prompted for it.
 
@@ -168,7 +171,8 @@ Options:
 - `--w-hostname`: which hostname the server should be started on (default is 0.0.0.0)
 - `--w-port`: which port the server should be started on (default is 80 or 443)
 - `--w-auth-scheme`: the authentication scheme the server should use, "basic" or "digest" (default is basic)
-- `--w-threads`: enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count)
+- `--w-threads`: enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count).
+  If you experience rate-limiting using this, using an [auth config](#authenticating) might help.
 
 ### Proxy mode
 
@@ -203,4 +207,5 @@ Options:
 - `--s3-https`: run the server on HTTPS instead of HTTP (using a self-signed certificate)
 - `--s3-hostname`: which hostname the server should be started on (default is 0.0.0.0)
 - `--s3-port`: which port the server should be started on (default is 80 or 443)
-- `--s3-threads`: enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count)
+- `--s3-threads`: enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count).
+  If you experience rate-limiting using this, using an [auth config](#authenticating) might help.

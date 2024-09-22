@@ -2,7 +2,7 @@ import readline from "node:readline"
 import { Autocompletion } from "../featureInterfaces/fs/autocompletion"
 import { InterruptHandler } from "./interrupt"
 import * as fs from "node:fs"
-import { formatTimestamp } from "./util"
+import { formatTimestamp, wrapRedTerminalText } from "./util"
 import { version } from "../buildInfo"
 
 /**
@@ -119,8 +119,7 @@ export function err(messageOrAction: string, underlyingError?: unknown, addition
 		str += `. (${additionalMessage})`
 	}
 
-	// red color: see https://stackoverflow.com/a/41407246
-	console.error("\x1b[31m" + str + "\x1b[0m")
+	console.error(wrapRedTerminalText(str))
 
 	if (underlyingError !== undefined) {
 		console.error(underlyingError instanceof Error ? underlyingError.stack : underlyingError)

@@ -108,7 +108,7 @@ export const isDevelopment = args["--dev"] ?? false
 			err("delete credentials", e)
 		}
 		try {
-			await authentication.authenticate(args["--email"], args["--password"], args["--two-factor-code"])
+			await authentication.authenticate(args["--email"], args["--password"], args["--two-factor-code"], args["_"][0] === "export-auth-config")
 		} catch (e) {
 			errExit("authenticate", e)
 		}

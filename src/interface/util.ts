@@ -119,3 +119,11 @@ export function formatTable(table: string[][], spacing: number = 3, rightAlignFi
 	})
 	return lines.join("\n")
 }
+
+/**
+ * Wrap text with the control characters necessary to produce red text in a terminal.
+ */
+export function wrapRedTerminalText(text: string): string {
+	// see https://stackoverflow.com/a/41407246
+	return "\x1b[31m" + text + "\x1b[0m"
+}

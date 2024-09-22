@@ -104,6 +104,9 @@ export class HelpPage {
 		2) Pass the --email and --password (optionally --two-factor-code) arguments.
 		3) Put your credentials in the FILE_EMAIL and FILEN_PASSWORD (optionally FILEN_2FA_CODE) environment variables.
 		4) Store your Filen email and password in a file named .filen-cli-credentials with email and password (optionally 2FA code) in separate plaintext lines.
+		5) Export an "auth config" using \`filen export-auth-config\` and place it where you invoke the CLI. (See the full documentation for more details.)
+		
+		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#authenticating
 	`
 
 	private readonly fsHelpPage: string = dedent`
