@@ -14,7 +14,7 @@ export class DriveMountingInterface {
 	}
 
 	public async invoke(mountPoint: string | undefined) {
-		mountPoint = mountPoint ?? process.platform === "win32" ? "X:" : "/tmp/filen"
+		mountPoint = mountPoint ?? (process.platform === "win32" ? "X:" : "/tmp/filen")
 		out(`Mounting network drive for ${this.filen.config.email} at ${mountPoint}`)
 
 		if (process.platform === "win32") {
