@@ -70,7 +70,7 @@ export const isDevelopment = args["--dev"] ?? false
 	if (isDevelopment) outVerbose("Running in development environment")
 
 	if ((args["--help"] ?? false) || args["_"][0] === "help") {
-		const topic = args["_"][0]?.toLowerCase() ?? "general"
+		const topic = (args["_"][0] === "help" ? args["_"][1] : args["_"][0])?.toLowerCase() ?? "general"
 		const helpPage = new HelpPage().getHelpPage(topic)
 		if (helpPage !== undefined) {
 			out("\n" + helpPage)
