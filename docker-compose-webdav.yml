@@ -1,0 +1,10 @@
+services:
+    filen-cli:
+        image: filen/cli:latest
+        ports:
+            - "80:80"
+        entrypoint: ["node", "filen.js", "--email", "<username>", "--password", "<password>", "--two-factor-code", "<code>"]
+        command: >
+            webdav
+            --w-user <webdav username>
+            --w-password <webdav password>

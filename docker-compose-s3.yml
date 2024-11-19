@@ -1,0 +1,10 @@
+services:
+    filen-cli:
+        image: filen/cli:latest
+        ports:
+            - "80:80"
+        entrypoint: ["node", "filen.js", "--email", "<username>", "--password", "<password>", "--two-factor-code", "<code>"]
+        command: >
+            s3
+            --s3-access-key-id <s3 key>
+            --s3-secret-access-key <s3 secret>

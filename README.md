@@ -209,3 +209,16 @@ Options:
 - `--s3-port`: which port the server should be started on (default is 80 or 443)
 - `--s3-threads`: enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count).
   If you experience rate-limiting using this, using an [auth config](#authenticating) might help.
+
+## Docker
+
+### Docker Compose
+
+Use one of the template `docker-compose-*.yml` files to run filen-cli. The template files automatically sets up WebDAV or S3 service as a docker container.
+
+> Note: The instructions assumes you already have Docker Compose installed and set up.
+
+1. Download a `docker-compose-*.yml` file.
+2. Rename the chosen file to `docker-compose.yml`.
+3. Move the file to your desired location (e.g., `~/docker/filen-cli/`).
+4. Run `docker compose up` in a terminal from the file's location.
