@@ -44,10 +44,14 @@ export class Authentication {
 	 * @param passwordArg the `--password` CLI argument
 	 * @param twoFactorCodeArg the `--two-factor-code` CLI argument
 	 */
-	public async authenticate(emailArg: string | undefined, passwordArg: string | undefined, twoFactorCodeArg: string | undefined, saveSDKConfigFile: boolean) {
+	public async authenticate(
+		emailArg: string | undefined,
+		passwordArg: string | undefined,
+		twoFactorCodeArg: string | undefined,
+		saveSDKConfigFile: boolean
+	) {
 		let credentials: Credentials | undefined = undefined
-		const needCredentials = () => credentials === undefined && !this.filen.config.email
-
+		const needCredentials = () => credentials === undefined && (this.filen.config.email === "anonymous" || !this.filen.config.email)
 
 		// try to get credentials from args, environment and file
 		for (const authenticate of [
@@ -60,12 +64,12 @@ export class Authentication {
 		}
 
 		// otherwise: login from .filen-cli-auth-config
-		if (needCredentials() && await exists(this.sdkConfigFile)) {
+		if (needCredentials() && (await exists(this.sdkConfigFile))) {
 			try {
 				const sdkConfig = JSON.parse((await fsModule.promises.readFile(this.sdkConfigFile)).toString())
 				outVerbose(`Logging in as ${sdkConfig.email} (using ${this.sdkConfigFile})`)
 				this.filen.init(sdkConfig)
-				if (!await this.filen.user().checkAPIKeyValidity()) throw new Error("invalid API key")
+				if (!(await this.filen.user().checkAPIKeyValidity())) throw new Error("invalid API key")
 			} catch (e) {
 				err(`login from ${this.sdkConfigFile}`, e, "try regenerating the file")
 				this.filen.logout()
@@ -73,13 +77,13 @@ export class Authentication {
 		}
 
 		// otherwise: login from central file
-		if (needCredentials() && await exists(this.credentialsFile)) {
+		if (needCredentials() && (await exists(this.credentialsFile))) {
 			const encryptedConfig = await fsModule.promises.readFile(this.credentialsFile, { encoding: "utf-8" })
 			try {
 				const config = await this.crypto.decrypt(encryptedConfig)
 				outVerbose(`Logging in as ${config.email} (using saved credentials)`)
 				this.filen.init(config)
-				if (!await this.filen.user().checkAPIKeyValidity()) throw new Error("invalid API key")
+				if (!(await this.filen.user().checkAPIKeyValidity())) throw new Error("invalid API key")
 			} catch (e) {
 				err("login from saved credentials", e, "try `filen delete-credentials`")
 				this.filen.logout()
@@ -97,14 +101,18 @@ export class Authentication {
 		}
 
 		// try to log in, optionally prompt for 2FA
-		if (!this.filen.config.email) {
+		if (this.filen.config.email === "anonymous" || !this.filen.config.email) {
 			try {
 				try {
 					await this.filen.login(credentials!)
 				} catch (e) {
 					if (e instanceof APIError && e.code === "enter_2fa") {
 						const twoFactorCode = await prompt("Please enter your 2FA code: ")
-						await this.filen.login({ ...credentials!, twoFactorCode })
+
+						await this.filen.login({
+							...credentials,
+							twoFactorCode
+						})
 					} else {
 						throw e
 					}
@@ -121,13 +129,18 @@ export class Authentication {
 		// save credentials as .filen-cli-auth-config
 		if (saveSDKConfigFile) {
 			if (await exists(this.sdkConfigFile)) {
-				if (!await promptConfirm(`overwrite ${this.sdkConfigFile}`)) process.exit()
+				if (!(await promptConfirm(`overwrite ${this.sdkConfigFile}`))) process.exit()
 			}
-			const input = await prompt(wrapRedTerminalText("You are about to export a Filen CLI auth config," +
-				"\nwhich is a plaintext file containing your unencrypted credentials." +
-				"\nA person in possession of this file's content has full access to your Filen Drive," +
-				"\nincluding reading, writing and deleting all your files, as well as all account operations." +
-				"\nType \"I am aware of the risks\" to proceed: "))
+			const input = await prompt(
+				wrapRedTerminalText(
+					"You are about to export a Filen CLI auth config," +
+						"\nwhich is a plaintext file containing your unencrypted credentials." +
+						"\nA person in possession of this file's content has full access to your Filen Drive," +
+						"\nincluding reading, writing and deleting all your files, as well as all account operations." +
+						// eslint-disable-next-line quotes
+						'\nType "I am aware of the risks" to proceed: '
+				)
+			)
 			if (input.toLowerCase() !== "i am aware of the risks") errExit("Cancelled.")
 			try {
 				await fsModule.promises.writeFile(this.sdkConfigFile, JSON.stringify(this.filen.config, null, 2))
