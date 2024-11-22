@@ -14,38 +14,44 @@ import { SyncInterface, syncOptions } from "./featureInterfaces/syncInterface"
 import { TrashInterface } from "./featureInterfaces/trashInterface"
 import { PublicLinksInterface } from "./featureInterfaces/publicLinksInterface"
 import { DriveMountingInterface } from "./featureInterfaces/driveMountingInterface"
+import { ANONYMOUS_SDK_CONFIG } from "./constants"
 
-const args = arg({
-	"--dev": Boolean,
+const args = arg(
+	{
+		"--dev": Boolean,
 
-	"--help": Boolean,
-	"-h": "--help",
-	"--version": Boolean,
+		"--help": Boolean,
+		"-h": "--help",
+		"--version": Boolean,
 
-	"--verbose": Boolean,
-	"-v": "--verbose",
+		"--verbose": Boolean,
+		"-v": "--verbose",
 
-	"--quiet": Boolean,
-	"-q": "--quiet",
+		"--quiet": Boolean,
+		"-q": "--quiet",
 
-	"--email": String,
-	"-e": "--email",
+		"--email": String,
+		"-e": "--email",
 
-	"--password": String,
-	"-p": "--password",
+		"--password": String,
+		"-p": "--password",
 
-	"--two-factor-code": String,
-	"-c": "--two-factor-code",
+		"--two-factor-code": String,
+		"-c": "--two-factor-code",
 
-	"--log-file": String,
-	"--skip-update": Boolean,
-	"--force-update": Boolean,
+		"--log-file": String,
+		"--skip-update": Boolean,
+		"--force-update": Boolean,
 
-	...fsOptions,
-	...webdavOptions,
-	...s3Options,
-	...syncOptions,
-}, { permissive: true })
+		...fsOptions,
+		...webdavOptions,
+		...s3Options,
+		...syncOptions
+	},
+	{
+		permissive: true
+	}
+)
 
 if (!checkInjectedBuildInfo()) {
 	errExit("Build info not injected correctly!")
@@ -92,12 +98,15 @@ export const isDevelopment = args["--dev"] ?? false
 	}
 
 	const filen = new FilenSDK({
+		...ANONYMOUS_SDK_CONFIG,
+		connectToSocket: true,
 		metadataCache: true,
 		tmpPath: path.join(os.tmpdir(), "filen-cli")
 	})
 
 	// authentication
-	if (args["_"][0] !== "webdav-proxy") { // skip authentication for webdav proxy mode
+	if (args["_"][0] !== "webdav-proxy") {
+		// skip authentication for webdav proxy mode
 		const authentication = new Authentication(filen)
 		try {
 			if (args["_"][0] === "delete-credentials") {
@@ -108,14 +117,18 @@ export const isDevelopment = args["--dev"] ?? false
 			err("delete credentials", e)
 		}
 		try {
-			await authentication.authenticate(args["--email"], args["--password"], args["--two-factor-code"], args["_"][0] === "export-auth-config")
+			await authentication.authenticate(
+				args["--email"],
+				args["--password"],
+				args["--two-factor-code"],
+				args["_"][0] === "export-auth-config"
+			)
 		} catch (e) {
 			errExit("authenticate", e)
 		}
 	}
 
 	if (args["_"][0] === "webdav" || args["_"][0] === "webdav-proxy") {
-
 		// webdav
 		const webdavInterface = new WebDAVInterface(filen)
 		const proxyMode = args["_"][0] === "webdav-proxy"
@@ -127,14 +140,12 @@ export const isDevelopment = args["--dev"] ?? false
 				hostname: args["--w-hostname"],
 				port: args["--w-port"],
 				authScheme: args["--w-auth-scheme"],
-				threads: args["--w-threads"],
+				threads: args["--w-threads"]
 			})
 		} catch (e) {
 			errExit("start WebDAV server", e)
 		}
-
 	} else if (args["_"][0] === "s3") {
-
 		// s3
 		const s3Interface = new S3Interface(filen)
 		try {
@@ -144,14 +155,12 @@ export const isDevelopment = args["--dev"] ?? false
 				https: args["--s3-https"] ?? false,
 				accessKeyId: args["--s3-access-key-id"],
 				secretAccessKey: args["--s3-secret-access-key"],
-				threads: args["--s3-threads"],
+				threads: args["--s3-threads"]
 			})
 		} catch (e) {
 			errExit("start S3 server", e)
 		}
-
 	} else if (args["_"][0] === "sync") {
-
 		// sync
 		const syncInterface = new SyncInterface(filen)
 		try {
@@ -159,9 +168,7 @@ export const isDevelopment = args["--dev"] ?? false
 		} catch (e) {
 			errExit("invoke sync", e)
 		}
-
 	} else if (args["_"][0] === "trash") {
-
 		// trash
 		const trashInterface = new TrashInterface(filen)
 		try {
@@ -169,15 +176,11 @@ export const isDevelopment = args["--dev"] ?? false
 		} catch (e) {
 			errExit("execute trash command", e)
 		}
-
 	} else if (args["_"][0] === "links" || args["_"][0] === "link") {
-
 		// links
 		const publicLinksInterface = new PublicLinksInterface(filen)
 		await publicLinksInterface.invoke(args["_"].slice(1))
-
 	} else if (args["_"][0] === "mount") {
-
 		// mount
 		const driveMountingInterface = new DriveMountingInterface(filen)
 		try {
@@ -185,17 +188,14 @@ export const isDevelopment = args["--dev"] ?? false
 		} catch (e) {
 			errExit("execute mount command", e)
 		}
-
 	} else {
-
 		// fs commands
 		const fsInterface = new FSInterface(filen)
 		await fsInterface.invoke({
 			formatJson: args["--json"]!,
 			root: args["--root"],
 			noAutocomplete: args["--no-autocomplete"] ?? false,
-			commandStr: args["_"],
+			commandStr: args["_"]
 		})
-
 	}
 })()
