@@ -5,6 +5,7 @@ import { exists, platformConfigPath } from "../util/util"
 import path from "path"
 import { CredentialsCrypto } from "./credentialsCrypto"
 import { wrapRedTerminalText } from "../interface/util"
+import { ANONYMOUS_SDK_CONFIG } from "../constants"
 
 export type Credentials = {
 	email: string
@@ -94,34 +95,59 @@ export class Authentication {
 		const authenticateUsingPrompt = needCredentials()
 		if (authenticateUsingPrompt) {
 			out("Please enter your Filen credentials:")
-			const email = await prompt("Email: ")
-			const password = await prompt("Password: ", false, true)
+			const email = await prompt("Email: ", true)
+			const password = await prompt("Password: ", true, true)
 			if (!email || !password) errExit("Please provide your credentials!")
 			credentials = { email, password }
 		}
 
 		// try to log in, optionally prompt for 2FA
-		if (this.filen.config.email === "anonymous" || !this.filen.config.email) {
-			try {
-				try {
-					await this.filen.login(credentials!)
-				} catch (e) {
-					if (e instanceof APIError && e.code === "enter_2fa") {
-						const twoFactorCode = await prompt("Please enter your 2FA code: ")
+		if ((this.filen.config.email === "anonymous" || !this.filen.config.email) && credentials) {
+			let authed = false
+			let twoFactorCode: string | undefined = credentials.twoFactorCode
 
-						await this.filen.login({
-							...credentials,
-							twoFactorCode
-						})
-					} else {
-						throw e
-					}
-				}
+			try {
+				this.filen.init(ANONYMOUS_SDK_CONFIG)
+
+				await this.filen.login(credentials)
+
+				authed = true
 			} catch (e) {
-				if (e instanceof APIError && e.code === "email_or_password_wrong") {
-					errExit("Invalid credentials!")
+				if (e instanceof APIError) {
+					if (e.code === "enter_2fa" || e.code === "wrong_2fa") {
+						twoFactorCode = await prompt("Please enter your 2FA code or recovery key: ", true, true)
+					} else if (e.code === "email_or_password_wrong") {
+						errExit("Invalid credentials!")
+					} else {
+						errExit("login", e)
+					}
 				} else {
 					errExit("login", e)
+				}
+			}
+
+			if (!authed && twoFactorCode) {
+				try {
+					this.filen.init(ANONYMOUS_SDK_CONFIG)
+
+					await this.filen.login({
+						...credentials,
+						twoFactorCode
+					})
+
+					authed = true
+				} catch (e) {
+					if (e instanceof APIError) {
+						if (e.code === "enter_2fa" || e.code === "wrong_2fa") {
+							errExit("Invalid Two Factor Authentication code!")
+						} else if (e.code === "email_or_password_wrong") {
+							errExit("Invalid credentials!")
+						} else {
+							errExit("login", e)
+						}
+					} else {
+						errExit("login", e)
+					}
 				}
 			}
 		}
@@ -139,7 +165,8 @@ export class Authentication {
 						"\nincluding reading, writing and deleting all your files, as well as all account operations." +
 						// eslint-disable-next-line quotes
 						'\nType "I am aware of the risks" to proceed: '
-				)
+				),
+				true
 			)
 			if (input.toLowerCase() !== "i am aware of the risks") errExit("Cancelled.")
 			try {
@@ -153,7 +180,7 @@ export class Authentication {
 
 		// save credentials from prompt
 		if (authenticateUsingPrompt) {
-			const saveCredentials = (await prompt("Save credentials locally for future invocations? [y/N] ")).toLowerCase() === "y"
+			const saveCredentials = (await prompt("Save credentials locally for future invocations? [y/N] ", true)).toLowerCase() === "y"
 			if (saveCredentials) {
 				try {
 					const encryptedCredentials = await this.crypto.encrypt(this.filen.config)

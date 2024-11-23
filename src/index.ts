@@ -99,7 +99,7 @@ export const isDevelopment = args["--dev"] ?? false
 
 	const filen = new FilenSDK({
 		...ANONYMOUS_SDK_CONFIG,
-		connectToSocket: true,
+		connectToSocket: true, // Needed to keep internal SDK FS tree up to date with remote changes
 		metadataCache: true,
 		tmpPath: path.join(os.tmpdir(), "filen-cli")
 	})
