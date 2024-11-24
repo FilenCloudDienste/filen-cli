@@ -1,36 +1,10 @@
-import readline from "node:readline"
 import { Autocompletion } from "../featureInterfaces/fs/autocompletion"
 import { InterruptHandler } from "./interrupt"
 import * as fs from "node:fs"
 import { formatTimestamp, wrapRedTerminalText } from "./util"
 import { version } from "../buildInfo"
-
-/**
- * amount of output calls until input should be obfuscated (-1 = don't obfuscate, 0 = obfuscate, 1 = obfuscate except first output, ...)
- */
-let obfuscateInput = -1
-
-export const readlineInterface = (() => {
-	try {
-		const rl = readline.createInterface({
-				input: process.stdin,
-				output: process.stdout,
-				completer: (input: string) => Autocompletion.instance?.autocomplete(input) ?? [[], input]
-			})
-		;(rl as any)._writeToOutput = (c: string) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-			(rl as any).output?.write(obfuscateInput === 0 ? c.replace(/./ /* don't replace newlines */, "") : c) // eslint-disable-line @typescript-eslint/no-explicit-any
-			if (obfuscateInput > 0) obfuscateInput -= 1
-		}
-		return rl
-	} catch (e) {
-		errExit("initialize console interface", e)
-	}
-})()
-
-process.stdin.on("keypress", () => {
-	Autocompletion.instance?.prefetchForInput(readlineInterface.line)
-	hasReceivedInput = readlineInterface.line.length > 0
-})
+import { read } from "read"
+import { CompleterResult } from "node:readline"
 
 /**
  * `--quiet` flag is set
@@ -142,35 +116,56 @@ export function errExit(messageOrAction: string, underlyingError?: unknown, addi
  * Global input prompting method
  * @param message The message to print before the prompt
  * @param allowExit Whether to allow to exit the application here via `^C`
+ * @param obfuscate Whether to obfuscate the input (for password input)
  */
 export async function prompt(message: string, allowExit: boolean = false, obfuscate: boolean = false) {
 	return new Promise<string>((resolve) => {
-		const signal = allowExit ? InterruptHandler.instance.createAbortSignal() : undefined
-		if (obfuscate) obfuscateInput = 1
+		const cancel = () => {
+			if (allowExit && hasReceivedKeyPresses <= 1) {
+				process.exit()
+			} else {
+				resolve("")
+			}
+		}
+		if (allowExit) {
+			InterruptHandler.instance.addListener(() => cancel())
+		}
 		try {
-			readlineInterface.question(message, { signal }, (input) => {
-				Autocompletion.instance?.clearPrefetchedResults()
-				obfuscateInput = -1
-				if (obfuscate) {
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					(readlineInterface as any).history = (readlineInterface as any).history.slice(1)
+			read({
+				prompt: message,
+				silent: obfuscate,
+				replace: obfuscate ? "*" : undefined,
+				completer: (input: string, callback: (err: undefined, result: CompleterResult) => void) => {
+					if (Autocompletion.instance !== undefined) {
+						Autocompletion.instance!.autocomplete(input).then(result => callback(undefined, result))
+					} else {
+						callback(undefined, [[], input])
+					}
 				}
+			}).then(input => {
+				Autocompletion.instance?.clearPrefetchedResults()
 				writeLog(message, "log")
-				writeLog(" ".repeat(message.length-1) + "> " + (obfuscate ? "***" : input), "input")
+				writeLog(" ".repeat(message.length) + (obfuscate ? "***" : input), "input")
 				resolve(input)
+			}).catch(e => {
+				if (e instanceof Error && e.message === "canceled") {
+					cancel()
+				} else {
+					throw e
+				}
 			})
 		} catch (e) {
 			errExit("prompt for user input", e, "maybe you're in an environment without stdin, like a Docker container")
 		}
-		hasReceivedInput = false
-		signal?.addEventListener("abort", () => {
-			if (!hasReceivedInput) process.exit()
-			else resolve("")
-		})
+		hasReceivedKeyPresses = 0
 	})
 }
 
-let hasReceivedInput = false
+// don't exit the program on ^C when there was user input
+let hasReceivedKeyPresses = 0
+process.stdin.on("keypress", () => {
+	hasReceivedKeyPresses++
+})
 
 /**
  * Global confirmation prompting method

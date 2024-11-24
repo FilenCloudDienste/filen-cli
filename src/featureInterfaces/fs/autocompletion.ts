@@ -24,24 +24,16 @@ export class Autocompletion {
 
 	private autocompleteResults = new Map<string, CompleterResult>()
 
-	/**
-	 * Supply the current user input so autocomplete results can be pre-fetched asynchronously.
-	 */
-	public prefetchForInput(input: string) {
-		if (this.autocompleteResults.has(input)) return
-		autocomplete(input, this.cloudWorkingPath, fsCommands, (path) => this.readCloudDirectory(path), (path) => this.readLocalDirectory(path))
-			.then(result => this.autocompleteResults.set(input, result))
-	}
-
 	public clearPrefetchedResults() {
 		this.autocompleteResults.clear()
 	}
 
-	/**
-	 * @return pre-fetched autocomplete results for a given user input
-	 */
-	public autocomplete(input: string): CompleterResult {
-		return this.autocompleteResults.get(input) ?? [[], input]
+	public async autocomplete(input: string): Promise<CompleterResult> {
+		if (!this.autocompleteResults.has(input)) {
+			const result = await autocomplete(input, this.cloudWorkingPath, fsCommands, (path) => this.readCloudDirectory(path), (path) => this.readLocalDirectory(path))
+			this.autocompleteResults.set(input, result)
+		}
+		return this.autocompleteResults.get(input)!
 	}
 
 	private cachedCloudPaths: string[] = []

@@ -1,4 +1,4 @@
-import { out, readlineInterface } from "./interface"
+import { out } from "./interface"
 
 /**
  * Handles SIGINT signals.
@@ -13,11 +13,6 @@ export class InterruptHandler {
 	private listeners: (() => void)[] = []
 
 	public constructor() {
-		if (process.platform === "win32") {
-			readlineInterface.on("SIGINT", function() {
-				process.emit("SIGINT")
-			})
-		}
 		let lastInterruptTimestamp = 0
 		let consecutiveInterrupts = 0
 		process.on("SIGINT", () => {
