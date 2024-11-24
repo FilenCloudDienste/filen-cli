@@ -25,6 +25,9 @@ export class PublicLinksInterface {
 			try {
 				await this.editPublicLink(args[0]!)
 			} catch (e) {
+				if (e instanceof Error && e.message.includes("upgrade your account to use this feature")) {
+					errExit("Subscription needed for public links. Upgrade to any pro plan to use this feature.")
+				}
 				errExit("edit public link", e)
 			}
 		}
@@ -34,10 +37,14 @@ export class PublicLinksInterface {
 	private async listPublicLinks() {
 		const items = await this.filen.cloud().listPublicLinks()
 		const itemsWithPath = await getItemPaths(this.filen, items)
-		out(formatTable(await Promise.all(itemsWithPath.map(async item => {
-			const publicLink = (await this.getPublicLinkStatus(item.type, item.uuid, item.type === "file" ? item.key : undefined))!
-			return [item.path, publicLink.url]
-		}))))
+		if (itemsWithPath.length > 0) {
+			out(formatTable(await Promise.all(itemsWithPath.map(async item => {
+				const publicLink = (await this.getPublicLinkStatus(item.type, item.uuid, item.type === "file" ? item.key : undefined))!
+				return [item.path, publicLink.url]
+			}))))
+		} else {
+			out("No public links yet.")
+		}
 	}
 
 	private async editPublicLink(path: string) {
