@@ -4,6 +4,7 @@ import path from "path"
 import { spawn } from "node:child_process"
 import { downloadFile, exists, platformConfigPath } from "./util/util"
 import * as fs from "node:fs"
+import { lt } from "semver"
 
 type ReleaseInfo = {
 	tag_name: string
@@ -79,7 +80,7 @@ export class Updater {
 		if (process.platform === "win32") platformStr = "win"
 		if (process.platform === "darwin") platformStr = "macos"
 		const downloadUrl = releaseInfo.assets.find(asset => asset.name.includes(platformStr) && asset.name.includes(process.arch))?.browser_download_url ?? undefined
-		if (downloadUrl !== undefined && currentVersion !== publishedVersion) {
+		if (downloadUrl !== undefined && lt(currentVersion, publishedVersion)) {
 			if (disableAutomaticUpdates) {
 				out(`Update available: ${currentVersion} -> ${publishedVersion}`)
 				return
