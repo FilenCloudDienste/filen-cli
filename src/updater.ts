@@ -86,7 +86,7 @@ export class Updater {
 			}
 
 			if ((await prompt(`Update from ${currentVersion} to ${publishedVersion}? [y/N] `)).toLowerCase() === "y") {
-				await this.update(downloadUrl, releaseInfo.tag_name)
+				await this.update(currentVersion, publishedVersion, downloadUrl)
 			}
 		} else {
 			outVerbose(`${currentVersion} is up to date.`)
@@ -101,9 +101,9 @@ export class Updater {
 		})()
 	}
 
-	private async update(downloadUrl: string, publishedVersion: string) {
+	private async update(currentVersionName: string, publishedVersionName: string, downloadUrl: string) {
 		const selfApplicationFile = process.pkg === undefined ? __filename : process.argv[0]!
-		const downloadedFile = path.join(path.dirname(selfApplicationFile), `filen_update_${publishedVersion}`)
+		const downloadedFile = path.join(path.dirname(selfApplicationFile), `filen_update_${publishedVersionName}`)
 
 		out("Downloading update...")
 		try {
@@ -114,21 +114,30 @@ export class Updater {
 
 		out("Installing update...")
 		if (process.platform === "win32") {
+			const newFileName = path.basename(selfApplicationFile).replace(currentVersionName, publishedVersionName)
+			if (path.basename(selfApplicationFile).includes(currentVersionName)) out(`Use the new version using the command: ${newFileName}`)
 			const commands = [
+				"echo Installing update...",
+				"ping 127.0.0.1 -n 2 > nul", // wait 2 seconds
 				`del "${selfApplicationFile}"`,
-				`rename "${downloadedFile}" ${path.basename(selfApplicationFile)}`,
-				`echo "Successfully updated to ${publishedVersion}"`,
+				`rename "${downloadedFile}" ${newFileName}`,
+				`echo Successfully updated to ${publishedVersionName}`,
+				...(path.basename(selfApplicationFile).includes(currentVersionName) ? [`echo Use the new version using the command: ${newFileName}`] : []),
 				"pause"
 			]
-			spawn("cmd.exe", ["/c", commands.join(" & ")], { shell: true, detached: true })
+			// for " escaping, see https://stackoverflow.com/a/15262019/13164753
+			spawn("cmd.exe", ["/c", "\"" + commands.join(" & ").replace(/"/g, "\"\"\"") + "\""], { shell: true, detached: true })
 			process.exit()
 		}
 		if (process.platform === "linux" || process.platform === "darwin") {
+			const newFileName = selfApplicationFile.replace(currentVersionName, publishedVersionName)
+			if (selfApplicationFile.includes(currentVersionName)) out(`Use the new version using the command: ${newFileName}`)
 			const commands = [
 				`rm "${selfApplicationFile}"`,
 				`chmod +x "${downloadedFile}"`,
-				`mv "${downloadedFile}" "${selfApplicationFile}"`,
-				`echo "Successfully updated to ${publishedVersion}"`,
+				`mv "${downloadedFile}" "${newFileName}"`,
+				`echo "Successfully updated to ${publishedVersionName}"`,
+				...(path.basename(selfApplicationFile).includes(currentVersionName) ? [`echo "Use the new version using the command: ${path.basename(selfApplicationFile).replace(currentVersionName, publishedVersionName)}"`] : []),
 				"read -p \"Press enter to continue...\""
 			]
 			spawn("sh", ["-c", `${commands.join(" & ")}`], { detached: true })
