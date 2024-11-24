@@ -126,7 +126,7 @@ export class Updater {
 				"pause"
 			]
 			// for " escaping, see https://stackoverflow.com/a/15262019/13164753
-			spawn("cmd.exe", ["/c", "\"" + commands.join(" & ").replace(/"/, "\"\"\"") + "\""], { shell: true, detached: true })
+			spawn("cmd.exe", ["/c", "\"" + commands.join(" & ").replace(/"/g, "\"\"\"") + "\""], { shell: true, detached: true })
 			process.exit()
 		}
 		if (process.platform === "linux" || process.platform === "darwin") {
