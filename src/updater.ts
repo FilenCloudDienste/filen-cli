@@ -115,6 +115,7 @@ export class Updater {
 		out("Installing update...")
 		if (process.platform === "win32") {
 			const newFileName = path.basename(selfApplicationFile).replace(currentVersionName, publishedVersionName)
+			if (path.basename(selfApplicationFile).includes(currentVersionName)) out(`Use the new version using the command: ${newFileName}`)
 			const commands = [
 				"echo Installing update...",
 				"ping 127.0.0.1 -n 2 > nul", // wait 2 seconds
@@ -129,10 +130,12 @@ export class Updater {
 			process.exit()
 		}
 		if (process.platform === "linux" || process.platform === "darwin") {
+			const newFileName = selfApplicationFile.replace(currentVersionName, publishedVersionName)
+			if (selfApplicationFile.includes(currentVersionName)) out(`Use the new version using the command: ${newFileName}`)
 			const commands = [
 				`rm "${selfApplicationFile}"`,
 				`chmod +x "${downloadedFile}"`,
-				`mv "${downloadedFile}" "${selfApplicationFile.replace(currentVersionName, publishedVersionName)}"`,
+				`mv "${downloadedFile}" "${newFileName}"`,
 				`echo "Successfully updated to ${publishedVersionName}"`,
 				...(path.basename(selfApplicationFile).includes(currentVersionName) ? [`echo "Use the new version using the command: ${path.basename(selfApplicationFile).replace(currentVersionName, publishedVersionName)}"`] : []),
 				"read -p \"Press enter to continue...\""
