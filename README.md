@@ -13,7 +13,7 @@ The Filen CLI provides a set of useful tools for interacting with the cloud:
 # Installation and updates
 
 You can download the latest binaries from the [release page](https://github.com/FilenCloudDienste/filen-cli/releases/latest).
-Docker images are also available as [filen/cli](https://hub.docker.com/repository/docker/filen/cli).
+Docker images are also available as [filen/cli](https://hub.docker.com/repository/docker/filen/cli) (see [below](#using-docker)).
 
 The Filen CLI includes an automatic updater that checks for a new release every time the CLI is invoked
 (after checking for updates, it will not check again for the next 10 minutes).
@@ -206,3 +206,23 @@ Options:
 - `--s3-port`: which port the server should be started on (default is 80 or 443)
 - `--s3-threads`: enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count).
   If you experience rate-limiting using this, using an [auth config](#authenticating) might help.
+
+## Using Docker
+
+You can run the CLI in a Docker container using the [`filen/cli`](https://hub.docker.com/repository/docker/filen/cli) image.
+
+For example, to run a WebDAV/S3 server in a container, you can use a [Docker Compose](https://docs.docker.com/compose) file similar to this:
+
+```yaml
+services:
+  filen-webdav:
+    image: filen/cli:latest
+    ports:
+      - 80:80
+    command: >
+      --email <...>
+      --password <...>
+      webdav
+      --w-user <...>
+      --w-password <...>
+```
