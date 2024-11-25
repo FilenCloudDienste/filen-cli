@@ -115,37 +115,38 @@ export function errExit(messageOrAction: string, underlyingError?: unknown, addi
 /**
  * Global input prompting method
  * @param message The message to print before the prompt
- * @param allowExit Whether to allow to exit the application here via `^C`
- * @param obfuscate Whether to obfuscate the input (for password input)
+ * @param options Options:
+ * @param options.allowExit Whether to allow to exit the application here via `^C`
+ * @param options.obfuscate Whether to obfuscate the input (for password input)
  */
-export async function prompt(message: string, allowExit: boolean = false, obfuscate: boolean = false) {
+export async function prompt(message: string, options: { allowExit?: boolean, obfuscate?: boolean } = {}) {
 	return new Promise<string>((resolve) => {
 		const cancel = () => {
-			if (allowExit && hasReceivedKeyPresses <= 1) {
+			if (options.allowExit && hasReceivedKeyPresses <= 1) {
 				process.exit()
 			} else {
 				resolve("")
 			}
 		}
-		if (allowExit) {
+		if (options.allowExit) {
 			InterruptHandler.instance.addListener(() => cancel())
 		}
 		try {
 			read({
 				prompt: message,
-				silent: obfuscate,
-				replace: obfuscate ? "*" : undefined,
+				silent: options.obfuscate,
+				replace: options.obfuscate ? "*" : undefined,
 				completer: (input: string, callback: (err: undefined, result: CompleterResult) => void) => {
 					if (Autocompletion.instance !== undefined) {
 						Autocompletion.instance!.autocomplete(input).then(result => callback(undefined, result))
 					} else {
 						callback(undefined, [[], input])
 					}
-				}
+				},
 			}).then(input => {
 				Autocompletion.instance?.clearPrefetchedResults()
 				writeLog(message, "log")
-				writeLog(" ".repeat(message.length) + (obfuscate ? "***" : input), "input")
+				writeLog(" ".repeat(message.length) + (options.obfuscate ? "***" : input), "input")
 				resolve(input)
 			}).catch(e => {
 				if (e instanceof Error && e.message === "canceled") {

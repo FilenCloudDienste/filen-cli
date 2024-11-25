@@ -74,7 +74,7 @@ export class PublicLinksInterface {
 			["Link URL:", publicLink.url],
 		]))
 
-		const selection = await prompt("Quit (Enter) / Edit (e) / Delete (d): ", true)
+		const selection = await prompt("Quit (Enter) / Edit (e) / Delete (d): ", { allowExit: true })
 		if (selection.toLowerCase() === "e") { // edit
 			const password = await prompt(`Password (current: ${publicLink.password !== null ? "***" : "<none>"}) [<password>/"-" to remove]: `)
 			const downloadButtonEnabled = item.type === "file" ? await prompt(`Download button enabled (current: ${publicLink.downloadButtonEnabled ? "y" : "n"}) [y/n]: `) : undefined

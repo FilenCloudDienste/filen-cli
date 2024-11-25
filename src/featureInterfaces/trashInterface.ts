@@ -35,7 +35,7 @@ export class TrashInterface {
 	private async deleteOrRestoreTrashItem(doDelete: boolean) {
 		const items = await this.filen.cloud().listTrash()
 		this.printTrashItems(items, true)
-		const selection = parseInt(await prompt(`Select an item to ${doDelete ? "permanently delete" : "restore"} (1-${items.length}): `, true))
+		const selection = parseInt(await prompt(`Select an item to ${doDelete ? "permanently delete" : "restore"} (1-${items.length}): `, { allowExit: true }))
 		if (isNaN(selection) || selection < 1 || selection > items.length) errExit("Invalid selection!")
 		if (doDelete) {
 			const item = items[selection-1]!

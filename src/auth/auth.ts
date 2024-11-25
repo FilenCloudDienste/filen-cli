@@ -95,8 +95,8 @@ export class Authentication {
 		const authenticateUsingPrompt = needCredentials()
 		if (authenticateUsingPrompt) {
 			out("Please enter your Filen credentials:")
-			const email = await prompt("Email: ", true)
-			const password = await prompt("Password: ", true, true)
+			const email = await prompt("Email: ", { allowExit: true })
+			const password = await prompt("Password: ", { allowExit: true, obfuscate: true })
 			if (!email || !password) errExit("Please provide your credentials!")
 			credentials = { email, password }
 		}
@@ -115,7 +115,7 @@ export class Authentication {
 			} catch (e) {
 				if (e instanceof APIError) {
 					if (e.code === "enter_2fa" || e.code === "wrong_2fa") {
-						twoFactorCode = await prompt("Please enter your 2FA code or recovery key: ", true, true)
+						twoFactorCode = await prompt("Please enter your 2FA code or recovery key: ", { allowExit: true, obfuscate: true })
 					} else if (e.code === "email_or_password_wrong") {
 						errExit("Invalid credentials!")
 					} else {
@@ -166,7 +166,7 @@ export class Authentication {
 						// eslint-disable-next-line quotes
 						'\nType "I am aware of the risks" to proceed: '
 				),
-				true
+				{ allowExit: true }
 			)
 			if (input.toLowerCase() !== "i am aware of the risks") errExit("Cancelled.")
 			try {
@@ -180,7 +180,7 @@ export class Authentication {
 
 		// save credentials from prompt
 		if (authenticateUsingPrompt) {
-			const saveCredentials = (await prompt("Save credentials locally for future invocations? [y/N] ", true)).toLowerCase() === "y"
+			const saveCredentials = (await prompt("Save credentials locally for future invocations? [y/N] ", { allowExit: true })).toLowerCase() === "y"
 			if (saveCredentials) {
 				try {
 					const encryptedCredentials = await this.crypto.encrypt(this.filen.config)
