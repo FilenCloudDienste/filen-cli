@@ -3,8 +3,8 @@ import { InterruptHandler } from "./interrupt"
 import * as fs from "node:fs"
 import { formatTimestamp, wrapRedTerminalText } from "./util"
 import { version } from "../buildInfo"
-import { read } from "read"
 import { CompleterResult } from "node:readline"
+import { read } from "./read"
 
 /**
  * `--quiet` flag is set
@@ -112,6 +112,9 @@ export function errExit(messageOrAction: string, underlyingError?: unknown, addi
 	process.exit(1)
 }
 
+// appended to in read()
+const readlineHistory: string[] = []
+
 /**
  * Global input prompting method
  * @param message The message to print before the prompt
@@ -119,7 +122,7 @@ export function errExit(messageOrAction: string, underlyingError?: unknown, addi
  * @param options.allowExit Whether to allow to exit the application here via `^C`
  * @param options.obfuscate Whether to obfuscate the input (for password input)
  */
-export async function prompt(message: string, options: { allowExit?: boolean, obfuscate?: boolean } = {}) {
+export async function prompt(message: string, options: { allowExit?: boolean, obfuscate?: boolean, useHistory?: boolean } = {}) {
 	return new Promise<string>((resolve) => {
 		const cancel = () => {
 			if (options.allowExit && hasReceivedKeyPresses <= 1) {
@@ -143,6 +146,7 @@ export async function prompt(message: string, options: { allowExit?: boolean, ob
 						callback(undefined, [[], input])
 					}
 				},
+				history: options.useHistory ? readlineHistory : undefined
 			}).then(input => {
 				Autocompletion.instance?.clearPrefetchedResults()
 				writeLog(message, "log")
