@@ -53,6 +53,8 @@ export class FS {
 		}
 
 		const params = { cloudWorkingPath, args, formatJson }
+		// trim args surrounded by quotes
+		params.args = args.map(arg => (arg.startsWith("\"") && arg.endsWith("\"")) ? arg.substring(1, arg.length - 1) : arg)
 
 		const command = fsCommands.find(command => [command.cmd, ...command.aliases].includes(cmd))
 
