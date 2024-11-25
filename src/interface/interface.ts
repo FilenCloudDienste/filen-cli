@@ -121,6 +121,7 @@ const readlineHistory: string[] = []
  * @param options Options:
  * @param options.allowExit Whether to allow to exit the application here via `^C`
  * @param options.obfuscate Whether to obfuscate the input (for password input)
+ * @param options.useHistory Whether to read from and append to the history
  */
 export async function prompt(message: string, options: { allowExit?: boolean, obfuscate?: boolean, useHistory?: boolean } = {}) {
 	return new Promise<string>((resolve) => {
