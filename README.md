@@ -9,6 +9,10 @@ The Filen CLI provides a set of useful tools for interacting with the cloud:
 - Running a [WebDAV mirror server](#webdav-server) of your [personal drive](#single-user), or multiple drives in [proxy mode](#proxy-mode)
 - Running an [S3 mirror server](#s3-server)
 
+> [!Note]
+> Please **report bugs** on our [issues page](https://github.com/FilenCloudDienste/filen-cli/issues)! \
+> **Feature requests** can be submitted on [features.filen.io](https://features.filen.io/?tags=cli).
+
 
 # Installation and updates
 
