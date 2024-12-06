@@ -12,8 +12,47 @@ on:
     types: [ published ]
 
 jobs:
-  build-and-publish-binaries-test:
-    name: Build artifacts and attach to release (macos-arm64 test)
+  build-and-publish-binaries-win-linux:
+    name: Build artifacts and attach to release (win, linux)
+    runs-on: linux-latest-arm64
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set version
+        uses: richardrigutins/replace-in-files@v2
+        with:
+          files: "package.json"
+          search-text: "\"version\": \"0.0.0\""
+          replacement-text: "\"version\": \"${{ github.event.release.tag_name }}\""
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+      - run: npm ci
+      - run: npm run package-all
+        env:
+          FILEN_CLI_CRYPTO_BASE_KEY: ${{ secrets.FILEN_CLI_CRYPTO_BASE_KEY }}
+      - name: Check info
+        run: node dist/bundle.js --help
+      - name: Rename artifacts to include release number
+        run: |
+          mv dist/filen-cli-win-x64 dist/filen-cli-${{ github.event.release.tag_name }}-win-x64
+          mv dist/filen-cli-win-arm64 dist/filen-cli-${{ github.event.release.tag_name }}-win-arm64
+          mv dist/filen-cli-linux-x64 dist/filen-cli-${{ github.event.release.tag_name }}-linux-x64
+          mv dist/filen-cli-linux-arm64 dist/filen-cli-${{ github.event.release.tag_name }}-linux-arm64
+      - name: Attach artifacts to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/filen-cli-${{ github.event.release.tag_name }}-win-x64
+            dist/filen-cli-${{ github.event.release.tag_name }}-win-arm64
+            dist/filen-cli-${{ github.event.release.tag_name }}-linux-x64
+            dist/filen-cli-${{ github.event.release.tag_name }}-linux-arm64
+
+  build-and-publish-binaries-macos:
+    name: Build artifacts and attach to release (macos)
     runs-on: macos-latest
     permissions:
       contents: write
@@ -39,10 +78,6 @@ jobs:
       - run: npm ci
       - name: Decode macOS certificate
         run: echo "$APPLE_DEVELOPER_ID_CERT" | base64 --decode > certificate.p12
-      - name: Test to see if certificates are there
-        run: |
-          echo "dev id cert $APPLE_DEVELOPER_ID_CERT found"
-          echo "$APPLE_DEVELOPER_ID_CERT_PASS" | wc -c
       - name: Import certificate to keychain
         run: |
           security create-keychain -p actions build.keychain

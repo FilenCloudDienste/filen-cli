@@ -53,6 +53,8 @@ const args = arg(
 	}
 )
 
+console.log(process.arch)
+
 if (!checkInjectedBuildInfo()) {
 	errExit("Build info not injected correctly!")
 }

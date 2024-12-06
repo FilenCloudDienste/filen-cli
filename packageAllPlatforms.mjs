@@ -10,10 +10,10 @@ const bundleFile = "dist/bundle.js"
 if (local) console.log(`\`dev\` option: building only for ${process.arch}`)
 
 const targets = [
-//	{ name: "win-x64", pkgTarget: "win32-x64", dependencies: [ "@parcel/watcher-win32-x64" ] },
-//	{ name: "win-arm64", pkgTarget: "win32-arm64", dependencies: [ "@parcel/watcher-win32-arm64" ] },
-//	{ name: "linux-x64", pkgTarget: "linux-x64", dependencies: [ "@parcel/watcher-linux-x64-glibc", "@parcel/watcher-linux-x64-musl" ] },
-//	{ name: "linux-arm64", pkgTarget: "linux-arm64", dependencies: [ "@parcel/watcher-linux-arm64-glibc", "@parcel/watcher-linux-arm64-musl" ] },
+	{ name: "win-x64", pkgTarget: "win32-x64", dependencies: [ "@parcel/watcher-win32-x64" ] },
+	{ name: "win-arm64", pkgTarget: "win32-arm64", dependencies: [ "@parcel/watcher-win32-arm64" ] },
+	{ name: "linux-x64", pkgTarget: "linux-x64", dependencies: [ "@parcel/watcher-linux-x64-glibc", "@parcel/watcher-linux-x64-musl" ] },
+	{ name: "linux-arm64", pkgTarget: "linux-arm64", dependencies: [ "@parcel/watcher-linux-arm64-glibc", "@parcel/watcher-linux-arm64-musl" ] },
 	{ name: "macos-x64", pkgTarget: "macos-x64", dependencies: [ "@parcel/watcher-darwin-x64" ] },
 	{ name: "macos-arm64", pkgTarget: "macos-arm64", dependencies: [ "@parcel/watcher-darwin-arm64" ] },
 ].filter(t => !local || t.name.includes(process.arch))
