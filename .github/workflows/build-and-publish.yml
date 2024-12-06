@@ -14,7 +14,7 @@ on:
 jobs:
   build-and-publish-binaries-win-linux:
     name: Build artifacts and attach to release (win, linux)
-    runs-on: linux-latest-arm64
+    runs-on: ubuntu-latest-arm64
     permissions:
       contents: write
     steps:
