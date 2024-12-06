@@ -96,8 +96,8 @@ jobs:
           codesign --sign "Developer ID Application: Filen Cloud Dienste UG (haftungsbeschraenkt)" --force --keychain ~/Library/Keychains/build.keychain dist/filen-cli-macos-arm64
       - name: Rename artifacts to include release number
         run: |
-          mv dist/filen-cli-win-x64 dist/filen-cli-${{ github.event.release.tag_name }}-win-x64
-          mv dist/filen-cli-win-arm64 dist/filen-cli-${{ github.event.release.tag_name }}-win-arm64
+          mv dist/filen-cli-win-x64 dist/filen-cli-${{ github.event.release.tag_name }}-win-x64.exe
+          mv dist/filen-cli-win-arm64 dist/filen-cli-${{ github.event.release.tag_name }}-win-arm64.exe
           mv dist/filen-cli-linux-x64 dist/filen-cli-${{ github.event.release.tag_name }}-linux-x64
           mv dist/filen-cli-linux-arm64 dist/filen-cli-${{ github.event.release.tag_name }}-linux-arm64
           mv dist/filen-cli-macos-x64 dist/filen-cli-${{ github.event.release.tag_name }}-macos-x64
@@ -106,8 +106,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/filen-cli-${{ github.event.release.tag_name }}-win-x64
-            dist/filen-cli-${{ github.event.release.tag_name }}-win-arm64
+            dist/filen-cli-${{ github.event.release.tag_name }}-win-x64.exe
+            dist/filen-cli-${{ github.event.release.tag_name }}-win-arm64.exe
             dist/filen-cli-${{ github.event.release.tag_name }}-linux-x64
             dist/filen-cli-${{ github.event.release.tag_name }}-linux-arm64
             dist/filen-cli-${{ github.event.release.tag_name }}-macos-x64
