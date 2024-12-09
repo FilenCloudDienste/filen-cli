@@ -19,6 +19,7 @@ export type RawSyncPair = {
 	remote: string
 	syncMode: SyncMode
 	ignoreContent: string
+	excludeDotFiles: boolean
 	disableLocalTrash: boolean
 }
 
@@ -84,7 +85,7 @@ export class SyncInterface {
 				remotePath: syncPair.remote,
 				remoteParentUUID: remoteParentStat.uuid,
 				mode: syncPair.syncMode,
-				excludeDotFiles: false,
+				excludeDotFiles: syncPair.excludeDotFiles,
 				paused: false,
 				localTrashDisabled: syncPair.disableLocalTrash
 			})
@@ -150,7 +151,7 @@ export class SyncInterface {
 	private async resolveSyncPairs(locationsStr: string[], disableLocalTrashFlag: boolean): Promise<RawSyncPair[]> {
 		if (locationsStr.length === 0) {
 			if (!await exists(this.defaultSyncPairsRegistry)) {
-				errExit(`Cannot find central sync pairs registry at ${this.defaultSyncPairsRegistry}.\nCreate it with JSON of type {local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean, ignore?: []}[]`)
+				errExit(`Cannot find central sync pairs registry at ${this.defaultSyncPairsRegistry}.\nCreate it with JSON of type {local: string, remote: string, syncMode: string, alias?: string, excludeDotFiles?: boolean, disableLocalTrash?: boolean, ignore?: []}[]`)
 			}
 			return (await this.getSyncPairsFromFile(this.defaultSyncPairsRegistry)).syncPairs
 		} else if (
@@ -176,7 +177,7 @@ export class SyncInterface {
 			errExit(`You need to create ${path} or specify another sync pairs registry using \`filen sync <path>\`!`)
 		}
 		const file = JSON.parse((await fsModule.promises.readFile(path)).toString())
-		const exitTypeErr = () => errExit("Invalid sync pairs registry! Needs to be of type: {local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean, ignore?: string[]}[]")
+		const exitTypeErr = () => errExit("Invalid sync pairs registry! Needs to be of type: {local: string, remote: string, syncMode: string, alias?: string, excludeDotFiles?: boolean, disableLocalTrash?: boolean, ignore?: string[]}[]")
 		if (!Array.isArray(file)) exitTypeErr()
 		for (const obj of file) {
 			if (typeof obj.local !== "string") exitTypeErr()
@@ -191,7 +192,14 @@ export class SyncInterface {
 				}
 				return obj.ignore.join("\n")
 			})()
-			const syncPair = { local: obj.local, remote: obj.remote, syncMode: syncMode as SyncMode, disableLocalTrash: obj.disableLocalTrash ?? false, ignoreContent }
+			const syncPair: RawSyncPair = {
+				local: obj.local,
+				remote: obj.remote,
+				syncMode: syncMode as SyncMode,
+				excludeDotFiles: obj.excludeDotFiles ?? false,
+				disableLocalTrash: obj.disableLocalTrash ?? false,
+				ignoreContent
+			}
 			syncPairs.push(syncPair)
 			if (typeof obj.alias === "string") aliases.set(obj.alias, syncPair)
 		}
@@ -206,6 +214,7 @@ export class SyncInterface {
 					local: str.slice(0, str.lastIndexOf(syncModeMapping[0])),
 					remote: str.slice(str.lastIndexOf(syncModeMapping[0]) + syncModeMapping[0].length),
 					syncMode: syncModeMapping[1],
+					excludeDotFiles: false,
 					disableLocalTrash: disableLocalTrashFlag,
 					ignoreContent: ""
 				}

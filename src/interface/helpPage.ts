@@ -151,7 +151,7 @@ export class HelpPage {
 		
 		Examples:
 		${formatTable([
-			["filen sync", "read sync pairs from $APP_DATA/filen_cli/syncPairs.json of type {local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean, ignore?: string[]}[]"],
+			["filen sync", "read sync pairs from $APP_DATA/filen_cli/syncPairs.json of type {local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean, ignore?: string[], excludeDotFiles?: boolean}[]"],
 			["filen sync <file>", "read sync pairs from custom JSON file"],
 			["filen sync mypair myotherpair", "use aliases as defined in syncPairs.json"],
 			["filen sync /local/path:/cloud/path", "sync a local path with a cloud path in two-way sync"],
