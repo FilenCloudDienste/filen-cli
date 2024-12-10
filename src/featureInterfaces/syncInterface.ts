@@ -8,6 +8,7 @@ import { exists, platformConfigPath } from "../util/util"
 import getUuidByString from "uuid-by-string"
 import { displayTransferProgressBar } from "../interface/util"
 import { InterruptHandler } from "../interface/interrupt"
+import os from "os"
 
 export const syncOptions = {
 	"--continuous": Boolean,
@@ -81,7 +82,7 @@ export class SyncInterface {
 			fullSyncPairs.push({
 				name: `${syncPair.local}:${syncPair.remote}`,
 				uuid,
-				localPath: syncPair.local,
+				localPath: syncPair.local.startsWith("~") ? pathModule.join(os.homedir(), syncPair.local.slice(1)) : syncPair.local, // expand "~" to home directory
 				remotePath: syncPair.remote,
 				remoteParentUUID: remoteParentStat.uuid,
 				mode: syncPair.syncMode,
