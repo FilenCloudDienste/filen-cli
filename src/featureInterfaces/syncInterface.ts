@@ -179,8 +179,8 @@ export class SyncInterface {
 		}
 		const file = JSON.parse((await fsModule.promises.readFile(path)).toString())
 		const exitTypeErr = () => errExit("Invalid sync pairs registry! Needs to be of type: {local: string, remote: string, syncMode: string, alias?: string, excludeDotFiles?: boolean, disableLocalTrash?: boolean, ignore?: string[]}[]")
-		if (!Array.isArray(file)) exitTypeErr()
-		for (const obj of file) {
+		const syncPairsObj = Array.isArray(file) ? file : [file]
+		for (const obj of syncPairsObj) {
 			if (typeof obj.local !== "string") exitTypeErr()
 			if (typeof obj.remote !== "string") exitTypeErr()
 			const syncMode: string = typeof obj.syncMode === "string" ? obj.syncMode : "twoWay"
