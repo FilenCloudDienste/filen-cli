@@ -97,7 +97,9 @@ jobs:
       - name: Notarize
         run: |
           /usr/bin/ditto -c -k --keepParent dist/filen-cli-macos-arm64 dist/filen-cli-macos-arm64.zip
-          xcrun notarytool submit dist/filen-cli-macos-arm64.zip --apple-id $APPLE_NOTARIZE_ID --password $APPLE_NOTARIZE_PASS --team-id $APPLE_NOTARIZE_TEAM_ID --wait
+          xcrun notarytool submit dist/filen-cli-macos-arm64.zip --apple-id $APPLE_NOTARIZE_ID --password $APPLE_NOTARIZE_PASS --team-id $APPLE_NOTARIZE_TEAM_ID --output-format json --wait 2>&1 | tee notarization_info.json
+          id=$(cat notarization_info.json | jq -r '.id')
+          xcrun notarytool log $id --apple-id $APPLE_NOTARIZE_ID --password $APPLE_NOTARIZE_PASS --team-id $APPLE_NOTARIZE_TEAM_ID
       - name: Cleanup keychain
         run: |
           security delete-keychain build.keychain
