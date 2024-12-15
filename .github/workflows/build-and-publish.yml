@@ -93,7 +93,7 @@ jobs:
         run: node dist/bundle.js --help
       - name: Codesign
         run: |
-          codesign --sign "Developer ID Application: Filen Cloud Dienste UG (haftungsbeschraenkt)" --force --keychain ~/Library/Keychains/build.keychain dist/filen-cli-macos-arm64
+          codesign --sign "Developer ID Application: Filen Cloud Dienste UG (haftungsbeschraenkt)" --options runtime --force --keychain ~/Library/Keychains/build.keychain dist/filen-cli-macos-arm64
       - name: Notarize
         run: |
           /usr/bin/ditto -c -k --keepParent dist/filen-cli-macos-arm64 dist/filen-cli-macos-arm64.zip
