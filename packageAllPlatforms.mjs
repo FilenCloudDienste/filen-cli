@@ -10,6 +10,8 @@ const buildScriptDirectory = import.meta.dirname
 const workingDirectory = path.resolve("./dist")
 const bundleFile = path.join(workingDirectory, "bundle.js")
 
+const onlyWinLinux = process.argv.includes("--only-win-linux")
+const onlyMacos = process.argv.includes("--only-macos")
 const targets = [
 	{ name: "win-x64", pkgTarget: "win32-x64", parcelWatcherVariant: "win32-x64" },
 	{ name: "win-arm64", pkgTarget: "win32-arm64", parcelWatcherVariant: "win32-arm64" },
@@ -17,7 +19,7 @@ const targets = [
 	{ name: "linux-arm64", pkgTarget: "linux-arm64", parcelWatcherVariant: "linux-arm64" },
 	{ name: "macos-x64", pkgTarget: "macos-x64", parcelWatcherVariant: "darwin-x64" },
 	{ name: "macos-arm64", pkgTarget: "macos-arm64", parcelWatcherVariant: "darwin-arm64" },
-]
+].filter(t => (!onlyWinLinux || t.name.includes("win") || t.name.includes("linux")) && (!onlyMacos || t.name.includes("macos")))
 
 // install temporary @parcel/watcher-${variant} dependencies
 const parcelWatcherDependencies = [
