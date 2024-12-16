@@ -3,24 +3,35 @@ import pkg from "@yao-pkg/pkg"
 import * as fs from "node:fs"
 import * as PELibrary from "pe-library"
 import * as ResEdit from "resedit"
+import bpkg from "bpkg"
+import path from "path"
 
-const local = process.argv.includes("dev")
-const bundleFile = "dist/bundle.js"
-
-if (local) console.log(`\`dev\` option: building only for ${process.arch}`)
+const buildScriptDirectory = import.meta.dirname
+const workingDirectory = path.resolve("./dist")
+const bundleFile = path.join(workingDirectory, "bundle.js")
 
 const targets = [
-	{ name: "win-x64", pkgTarget: "win32-x64", dependencies: [ "@parcel/watcher-win32-x64" ] },
-	{ name: "win-arm64", pkgTarget: "win32-arm64", dependencies: [ "@parcel/watcher-win32-arm64" ] },
-	{ name: "linux-x64", pkgTarget: "linux-x64", dependencies: [ "@parcel/watcher-linux-x64-glibc", "@parcel/watcher-linux-x64-musl" ] },
-	{ name: "linux-arm64", pkgTarget: "linux-arm64", dependencies: [ "@parcel/watcher-linux-arm64-glibc", "@parcel/watcher-linux-arm64-musl" ] },
-	{ name: "macos-x64", pkgTarget: "macos-x64", dependencies: [ "@parcel/watcher-darwin-x64" ] },
-	{ name: "macos-arm64", pkgTarget: "macos-arm64", dependencies: [ "@parcel/watcher-darwin-arm64" ] },
-].filter(t => !local || t.name.includes(process.arch))
+	{ name: "win-x64", pkgTarget: "win32-x64", parcelWatcherVariant: "win32-x64" },
+	{ name: "win-arm64", pkgTarget: "win32-arm64", parcelWatcherVariant: "win32-arm64" },
+	{ name: "linux-x64", pkgTarget: "linux-x64", parcelWatcherVariant: "linux-x64" },
+	{ name: "linux-arm64", pkgTarget: "linux-arm64", parcelWatcherVariant: "linux-arm64" },
+	{ name: "macos-x64", pkgTarget: "macos-x64", parcelWatcherVariant: "darwin-x64" },
+	{ name: "macos-arm64", pkgTarget: "macos-arm64", parcelWatcherVariant: "darwin-arm64" },
+]
 
-// install temporary dependencies
+// install temporary @parcel/watcher-${variant} dependencies
+const parcelWatcherDependencies = [
+	"@parcel/watcher-win32-x64",
+	"@parcel/watcher-win32-arm64",
+	"@parcel/watcher-linux-x64-musl",
+	"@parcel/watcher-linux-x64-glibc",
+	"@parcel/watcher-linux-arm64-musl",
+	"@parcel/watcher-linux-arm64-glibc",
+	"@parcel/watcher-darwin-x64",
+	"@parcel/watcher-darwin-arm64"
+]
 await new Promise(resolve => {
-	spawn("npm", ["install", "--force", ...targets.flatMap(t => t.dependencies)], { shell: true })
+	spawn("npm", ["install", "--force", ...parcelWatcherDependencies], { shell: true })
 		.on("error", err => console.error(err))
 		.on("close", () => resolve())
 })
@@ -31,25 +42,41 @@ const placeholderRegex = /\/\* INJECTED DEPENDENCIES PLACEHOLDER >>>>> \*\/.*\/\
 
 // prepare bundle file
 let bundle = fs.readFileSync(bundleFile).toString()
-bundle = bundle.replace("\"use strict\";", `"use strict";\n\n${placeholderStart}\n${placeholderEnd}\n`)
+if (Array.from(bundle.matchAll(/require\(name\);/g)).length !== 1 && Array.from(bundle.matchAll(placeholderRegex)).length !== 1) {
+	console.error(`Couldn't find exactly one occurrence of "require(name);" in ${bundleFile}!`)
+	process.exit()
+}
+bundle = bundle.replace("binding = require(name);", `\n${placeholderStart}\n${placeholderEnd}\n`)
 fs.writeFileSync(bundleFile, bundle)
 
 // build binaries
 for (const target of targets) {
-	console.log(`Packaging for ${target.name}...`)
+	console.log(`\nPackaging for ${target.name}...`)
 
 	// inject require statements
 	let bundle = fs.readFileSync(bundleFile).toString()
-	bundle = bundle.replace(placeholderRegex, `${placeholderStart}\n${target.dependencies.map(d => `if (false) require("${d}");`).join("\n")}\n${placeholderEnd}`)
+	const injectSnippet = target.name.startsWith("linux")
+		? `const { MUSL, family } = require_detect_libc(); binding = family === MUSL ? require("@parcel/watcher-${target.parcelWatcherVariant}-musl") : require("@parcel/watcher-${target.parcelWatcherVariant}-glibc");`
+		: `binding = require("@parcel/watcher-${target.parcelWatcherVariant}");`
+	bundle = bundle.replace(placeholderRegex, `${placeholderStart}\n${injectSnippet}\n${placeholderEnd}`)
 	fs.writeFileSync(bundleFile, bundle)
 
-	await pkg.exec(`-t ${target.pkgTarget} -o dist/filen-cli-${target.name} dist/bundle.js --options max-old-space-size=16384`.split(" "))
+	// bundle native modules using bpkg
+	await bpkg.build({
+		env: "node",
+		input: bundleFile,
+		output: path.join(workingDirectory, `bundle-${target.name}.js`),
+		ignoreMissing: true
+	})
+
+	// build binary using pkg via SEA
+	await pkg.exec(`--sea -t ${target.pkgTarget} -o ${workingDirectory}/filen-cli-${target.name} ${workingDirectory}/bundle-${target.name}.js --options max-old-space-size=16384`.split(" "))
 
 	// replace app icon (Windows)
 	if (target.pkgTarget.includes("win")) {
-		const exe = PELibrary.NtExecutable.from(fs.readFileSync(`dist/filen-cli-${target.name}.exe`))
+		const exe = PELibrary.NtExecutable.from(fs.readFileSync(path.join(workingDirectory, `filen-cli-${target.name}.exe`)), { ignoreCert: true })
 		const res = PELibrary.NtExecutableResource.from(exe)
-		const iconFile = ResEdit.Data.IconFile.from(fs.readFileSync("icon.ico"))
+		const iconFile = ResEdit.Data.IconFile.from(fs.readFileSync(path.join(buildScriptDirectory, "icon.ico")))
 		ResEdit.Resource.IconGroupEntry.replaceIconsForResource(
 			res.entries,
 			ResEdit.Resource.IconGroupEntry.fromEntries(res.entries).map((entry) => entry.id)[0],
@@ -57,19 +84,13 @@ for (const target of targets) {
 		)
 		res.outputResource(exe)
 		const newBinary = exe.generate()
-		fs.writeFileSync(`dist/filen-cli-${target.name}.exe`, Buffer.from(newBinary))
+		fs.writeFileSync(`${workingDirectory}/filen-cli-${target.name}.exe`, Buffer.from(newBinary))
 	}
 }
 
-if (local) {
-	// remove require statements
-	bundle = fs.readFileSync(bundleFile).toString().replace(placeholderRegex, "")
-	fs.writeFileSync(bundleFile, bundle)
-
-	// remove temporary dependencies
-	await new Promise(resolve => {
-		spawn("npm", ["remove", ...targets.flatMap(t => t.dependencies)], { shell: true })
-			.on("error", err => console.error(err))
-			.on("close", () => resolve())
-	})
-}
+// remove temporary dependencies
+await new Promise(resolve => {
+	spawn("npm", ["remove", "--force", ...parcelWatcherDependencies], { shell: true })
+		.on("error", err => console.error(err))
+		.on("close", () => resolve())
+})
