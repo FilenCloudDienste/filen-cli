@@ -19,8 +19,10 @@ jobs:
         include:
           - os: ubuntu-latest
             build-options: --only-win-linux
+            test-binary: dist/filen-cli-linux-x64
           - os: macos-latest
             build-options: --only-macos
+            test-binary: dist/filen-cli-macos-arm64
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -48,7 +50,7 @@ jobs:
         env:
           FILEN_CLI_CRYPTO_BASE_KEY: ${{ secrets.FILEN_CLI_CRYPTO_BASE_KEY }}
       - name: Check info
-        run: dist/filen-cli-linux-x64 help
+        run: ${{ matrix.test-binary }} help
       - name: Codesign and notarize on macOS
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
