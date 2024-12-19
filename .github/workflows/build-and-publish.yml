@@ -18,10 +18,10 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            build-options: --only-win-linux
+            build-script: package-win-linux
             test-binary: dist/filen-cli-linux-x64
           - os: macos-latest
-            build-options: --only-macos
+            build-script: package-macos
             test-binary: dist/filen-cli-macos-arm64
     runs-on: ${{ matrix.os }}
     permissions:
@@ -46,7 +46,7 @@ jobs:
         with:
           node-version: "20.x"
       - run: npm ci
-      - run: npm run package-all ${{ matrix.build-options }}
+      - run: npm run ${{ matrix.build-script }}
         env:
           FILEN_CLI_CRYPTO_BASE_KEY: ${{ secrets.FILEN_CLI_CRYPTO_BASE_KEY }}
       - name: Check info
