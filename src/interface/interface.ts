@@ -2,9 +2,11 @@ import { Autocompletion } from "../featureInterfaces/fs/autocompletion"
 import { InterruptHandler } from "./interrupt"
 import * as fs from "node:fs"
 import { formatTimestamp, wrapRedTerminalText } from "./util"
-import { version } from "../buildInfo"
 import { CompleterResult } from "node:readline"
 import { read } from "./read"
+import { Mutex } from "async-mutex"
+import * as buffer from "buffer"
+import { randomUUID } from "node:crypto"
 
 /**
  * `--quiet` flag is set
@@ -27,20 +29,33 @@ export function setOutputFlags(quietFlag: boolean, verboseFlag: boolean) {
  */
 export function setupLogs(logsFile: string | undefined = undefined) {
 	if (logsFile === undefined) return
-	process.on("exit", () => {
+	writeLogsToDisk = () => {
 		try {
 			if (fs.readFileSync(logsFile).length > 1) logs = "\n\n" + logs
 		} catch (e) {
 			// do nothing
 		}
-		logs = `${formatTimestamp(new Date().getTime())}       Filen CLI ${version}\n${formatTimestamp(new Date().getTime())}       > ${process.argv.join(" ")}\n` + logs
 		fs.appendFileSync(logsFile, logs)
-	})
+	}
+	process.on("exit", () => writeLogsToDisk!())
+	writeLog(`> ${process.argv.join(" ")}`, "log")
 }
+let writeLogsToDisk: () => void = () => {}
 
 let logs = ""
+const logsMutex = new Mutex()
 function writeLog(message: string, type: "log" | "input" | "error") {
-	logs += message.split("\n").map(line => `${formatTimestamp(new Date().getTime())} ${type === "log" ? "[LOG]" : type === "error" ? "[ERR]" : "[IN ]"} ${line}\n`).join("")
+	logsMutex.acquire().then(() => {
+		logs += message.split("\n").map(line => `${formatTimestamp(new Date().getTime())} ${type === "log" ? "[LOG]" : type === "error" ? "[ERR]" : "[IN ]"} ${line}\n`).join("")
+		if (buffer.constants.MAX_STRING_LENGTH - logs.length < 10_000) {
+			// the in-memory log file is too large, flush it to disk
+			const randomTag = randomUUID()
+			logs += `                              (these logs are continued at #${randomTag})\n`
+			writeLogsToDisk?.()
+			logs = `                              (this is the continuation of #${randomTag})\n`
+		}
+		logsMutex.release()
+	})
 }
 
 /**
