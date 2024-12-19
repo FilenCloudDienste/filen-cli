@@ -124,7 +124,7 @@ Invoke `filen sync` to sync any locations with your Filen Drive. This is the sam
 You must specify the sync pairs (`[sync pairs...]` above) as follows:
 - **(central registry)** `filen sync`: Read the sync pairs from `$APP_DATA/filen_cli/syncPairs.json`. 
   This file must contain JSON of the type `{local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean, ignore?: string[], excludeDotFiles?: boolean}[]`.
-  `syncMode` can be `twoWay`, `localToCloud`, `localBackup`, `cloudToLocal` or `cloudBackup` (see the FAQ [here](https://filen.io/apps/desktop) on what that means).
+  `syncMode` can be `twoWay`, `localToCloud`, `localBackup`, `cloudToLocal` or `cloudBackup` (see [here](https://blog.filen.io/how-to-desktop-client/#:~:text=for%20this%20sync.-,Sync%20Modes,-%3A) on what that means).
 - **(custom registry)** `filen sync <file>`: Read the sync pairs from a custom JSON file (same type as above).
 - **(aliases)** `filen sync mypair myotherpair`: Sync the sync pairs from the central registry that were given the aliases `mypair` and `myotherpair`.
 - **(literal pair)** `filen sync /local/path:twoWay:/cloud/path`: Sync the local path `/local/path` with the cloud path `/cloud/path` in two-way sync.
