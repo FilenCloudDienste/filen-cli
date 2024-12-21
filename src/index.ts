@@ -88,8 +88,27 @@ export const isDevelopment = args["--dev"] ?? false
 
 	// check for updates
 	if (args["--skip-update"] !== true) {
+		const updater = new Updater()
+		if (args["_"][0] === "canary") {
+			try {
+				await updater.showCanaryPrompt()
+				process.exit()
+			} catch (e) {
+				errExit("change canary preferences", e)
+			}
+		}
+		if (args["_"][0] === "install") {
+			try {
+				const version = args["_"][1]
+				if (version === undefined) errExit("Need to specify version")
+				await updater.fetchAndInstallVersion(version)
+				process.exit()
+			} catch (e) {
+				errExit("install version", e)
+			}
+		}
 		try {
-			await new Updater().checkForUpdates(args["--force-update"] ?? false)
+			await updater.checkForUpdates(args["--force-update"] ?? false)
 		} catch (e) {
 			errExit("check for updates", e)
 		}
