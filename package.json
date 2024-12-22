@@ -39,6 +39,7 @@
 		"dedent": "^1.5.3",
 		"open": "^7.4.2",
 		"read": "^4.0.0",
+		"semver": "^7.6.3",
 		"uuid-by-string": "^4.0.0"
 	},
 	"devDependencies": {

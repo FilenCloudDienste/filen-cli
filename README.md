@@ -24,6 +24,14 @@ The Filen CLI includes an automatic updater that checks for a new release every 
 Invoke the CLI with the `--skip-update` flag to skip checking for updates.
 (Use the `--force-update` flag to check for updates even if it was recently checked.)
 
+You can always install any version using `filen install <version>`, `filen install latest` or `filen install canary`.
+
+### Canary releases
+
+If you want to be among the first to try out new features and fixes, you can enable canary releases,
+which are early releases meant for a subset of users to test before they are declared as stable.
+To enable or disable canary releases, invoke the CLI with the command `filen canary`.
+
 
 # Usage
 

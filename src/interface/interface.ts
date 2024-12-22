@@ -193,9 +193,28 @@ process.stdin.on("keypress", () => {
  * @param action The action to include in the prompt (e.g. "delete file.txt"), or undefined for a generic prompt.
  */
 export async function promptConfirm(action: string | undefined) {
+	return promptYesNo(action !== undefined ? `Are you sure you want to ${action}?` : "Are you sure?")
+}
+
+/**
+ * Global confirmation prompting method
+ * @param question The question to include in the prompt
+ * @param defaultAnswer The default answer if there's no input
+ */
+export async function promptYesNo(question: string, defaultAnswer: boolean = false) {
 	return new Promise<boolean>((resolve) => {
-		prompt(action !== undefined ? `Are you sure you want to ${action}? [y/N] ` : "Are you sure? [y/N] ").then(result => {
-			resolve(result.toLowerCase() === "y")
+		prompt(`${question} ${defaultAnswer ? "[Y/n]" : "[y/N]"} `).then(result => {
+			const input = result.toLowerCase()
+			if (input === "n" || input === "no") {
+				resolve(false)
+			} else if (input === "y" || input === "yes") {
+				resolve(true)
+			} else if (input.trim() === "") {
+				resolve(defaultAnswer)
+			} else {
+				err("Invalid input, please enter 'y' or 'n'!")
+				promptYesNo(question, defaultAnswer).then(resolve)
+			}
 		})
 	})
 }

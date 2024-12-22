@@ -18,6 +18,7 @@ export class HelpPage {
 		if (topic === "webdav") return this.webdavHelpPage
 		if (topic === "s3") return this.s3HelpPage
 		if (topic === "mount") return this.driveMountingHelpPage
+		if (topic.startsWith("update")) return this.updatesHelpPage
 		return undefined
 	}
 
@@ -81,8 +82,6 @@ export class HelpPage {
 			["--password <password>", ""],
 			["--two-factor-code <code>, -c <code>", "(optional)"],
 			["--log-file <file>", "write logs to a file"],
-			["--skip-update", "skip checking for updates"],
-			["--force-update", "check for updates even if it was recently checked"],
 		])}
 		
 		View the topic pages via \`filen -h <topic>\` for more information:
@@ -93,6 +92,7 @@ export class HelpPage {
 			["mount", "Mount a network drive"],
 			["webdav", "WebDAV mirror server with single user or proxy mode"],
 			["s3", "S3 mirror server"],
+			["updates", "Fetching and installing updates"],
 		])}
 		
 		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#readme
@@ -202,5 +202,21 @@ export class HelpPage {
 		])}
 		
 		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#s3-server
+		`
+
+	private readonly updatesHelpPage: string = dedent`
+		The automatic updater checks for new releases every time the CLI is invoked.
+		
+		After checking for updates, it will not check again for the next 10 minutes. Use the flags:
+		    --force-update  to check for updates even if it was recently checked.
+		    --skip-update   to skip checking for updates.
+		
+		You can always install any version using \`filen install <version>\`, \`filen install latest\` or \`filen install canary\`.
+		
+		If you want to be among the first to try out new features and fixes, you can enable canary releases,
+		which are early releases meant for a subset of users to test before they are declared as stable.
+		To enable or disable canary releases, invoke the CLI with the command \`filen canary\`.
+		
+		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#installation-and-updates
 		`
 }
