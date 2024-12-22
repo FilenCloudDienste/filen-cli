@@ -23,7 +23,7 @@ type ReleaseInfo = {
 }
 
 /**
- * Checks for updates and installs updates.
+ * Manages updates.
  */
 export class Updater {
 	private readonly updateCacheDirectory = platformConfigPath()
@@ -53,82 +53,114 @@ export class Updater {
 			outVerbose("Update check forced")
 		}
 
-		// fetch release info
-		const fetchGithubAPI = async (url: string) => {
-			try {
-				const response = await fetch(url)
-				return await response.json()
-			} catch (e) {
-				errExit("fetch update info", e)
-			}
-		}
-		const latestRelease: ReleaseInfo = await fetchGithubAPI("https://api.github.com/repos/FilenCloudDienste/filen-cli/releases/latest")
-		const releases: ReleaseInfo[] = await fetchGithubAPI("https://api.github.com/repos/FilenCloudDienste/filen-cli/releases")
-
-		// determine canary release
-		const canaryRelease = releases
-			.sort((a, b) => semver.compare(a.tag_name, b.tag_name))
-			.filter(release => !release.prerelease)
-			.reverse()[0]!
+		const { releases, latestRelease, canaryRelease } = await this.fetchReleaseInfo()
+		const latestDownloadUrl = this.getDownloadUrl(latestRelease)
+		const canaryDownloadUrl = this.getDownloadUrl(canaryRelease)
 
 		const currentVersion = version
 		const latestVersion = latestRelease.tag_name
 
-		const platformStr = (() => {
-			switch (process.platform) {
-				case "win32": return "win"
-				case "darwin": return "macos"
-				case "linux": return "linux"
-				default: errExit(`Error trying to update on unsupported platform ${process.platform}`)
-			}
-		})()
-		const latestDownloadUrl = latestRelease.assets.find(asset => asset.name.includes(platformStr) && asset.name.includes(process.arch))?.browser_download_url
-		const canaryDownloadUrl = canaryRelease.assets.find(asset => asset.name.includes(platformStr) && asset.name.includes(process.arch))?.browser_download_url
 		if (disableAutomaticUpdates && latestDownloadUrl !== undefined && currentVersion !== latestVersion) {
+			// don't prompt for update in a container environment
 			out(`${(semver.gt(latestVersion, currentVersion) ? "Update available" : "Other version recommended")}: ${currentVersion} -> ${latestVersion}`)
 			return
 		}
-		if (latestDownloadUrl !== undefined) {
-			if (semver.gt(latestVersion, currentVersion)) {
-				if (await promptYesNo(`Update from ${currentVersion} to ${latestVersion}?`)) {
+		if (releases.filter(release => release.tag_name === currentVersion).length === 0) {
+			// current version doesn't exist as release, so it was intentionally deleted to prompt for downgrade
+			if (updateCache.canary && canaryDownloadUrl !== undefined) {
+				if (await promptYesNo(`It is highly recommended to ${semver.gt(currentVersion, canaryRelease.tag_name) ? "downgrade" : "update"} from ${currentVersion} to${latestVersion === canaryRelease.tag_name ? "" : " canary release"} ${canaryRelease.tag_name}. Please confirm:`, true)) {
+					await this.installVersion(currentVersion, canaryRelease.tag_name, canaryDownloadUrl)
+				}
+			} else if (latestDownloadUrl !== undefined) {
+				if (await promptYesNo(`It is highly recommended to ${semver.gt(currentVersion, latestVersion) ? "downgrade" : "update"} from ${currentVersion} to ${latestVersion}. Please confirm:`, true)) {
 					await this.installVersion(currentVersion, latestVersion, latestDownloadUrl)
 				}
-			} else if (semver.lt(latestVersion, currentVersion)) {
-				// current version is higher than latest version
-				if (releases.filter(release => release.tag_name === currentVersion).length === 0) {
-					// current version doesn't exist as release, so it was intentionally deleted to prompt for downgrade
-					if (updateCache.canary && canaryDownloadUrl !== undefined) {
-						if (await promptYesNo(`It is recommended to downgrade from ${currentVersion} to${latestVersion === canaryRelease.tag_name ? "" : " canary release"} ${canaryRelease.tag_name}. Please confirm:`, true)) {
-							await this.installVersion(currentVersion, canaryRelease.tag_name, canaryDownloadUrl)
-						}
-					} else {
-						if (await promptYesNo(`It is recommended to downgrade from ${currentVersion} to ${latestVersion}. Please confirm:`, true)) {
-							await this.installVersion(currentVersion, latestVersion, latestDownloadUrl)
-						}
-					}
-				}
-				if (updateCache.canary) {
-					if (canaryDownloadUrl !== undefined && semver.gt(canaryRelease.tag_name, currentVersion)) {
-						if (await promptYesNo(`Update from ${currentVersion} to canary release ${canaryRelease.tag_name}?`)) {
-							await this.installVersion(currentVersion, canaryRelease.tag_name, canaryDownloadUrl)
-						}
-					} else {
-						outVerbose(`${currentVersion} is up to date.`)
-					}
-				} else {
-					// current version exists as release, so this canary version was downloaded manually
-					out(`It seems you have downloaded this canary release ${currentVersion} manually (latest is ${latestVersion}).\nPlease invoke \`filen canary\` to remove this warning and get notified of new canary releases.\nIf this wasn't intentional, invoke \`filen install ${latestVersion}\` to install the latest version.`)
-				}
 			} else {
-				outVerbose(`${currentVersion} is up to date.`)
+				out("It is highly recommended to update to a newer version, but none could be found. Please try to reinstall the CLI.")
+			}
+			return
+		}
+		if (semver.gt(latestVersion, currentVersion) && latestDownloadUrl !== undefined) {
+			if (await promptYesNo(`Update from ${currentVersion} to ${latestVersion}?`)) {
+				await this.installVersion(currentVersion, latestVersion, latestDownloadUrl)
 			}
 		} else {
-			outVerbose(`${currentVersion} is up to date.`)
+			if (updateCache.canary) {
+				if (canaryDownloadUrl !== undefined && semver.gt(canaryRelease.tag_name, currentVersion)) {
+					if (await promptYesNo(`Update from ${currentVersion} to canary release ${canaryRelease.tag_name}?`)) {
+						await this.installVersion(currentVersion, canaryRelease.tag_name, canaryDownloadUrl)
+					}
+				} else {
+					outVerbose(`${currentVersion} is up to date.`)
+				}
+			} else {
+				if (semver.gt(currentVersion, latestVersion)) {
+					// this canary version seems to have been downloaded manually
+					out(`It seems you have downloaded this canary release ${currentVersion} manually (latest is ${latestVersion}).\n` +
+						"Please invoke `filen canary` to remove this warning and get notified of new canary releases.\n" +
+						"If this wasn't intentional, invoke `filen install latest` to install the latest version.")
+				} else {
+					outVerbose(`${currentVersion} is up to date.`)
+				}
+			}
 		}
 
 		// save update cache
 		await this.writeUpdateCache({ ...updateCache, lastCheckedUpdate: Date.now() })
 	}
+
+	/**
+	 * Shows a prompt to the user to enable or disable canary releases.
+	 */
+	public async showCanaryPrompt() {
+		const updateCache = await this.readUpdateCache()
+		if (updateCache.canary) {
+			out("Canary releases are enabled.")
+			if (await promptYesNo("Disable canary releases?", false)) {
+				await this.writeUpdateCache({ ...updateCache, canary: false })
+				out("Canary releases disabled. If you wish to rollback to the latest stable version, invoke `filen install latest`.")
+			}
+		} else {
+			out("You are about to enable canary releases, which are early releases meant for a subset of users to test before they are declared as stable.\n" +
+				"You might encounter bugs or crashes, so please do not use this in production. Report bugs on GitHub: https://github.com/FilenCloudDienste/filen-cli/issues\n" +
+				"To install the latest stable version again, invoke the CLI with the command `filen install latest`. To disable canary releases altogether, call `filen canary` again.")
+			if (await promptYesNo("Enable canary releases?")) {
+				await this.writeUpdateCache({ ...updateCache, canary: true })
+				out("Canary releases enabled.")
+
+				const { canaryRelease } = await this.fetchReleaseInfo()
+				const downloadUrl = this.getDownloadUrl(canaryRelease)
+				if (semver.gt(canaryRelease.tag_name, version) && downloadUrl !== undefined) {
+					if (await promptYesNo(`Install the latest canary release ${canaryRelease.tag_name} now?`)) {
+						await this.installVersion(version, canaryRelease.tag_name, downloadUrl)
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Downloads and installs any specified version.
+	 * @param version The specific version to install, or "latest" or "canary".
+	 */
+	public async fetchAndInstallVersion(version: string | "latest" | "canary") {
+		const { releases, latestRelease, canaryRelease } = await this.fetchReleaseInfo()
+		const release = (() => {
+			switch (version) {
+				case "latest": return latestRelease
+				case "canary": return canaryRelease
+				default: return releases.find(release => release.tag_name === version)
+			}
+		})()
+		if (release === undefined) errExit(`No such version: ${version}`)
+		const downloadUrl = this.getDownloadUrl(release)
+		if (downloadUrl === undefined) errExit(`Unsupported platform ${process.platform} for version ${release.tag_name}`)
+		if (await promptYesNo(`Download and install ${release.tag_name}?`)) {
+			await this.installVersion(version, release.tag_name, downloadUrl)
+		}
+	}
+
+	// update cache
 
 	private async readUpdateCache(): Promise<UpdateCache> {
 		if (await exists(this.updateCacheFile)) {
@@ -174,25 +206,9 @@ export class Updater {
 		await fs.promises.writeFile(this.updateCacheFile, JSON.stringify(updateCache))
 	}
 
-	public async showCanaryPrompt() {
-		const updateCache = await this.readUpdateCache()
-		if (updateCache.canary) {
-			out("Canary releases are enabled.")
-			if (await promptYesNo("Disable canary releases?", false)) {
-				await this.writeUpdateCache({ ...updateCache, canary: false })
-			}
-		} else {
-			out("You are about to enable canary releases, which are early releases meant for a subset of users to test before they are declared as stable.\n" +
-				"You might encounter bugs or crashes, so please do not use this in production. Report bugs on GitHub: https://github.com/FilenCloudDienste/filen-cli/issues\n" +
-				"To install the latest stable version again, invoke the CLI with the command `filen install latest`. To disable canary releases altogether, call `filen canary` again.")
-			if (await promptYesNo("Enable canary releases?")) {
-				await this.writeUpdateCache({ ...updateCache, canary: true })
-			}
-		}
-	}
+	// release info
 
-	public async fetchAndInstallVersion(version: string | "latest") {
-		// fetch version info
+	private async fetchReleaseInfo(): Promise<{ releases: ReleaseInfo[], latestRelease: ReleaseInfo, canaryRelease: ReleaseInfo }> {
 		const fetchGithubAPI = async (url: string) => {
 			try {
 				const response = await fetch(url)
@@ -203,12 +219,11 @@ export class Updater {
 		}
 		const latestRelease: ReleaseInfo = await fetchGithubAPI("https://api.github.com/repos/FilenCloudDienste/filen-cli/releases/latest")
 		const releases: ReleaseInfo[] = await fetchGithubAPI("https://api.github.com/repos/FilenCloudDienste/filen-cli/releases")
+		const canaryRelease = releases.sort((a, b) => semver.compare(a.tag_name, b.tag_name)).filter(release => !release.prerelease).reverse()[0]!
+		return { releases, latestRelease, canaryRelease }
+	}
 
-		const release = version === "latest" ? latestRelease : releases.find(release => release.tag_name === version)
-		if (release === undefined) {
-			errExit(`No such version: ${version}`)
-		}
-
+	private getDownloadUrl(release: ReleaseInfo) {
 		const platformStr = (() => {
 			switch (process.platform) {
 				case "win32": return "win"
@@ -217,12 +232,10 @@ export class Updater {
 				default: errExit(`Error trying to update on unsupported platform ${process.platform}`)
 			}
 		})()
-		const downloadUrl = release.assets.find(asset => asset.name.includes(platformStr) && asset.name.includes(process.arch))?.browser_download_url
-		if (downloadUrl === undefined) errExit(`Unsupported platform ${process.platform} for version ${version}`)
-		if (await promptYesNo(`Download and install ${version}?`)) {
-			await this.installVersion(version, release.tag_name, downloadUrl)
-		}
+		return release.assets.find(asset => asset.name.includes(platformStr) && asset.name.includes(process.arch))?.browser_download_url
 	}
+
+	// install
 
 	private async installVersion(currentVersionName: string, publishedVersionName: string, downloadUrl: string) {
 		const selfApplicationFile = process.pkg === undefined ? __filename : process.argv[0]!
