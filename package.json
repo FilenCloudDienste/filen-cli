@@ -8,10 +8,8 @@
 		"lint": "eslint src/**/* --ext .js,.jsx,.ts,.tsx",
 		"test": "jest",
 		"generateKey": "node generateKey.mjs",
-		"build": "tsc && node injectBuildInfo.mjs && esbuild build/index.js --bundle --outfile=dist/bundle.js --format=cjs --platform=node",
-		"package-all": "npm run build && node packageAllPlatforms.mjs",
-		"package-win-linux": "npm run build && node packageAllPlatforms.mjs --only-win-linux",
-		"package-macos": "npm run build && node packageAllPlatforms.mjs --only-macos",
+		"build": "tsc && node injectBuildInfo.mjs && esbuild build/index.js --bundle --outfile=dist/bundle.js \"--external:*keytar.node\" --external:keytar --format=cjs --platform=node",
+		"package": "npm run build && node package.mjs",
 		"bump-filen-dependencies": "npm i @filen/sdk@latest @filen/sync@latest @filen/webdav@latest @filen/s3@latest @filen/network-drive@latest"
 	},
 	"engines": {
@@ -36,6 +34,7 @@
 		"arg": "^5.0.2",
 		"cli-progress": "^3.12.0",
 		"dedent": "^1.5.3",
+		"keytar": "^7.9.0",
 		"open": "^7.4.2",
 		"read": "^4.0.0",
 		"uuid-by-string": "^4.0.0"
@@ -43,6 +42,7 @@
 	"devDependencies": {
 		"@types/cli-progress": "^3.11.6",
 		"@types/jest": "^29.5.12",
+		"@types/mute-stream": "^0.0.4",
 		"@types/node": "^22.9.0",
 		"@typescript-eslint/eslint-plugin": "^7.0.0",
 		"@typescript-eslint/parser": "^6.20.0",
