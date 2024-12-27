@@ -13,7 +13,7 @@ on:
 
 jobs:
   build-and-publish-binaries:
-    name: Build artifacts and attach to release (${{ matrix.os }})
+    name: Build binaries (${{ matrix.os }})
     strategy:
       matrix:
         include:
@@ -49,6 +49,10 @@ jobs:
       - run: npm run package
         env:
           FILEN_CLI_CRYPTO_BASE_KEY: ${{ secrets.FILEN_CLI_CRYPTO_BASE_KEY }}
+      - name: (Debug) Attach dist/bundle.js to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
       - name: Check info
         run: ${{ matrix.test-binary }} help
       - name: Codesign and notarize on macOS
@@ -72,7 +76,7 @@ jobs:
           # cleanup keychain
           security delete-keychain build.keychain
           rm -f certificate.p12
-      - name: Rename artifacts to include release number
+      - name: Rename binaries to include release number
         run: |
           # move files only if they exist
           [ ! -f dist/filen-cli-win-x64.exe   ] || mv dist/filen-cli-win-x64.exe   dist/filen-cli-${{ github.event.release.tag_name }}-win-x64.exe
@@ -81,7 +85,7 @@ jobs:
           [ ! -f dist/filen-cli-linux-arm64   ] || mv dist/filen-cli-linux-arm64   dist/filen-cli-${{ github.event.release.tag_name }}-linux-arm64
           [ ! -f dist/filen-cli-macos-x64     ] || mv dist/filen-cli-macos-x64     dist/filen-cli-${{ github.event.release.tag_name }}-macos-x64
           [ ! -f dist/filen-cli-macos-arm64   ] || mv dist/filen-cli-macos-arm64   dist/filen-cli-${{ github.event.release.tag_name }}-macos-arm64
-      - name: Attach artifacts to release
+      - name: Attach binaries to release
         uses: softprops/action-gh-release@v2
         with:
           files: dist/filen-cli-${{ github.event.release.tag_name }}-*
