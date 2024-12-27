@@ -13,15 +13,15 @@ on:
 
 jobs:
   build-and-publish-binaries:
-    name: Build artifacts and attach to release
+    name: Build artifacts and attach to release (${{ matrix.os }})
     strategy:
       matrix:
         include:
+          - os: windows-latest
+            test-binary: dist/filen-cli-win-x64.exe
           - os: ubuntu-latest
-            build-script: package-win-linux
             test-binary: dist/filen-cli-linux-x64
           - os: macos-latest
-            build-script: package-macos
             test-binary: dist/filen-cli-macos-arm64
     runs-on: ${{ matrix.os }}
     permissions:
@@ -46,7 +46,7 @@ jobs:
         with:
           node-version: "20.x"
       - run: npm ci
-      - run: npm run ${{ matrix.build-script }}
+      - run: npm run package
         env:
           FILEN_CLI_CRYPTO_BASE_KEY: ${{ secrets.FILEN_CLI_CRYPTO_BASE_KEY }}
       - name: Check info
