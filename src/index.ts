@@ -54,8 +54,9 @@ const args = arg(
 	}
 )
 
-console.log(`${process.platform}-${process.arch}`)
 
+//TODO tmp
+console.log(`${process.platform}-${process.arch}`)
 keytar.findCredentials("filen-cli").then(credentials => {
 	console.log("credentials: ", credentials)
 })
@@ -116,8 +117,8 @@ export const isDevelopment = args["--dev"] ?? false
 		// skip authentication for webdav proxy mode
 		const authentication = new Authentication(filen)
 		try {
-			if (args["_"][0] === "delete-credentials") {
-				await authentication.deleteStoredCredentials()
+			if (args["_"][0] === "logout") {
+				await authentication.deleteSavedCredentials()
 				process.exit()
 			}
 		} catch (e) {

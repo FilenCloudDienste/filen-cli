@@ -18,6 +18,7 @@ export class HelpPage {
 		if (topic === "webdav") return this.webdavHelpPage
 		if (topic === "s3") return this.s3HelpPage
 		if (topic === "mount") return this.driveMountingHelpPage
+		if (topic === "libsecret") return this.libsecretHelpPage
 		return undefined
 	}
 
@@ -202,5 +203,17 @@ export class HelpPage {
 		])}
 		
 		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#s3-server
+		`
+
+	private readonly libsecretHelpPage: string = dedent`
+		On Linux, the Filen CLI uses libsecret to store the credentials crypto key in the system Secret Service.
+		
+		If you experience issues with saving credentials, you can try installing libsecret via:
+			Debain/Ubuntu:  sudo apt-get install libsecret-1-dev
+			Red Hat based:  sudo yum install libsecret-devel
+			Arch:           sudo pacman -S libsecret
+		
+		Alternatively, you can export an auth config containing your credentials using \`filen export-auth-config\`.
+		Exporting this file to $APPDATA/filen-cli will make it visible to the CLI.
 		`
 }
