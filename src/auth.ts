@@ -30,14 +30,9 @@ export class Authentication {
 	 */
 	public async deleteSavedCredentials() {
 		try {
-			await fs.promises.unlink(this.keepMeLoggedInFile)
+			if (await exists(this.keepMeLoggedInFile)) await fs.promises.unlink(this.keepMeLoggedInFile)
 		} catch (e) {
 			errExit("delete saved credentials file", e)
-		}
-		try {
-			await keytar.deletePassword(this.keychainServiceName, this.keychainAccountName)
-		} catch (e) {
-			errExit("delete keychain credentials", e)
 		}
 		out("Credentials deleted")
 	}
