@@ -15,7 +15,6 @@ import { TrashInterface } from "./featureInterfaces/trashInterface"
 import { PublicLinksInterface } from "./featureInterfaces/publicLinksInterface"
 import { DriveMountingInterface } from "./featureInterfaces/driveMountingInterface"
 import { ANONYMOUS_SDK_CONFIG } from "./constants"
-import * as keytar from "keytar"
 
 const args = arg(
 	{
@@ -53,13 +52,6 @@ const args = arg(
 		permissive: true
 	}
 )
-
-
-//TODO tmp
-console.log(`${process.platform}-${process.arch}`)
-keytar.findCredentials("filen-cli").then(credentials => {
-	console.log("credentials: ", credentials)
-})
 
 if (!checkInjectedBuildInfo()) {
 	errExit("Build info not injected correctly!")
