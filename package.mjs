@@ -64,10 +64,7 @@ for (const target of targets) {
 	})
 
 	// build binary using pkg via SEA
-	// save current directory and change back to it again, because pkg calls process.chdir()
-	const currentDirectory = process.cwd()
 	await pkg.exec(`--sea -t ${target.platform}-${target.arch} -o ${workingDirectory}/filen-cli-${target.name} ${workingDirectory}/bundle-${target.name}-2.js${target.name.includes("macos") ? "" : " --options max-old-space-size=16384"}`.split(" "))
-	process.chdir(currentDirectory)
 
 	// replace app icon (Windows)
 	if (target.platform === "win32") {
