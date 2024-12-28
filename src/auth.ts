@@ -1,12 +1,13 @@
 import FilenSDK, { APIError, FilenSDKConfig } from "@filen/sdk"
-import { err, errExit, out, outVerbose, prompt, promptConfirm } from "../interface/interface"
+import { err, errExit, out, outVerbose, prompt, promptConfirm } from "./interface/interface"
 import fs from "node:fs"
-import { exists, platformConfigPath } from "../util/util"
+import { exists, platformConfigPath } from "./util/util"
 import path from "path"
-import { wrapRedTerminalText } from "../interface/util"
-import { ANONYMOUS_SDK_CONFIG } from "../constants"
+import { wrapRedTerminalText } from "./interface/util"
+import { ANONYMOUS_SDK_CONFIG } from "./constants"
 import keytar from "keytar"
 import crypto from "node:crypto"
+import { isDevelopment } from "./index"
 
 /**
  * Handles authentication.
@@ -18,7 +19,7 @@ export class Authentication {
 	private readonly keepMeLoggedInFile = path.join(platformConfigPath(), ".filen-cli-keep-me-logged-in")
 
 	private readonly keychainServiceName = "filen-cli"
-	private readonly keychainAccountName = "auth-config-crypto-key"
+	private readonly keychainAccountName = "auth-config-crypto-key" + (isDevelopment ? "-dev" : "")
 
 	public constructor(filen: FilenSDK) {
 		this.filen = filen
