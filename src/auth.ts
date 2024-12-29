@@ -251,24 +251,26 @@ export class Authentication {
 	}
 
 	private generateCryptoKey() {
-		return crypto.randomBytes(16).toString("hex")
+		return crypto.randomBytes(32).toString("hex")
 	}
 
 	private async encryptAuthConfig(config: FilenSDKConfig, cryptoKey: string) {
+		const key = Buffer.from(cryptoKey, "hex")
 		const iv = crypto.randomBytes(12)
-		const cipher = crypto.createCipheriv("aes-256-gcm", cryptoKey, iv)
+		const cipher = crypto.createCipheriv("aes-256-gcm", key, iv)
 		const encrypted = Buffer.concat([cipher.update(JSON.stringify(config)), cipher.final()])
 		const authTag = cipher.getAuthTag()
 		return Buffer.concat([iv, encrypted, authTag]).toString("base64")
 	}
 
 	private async decryptAuthConfig(encryptedAuthConfig: string, cryptoKey: string) {
+		const key = Buffer.from(cryptoKey, "hex")
 		const data = Buffer.from(encryptedAuthConfig, "base64")
 		const iv = data.subarray(0, 12)
 		const encData = data.subarray(12)
 		const authTag = encData.subarray(-16)
 		const ciphertext = encData.subarray(0, encData.byteLength - 16)
-		const decipher = crypto.createDecipheriv("aes-256-gcm", cryptoKey, iv)
+		const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv)
 		decipher.setAuthTag(authTag)
 		const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf-8")
 		return JSON.parse(decrypted) as FilenSDKConfig
