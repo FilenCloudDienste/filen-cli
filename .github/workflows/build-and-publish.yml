@@ -49,10 +49,6 @@ jobs:
       - run: npm run package
         env:
           FILEN_CLI_CRYPTO_BASE_KEY: ${{ secrets.FILEN_CLI_CRYPTO_BASE_KEY }}
-      - name: (Debug) Attach dist/bundle.js to release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*
       - name: Check info
         run: ${{ matrix.test-binary }} help
       - name: Codesign and notarize on macOS
