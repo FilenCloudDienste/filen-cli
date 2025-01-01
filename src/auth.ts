@@ -51,6 +51,11 @@ export class Authentication {
 		twoFactorCodeArg: string | undefined,
 		exportAuthConfig: boolean
 	) {
+		// delete legacy saved credentials
+		for (const file of [path.join(platformConfigPath(), ".credentials"), path.join(platformConfigPath(), ".credentials.salt")]) {
+			if (await exists(file)) await fs.promises.unlink(file)
+		}
+
 		let credentials: { email: string, password: string, twoFactorCode?: string } | undefined = undefined
 		const needCredentials = () => credentials === undefined && (this.filen.config.email === "anonymous" || !this.filen.config.email)
 
