@@ -40,8 +40,10 @@ const args = arg(
 		"-c": "--two-factor-code",
 
 		"--log-file": String,
+
 		"--skip-update": Boolean,
 		"--force-update": Boolean,
+		"--auto-update": Boolean,
 
 		...fsOptions,
 		...webdavOptions,
@@ -108,7 +110,7 @@ export const isDevelopment = args["--dev"] ?? false
 			}
 		}
 		try {
-			await updater.checkForUpdates(args["--force-update"] ?? false)
+			await updater.checkForUpdates(args["--force-update"] ?? false, args["--auto-update"] ?? false)
 		} catch (e) {
 			errExit("check for updates", e)
 		}

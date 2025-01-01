@@ -21,8 +21,8 @@ Docker images are also available as [filen/cli](https://hub.docker.com/repositor
 
 The Filen CLI includes an automatic updater that checks for a new release every time the CLI is invoked
 (after checking for updates, it will not check again for the next 10 minutes).
-Invoke the CLI with the `--skip-update` flag to skip checking for updates.
-(Use the `--force-update` flag to check for updates even if it was recently checked.)
+Invoke the CLI with the `--skip-update` flag to skip checking for updates, or use the `--force-update` flag to check for updates even if it was recently checked.
+Use the `--auto-update` flag to skip the confirmation prompt and update automatically (the CLI will still abort after updating).
 
 You can always install any version using `filen install <version>`, `filen install latest` or `filen install canary`.
 

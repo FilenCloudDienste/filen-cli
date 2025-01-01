@@ -1,4 +1,4 @@
-import { disableAutomaticUpdates, version } from "./buildInfo"
+import { disableUpdates, version } from "./buildInfo"
 import { err, errExit, out, outVerbose, promptYesNo } from "./interface/interface"
 import path from "path"
 import { spawn } from "node:child_process"
@@ -32,8 +32,10 @@ export class Updater {
 
 	/**
 	 * Check for updates and prompt the user on whether to update.
+	 * @param forceUpdateCheck the `--force-update` CLI argument
+	 * @param autoUpdate the `--auto-update` CLI argument
 	 */
-	public async checkForUpdates(force: boolean): Promise<void> {
+	public async checkForUpdates(forceUpdateCheck: boolean, autoUpdate: boolean): Promise<void> {
 		if (version === "0.0.0") {
 			outVerbose("Skipping updates in development environment")
 			return
@@ -42,7 +44,7 @@ export class Updater {
 		const updateCache = await this.readUpdateCache()
 
 		// skip if already recently checked
-		if (!force) {
+		if (!forceUpdateCheck) {
 			if (Date.now() - updateCache.lastCheckedUpdate < this.updateCheckExpiration) {
 				outVerbose("Checked for updates not long ago, not checking again")
 				return
@@ -60,7 +62,7 @@ export class Updater {
 		const currentVersion = version
 		const latestVersion = latestRelease.tag_name
 
-		if (disableAutomaticUpdates && latestDownloadUrl !== undefined && currentVersion !== latestVersion) {
+		if (disableUpdates && latestDownloadUrl !== undefined && currentVersion !== latestVersion) {
 			// don't prompt for update in a container environment
 			out(`${(semver.gt(latestVersion, currentVersion) ? "Update available" : "Other version recommended")}: ${currentVersion} -> ${latestVersion}`)
 			return
@@ -68,13 +70,15 @@ export class Updater {
 		if (releases.filter(release => release.tag_name === currentVersion).length === 0) {
 			// current version doesn't exist as release, so it was intentionally deleted to prompt for downgrade
 			if (updateCache.canary && canaryDownloadUrl !== undefined) {
-				if (await promptYesNo(`It is highly recommended to ${semver.gt(currentVersion, canaryRelease.tag_name) ? "downgrade" : "update"} from ${currentVersion} to${latestVersion === canaryRelease.tag_name ? "" : " canary release"} ${canaryRelease.tag_name}. Please confirm:`, true)) {
-					await this.showChangelogs(releases, canaryRelease.tag_name)
+				if (autoUpdate || await promptYesNo(`It is highly recommended to ${semver.gt(currentVersion, canaryRelease.tag_name) ? "downgrade" : "update"} from ${currentVersion} to${latestVersion === canaryRelease.tag_name ? "" : " canary release"} ${canaryRelease.tag_name}. Please confirm:`, true)) {
+					out(`${semver.gt(currentVersion, canaryRelease.tag_name) ? "Downgrading" : "Updating"} from ${currentVersion} to${latestVersion === canaryRelease.tag_name ? "" : " canary release"} ${canaryRelease.tag_name}...`)
+					await this.showChangelogs(releases, canaryRelease.tag_name, autoUpdate)
 					await this.installVersion(currentVersion, canaryRelease.tag_name, canaryDownloadUrl)
 				}
 			} else if (latestDownloadUrl !== undefined) {
-				if (await promptYesNo(`It is highly recommended to ${semver.gt(currentVersion, latestVersion) ? "downgrade" : "update"} from ${currentVersion} to ${latestVersion}. Please confirm:`, true)) {
-					await this.showChangelogs(releases, latestVersion)
+				if (autoUpdate || await promptYesNo(`It is highly recommended to ${semver.gt(currentVersion, latestVersion) ? "downgrade" : "update"} from ${currentVersion} to ${latestVersion}. Please confirm:`, true)) {
+					out(`${semver.gt(currentVersion, latestVersion) ? "Downgrading" : "Updating"} from ${currentVersion} to ${latestVersion}...`)
+					await this.showChangelogs(releases, latestVersion, autoUpdate)
 					await this.installVersion(currentVersion, latestVersion, latestDownloadUrl)
 				}
 			} else {
@@ -83,15 +87,17 @@ export class Updater {
 			return
 		}
 		if (semver.gt(latestVersion, currentVersion) && latestDownloadUrl !== undefined) {
-			if (await promptYesNo(`Update from ${currentVersion} to ${latestVersion}?`)) {
-				await this.showChangelogs(releases, latestVersion)
+			if (autoUpdate || await promptYesNo(`Update from ${currentVersion} to ${latestVersion}?`)) {
+				out(`Updating from ${currentVersion} to ${latestVersion}...`)
+				await this.showChangelogs(releases, latestVersion, autoUpdate)
 				await this.installVersion(currentVersion, latestVersion, latestDownloadUrl)
 			}
 		} else {
 			if (updateCache.canary) {
 				if (canaryDownloadUrl !== undefined && semver.gt(canaryRelease.tag_name, currentVersion)) {
-					if (await promptYesNo(`Update from ${currentVersion} to canary release ${canaryRelease.tag_name}?`)) {
-						await this.showChangelogs(releases, canaryRelease.tag_name)
+					if (autoUpdate || await promptYesNo(`Update from ${currentVersion} to canary release ${canaryRelease.tag_name}?`)) {
+						out(`Updating from ${currentVersion} to canary release ${canaryRelease.tag_name}...`)
+						await this.showChangelogs(releases, canaryRelease.tag_name, autoUpdate)
 						await this.installVersion(currentVersion, canaryRelease.tag_name, canaryDownloadUrl)
 					}
 				} else {
@@ -136,7 +142,7 @@ export class Updater {
 				const downloadUrl = this.getDownloadUrl(canaryRelease)
 				if (semver.gt(canaryRelease.tag_name, version) && downloadUrl !== undefined) {
 					if (await promptYesNo(`Install the latest canary release ${canaryRelease.tag_name} now?`)) {
-						await this.showChangelogs(releases, canaryRelease.tag_name)
+						await this.showChangelogs(releases, canaryRelease.tag_name, false)
 						await this.installVersion(version, canaryRelease.tag_name, downloadUrl)
 					}
 				}
@@ -242,9 +248,9 @@ export class Updater {
 
 	// install
 	
-	private async showChangelogs(releases: ReleaseInfo[], targetRelease: string) {
+	private async showChangelogs(releases: ReleaseInfo[], targetRelease: string, skipConfirmation: boolean) {
 		if (semver.lt(targetRelease, version)) return
-		if (await promptYesNo("Show changelogs?", true)) {
+		if (skipConfirmation || await promptYesNo("Show changelogs?", true)) {
 			const passingReleases = releases.sort((a, b) => semver.compare(a.tag_name, b.tag_name)).filter(release => semver.gt(release.tag_name, version) && semver.lte(release.tag_name, targetRelease) && !release.prerelease)
 			const releaseBodies = passingReleases.map(release => `========== ${release.tag_name} ==========\n${release.body}\n${"=".repeat(22 + release.tag_name.length)}`)
 			out("\n\n" + releaseBodies.join("\n\n\n") + "\n\n")

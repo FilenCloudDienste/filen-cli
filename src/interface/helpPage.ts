@@ -210,6 +210,7 @@ export class HelpPage {
 		After checking for updates, it will not check again for the next 10 minutes. Use the flags:
 		    --force-update  to check for updates even if it was recently checked.
 		    --skip-update   to skip checking for updates.
+		    --auto-update   to skip the confirmation prompt and update automatically (will still abort after updating).
 		
 		You can always install any version using \`filen install <version>\`, \`filen install latest\` or \`filen install canary\`.
 		
