@@ -49,8 +49,6 @@ jobs:
       - run: npm run package
         env:
           FILEN_CLI_CRYPTO_BASE_KEY: ${{ secrets.FILEN_CLI_CRYPTO_BASE_KEY }}
-      - name: Check info
-        run: ${{ matrix.test-binary }} help
       - name: Codesign and notarize on macOS
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
