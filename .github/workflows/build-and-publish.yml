@@ -13,7 +13,6 @@ jobs:
           - os: windows-latest
             test-binary: dist/filen-cli-win-x64.exe
           - os: ubuntu-latest
-            test-binary: dist/filen-cli-linux-x64
           - os: macos-latest
             test-binary: dist/filen-cli-macos-arm64
     runs-on: ${{ matrix.os }}
@@ -40,8 +39,9 @@ jobs:
           node-version: "20.x"
       - run: npm ci
       - run: npm run package
-        env:
-          FILEN_CLI_CRYPTO_BASE_KEY: ${{ secrets.FILEN_CLI_CRYPTO_BASE_KEY }}
+      - name: Test binary
+        if: ${{ matrix.test-binary }}
+        run: ${{ matrix.test-binary }} help
       - name: Codesign and notarize on macOS
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
@@ -64,21 +64,14 @@ jobs:
           security delete-keychain build.keychain
           rm -f certificate.p12
       - name: Rename binaries to include release number
-        run: |
-          # move files only if they exist
-          [ ! -f dist/filen-cli-win-x64.exe   ] || mv dist/filen-cli-win-x64.exe   dist/filen-cli-${{ github.event.release.tag_name }}-win-x64.exe
-          [ ! -f dist/filen-cli-win-arm64.exe ] || mv dist/filen-cli-win-arm64.exe dist/filen-cli-${{ github.event.release.tag_name }}-win-arm64.exe
-          [ ! -f dist/filen-cli-linux-x64     ] || mv dist/filen-cli-linux-x64     dist/filen-cli-${{ github.event.release.tag_name }}-linux-x64
-          [ ! -f dist/filen-cli-linux-arm64   ] || mv dist/filen-cli-linux-arm64   dist/filen-cli-${{ github.event.release.tag_name }}-linux-arm64
-          [ ! -f dist/filen-cli-macos-x64     ] || mv dist/filen-cli-macos-x64     dist/filen-cli-${{ github.event.release.tag_name }}-macos-x64
-          [ ! -f dist/filen-cli-macos-arm64   ] || mv dist/filen-cli-macos-arm64   dist/filen-cli-${{ github.event.release.tag_name }}-macos-arm64
+        run: node -e "['win-x64.exe', 'win-arm64.exe', 'linux-x64', 'linux-arm64', 'macos-x64', 'macos-arm64'].forEach(suffix => { if (fs.existsSync('dist/filen-cli-'+suffix)) { fs.renameSync('dist/filen-cli-'+suffix, 'dist/filen-cli-${{ github.event.release.tag_name }}-'+suffix) } })"
       - name: Attach binaries to release
         uses: softprops/action-gh-release@v2
         with:
           files: dist/filen-cli-${{ github.event.release.tag_name }}-*
 
   build-and-publish-docker:
-    name: Build docker image
+    name: Build Docker image
     runs-on: ubuntu-latest
     if: ${{ github.event.release.prerelease == false }}
     steps:
