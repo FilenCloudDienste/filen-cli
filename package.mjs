@@ -18,7 +18,7 @@ const targets = [
 	{ name: "linux-arm64", platform: "linux", arch: "arm64", parcelWatcherVariant: "linux-arm64" },
 	{ name: "macos-x64", platform: "darwin", arch: "x64", parcelWatcherVariant: "darwin-x64" },
 	{ name: "macos-arm64", platform: "darwin", arch: "arm64", parcelWatcherVariant: "darwin-arm64" },
-]
+].filter(target => target.platform === process.platform)
 
 // install temporary @parcel/watcher-${variant} dependencies
 const parcelWatcherDependencies = [
@@ -30,7 +30,7 @@ const parcelWatcherDependencies = [
 	"@parcel/watcher-linux-arm64-glibc",
 	"@parcel/watcher-darwin-x64",
 	"@parcel/watcher-darwin-arm64"
-]
+].filter(dependency => dependency.includes(process.platform))
 await executeCommand(`npm install --force ${parcelWatcherDependencies.join(" ")}`)
 
 // build binaries
