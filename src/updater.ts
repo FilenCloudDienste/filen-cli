@@ -223,6 +223,7 @@ export class Updater {
 		const fetchGithubAPI = async (url: string) => {
 			try {
 				const response = await fetch(url)
+				if (response.status !== 200) throw new Error(`Error trying to fetch update info: GitHub API returned status ${response.status} ${response.statusText}`)
 				return await response.json()
 			} catch (e) {
 				errExit("fetch update info", e)
