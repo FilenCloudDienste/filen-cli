@@ -67,16 +67,41 @@ export function displayTransferProgressBar(
 	try {
 		const progressBar = new cliProgress.SingleBar(
 			{
-				format: `${action} ${file} [{bar}] {percentage}% | ETA: {eta_formatted} | ${isApproximate ? "~ " : ""}{value} / {total}`,
+				format: `${action} ${file} [{bar}] {percentage}% | {speed} | ETA: {eta_formatted} | ${isApproximate ? "~ " : ""}{value} / {total}`,
 				// of a number is <= 100, it is likely a percentage; otherwise format as byte (library used here doesn't provide other options)
 				formatValue: n => (n <= 100 ? n.toString() : formatBytes(n))
 			},
 			cliProgress.Presets.legacy
 		)
-		progressBar.start(total, 0)
+		progressBar.start(total, 0, {speed: "N/A"})
+		const startTime = Date.now()
+		let lastUpdate = startTime
+		let accumulatedTransferred = 0
+		let currentSpeed = 0
+
 		const onProgress = (transferred: number) => {
-			progressBar.increment(transferred)
-			if (progressBar.getProgress() >= 1.0) progressBar.stop()
+			const now = Date.now()
+			const elapsedSinceLastUpdate = (now - lastUpdate) / 1000
+			accumulatedTransferred += transferred
+
+			// Update speed if at least 1 second has passed
+			if (elapsedSinceLastUpdate  >= 1) {
+				currentSpeed = Math.round(accumulatedTransferred  / elapsedSinceLastUpdate)
+				lastUpdate = now
+				accumulatedTransferred = 0
+			}
+			progressBar.increment(transferred, {
+				speed: `${formatBytes(currentSpeed)}/s`
+			})
+
+			if (progressBar.getProgress() >= 1.0) {
+				// Update the final average speed
+				const totalElapsedSecs = (now - startTime) / 1000
+				progressBar.update({
+					speed: `Avg: ${formatBytes(total / totalElapsedSecs)}/s`
+				})
+				progressBar.stop()
+			}
 		}
 		return { progressBar, onProgress }
 	} catch (e) {
