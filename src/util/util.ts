@@ -55,6 +55,7 @@ export async function directorySize(path: PathLike) {
 	return (await Promise.all(stats)).reduce((accumulator, { size }) => accumulator + size, 0)
 }
 
+let _platformConfigPath: string | undefined = undefined
 /**
  * Returns the platform-specific directory for storing configuration files.
  * Creates the directory if it doesn't exist.
@@ -63,6 +64,8 @@ export async function directorySize(path: PathLike) {
  * - Unix: `$XDG_CONFIG_HOME/filen-cli` or `~/.config/filen-cli` (or `~/.filen-cli`)
  */
 export function platformConfigPath(): string {
+	if (_platformConfigPath !== undefined) return _platformConfigPath
+
 	// default config path, see https://github.com/jprichardson/ospath/blob/master/index.js
 	let configPath: string = (() => {
 		switch (process.platform) {
@@ -97,6 +100,7 @@ export function platformConfigPath(): string {
 		})
 	}
 
+	_platformConfigPath = configPath
 	return configPath
 }
 
