@@ -2,23 +2,23 @@
 
 # check if filen-cli is already installed
 if [[ ! -z $(which filen) ]] ; then
-    echo "Filen CLI is already installed"
-    echo "You can install a different version using \`filen install <version>\` or \`filen install latest\`"
-    echo "To uninstall, delete ~/.filen-cli and revert changes to ~/.profile"
+  echo "Filen CLI is already installed"
+  echo "You can install a different version using \`filen install <version>\` or \`filen install latest\`"
+  echo "To uninstall, delete ~/.filen-cli and revert changes to your shell profile(s)"
 else
 
   # determine platform as "linux" or "macos"
   if [[ "$(uname -s)" == "Linux" ]] ; then
-      platform=linux
+    platform=linux
   elif [[ "$(uname -s)" == "Darwin" ]] ; then
-      platform=macos
+    platform=macos
   fi
 
   # determine architecture as "x64" or "arm64"
   if [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]] ; then
-      arch=arm64
+    arch=arm64
   else
-      arch=x64
+    arch=x64
   fi
 
   # fetch release info
@@ -37,15 +37,24 @@ else
   chmod +x ~/.filen-cli/bin/filen
 
   # add to PATH
-  if [[ $PATH == *"~/.filen-cli"* ]] ; then
-      echo "\$PATH already contains ~/.filen-cli"
+  if [[ $PATH == *$(echo ~)/\.filen-cli* ]] ; then
+    echo "\$PATH already contains ~/.filen-cli"
   else
-      export PATH=$PATH:~/.filen-cli/bin
-      printf "\n\n# filen-cli\nPATH=\$PATH:~/.filen-cli/bin\n" >> ~/.profile
-      echo "Added ~/.filen-cli/bin to \$PATH in ~/.profile"
+    export PATH=$PATH:~/.filen-cli/bin
+    profileFileFound=0
+    for profileFile in ~/.bashrc ~/.bash_profile ~/.zshrc ~/.profile ; do
+      if [[ -f $profileFile ]] ; then
+        profileFileFound=1
+        printf "\n\n# filen-cli\nPATH=\$PATH:~/.filen-cli/bin\n" >> $profileFile
+        echo "Added ~/.filen-cli/bin to \$PATH in $profileFile"
+      fi
+    done
+    if [[ $profileFileFound == "0" ]] ; then
+      echo "ERR: No shell profile file found (checked: ~/.bashrc ~/.bash_profile ~/.zshrc ~/.profile)"
+    fi
   fi
   echo "Filen CLI installed as \`filen\` (you might need to restart your shell)"
 
-  echo "To uninstall, delete ~/.filen-cli and revert changes to ~/.profile"
+  echo "To uninstall, delete ~/.filen-cli and revert changes to your shell profile(s)"
 
 fi
