@@ -160,6 +160,10 @@ You can set the `--continuous` flag to keep syncing (instead of only syncing onc
         "syncMode": "twoWay",
         "alias": "PicSync",
         "disableLocalTrash": true,
+        "ignore": [ 
+            "*.log",
+            "example.txt"
+        ],
         "excludeDotFiles": false
     }
 ]
