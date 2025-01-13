@@ -143,6 +143,28 @@ You must specify the sync pairs (`[sync pairs...]` above) as follows:
 
 You can set the `--continuous` flag to keep syncing (instead of only syncing once).
 
+`syncPairs.json` example:
+```json
+[
+    {
+        "local": "/home/JohnSmith/Documents",
+        "remote": "/Documents",
+        "syncMode": "twoWay",
+        "alias": "DocSync",
+        "disableLocalTrash": true,
+        "excludeDotFiles": false
+    },
+    {
+        "local": "/home/JohnSmith/Pictures",
+        "remote": "/Pictures",
+        "syncMode": "twoWay",
+        "alias": "PicSync",
+        "disableLocalTrash": true,
+        "excludeDotFiles": false
+    }
+]
+```
+
 
 ## Network drive mounting
 
