@@ -77,6 +77,7 @@ jobs:
             - run: npm ci
             - run: npm publish  # includes build
               env:
+                FILEN_CLI_CRYPTO_BASE_KEY: ${{ secrets.FILEN_CLI_CRYPTO_BASE_KEY }}
                 FILEN_IS_NPM_PACKAGE: true
 
     build-and-publish-docker:
