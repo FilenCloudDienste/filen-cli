@@ -4,6 +4,7 @@ import * as fs from "fs"
 
 const version = JSON.parse(fs.readFileSync("package.json").toString()).version
 const isContainer = process.env.FILEN_IS_CONTAINER === "true"
+const isNPMPackage = process.env.FILEN_IS_NPM_PACKAGE === "true"
 const key = process.env.FILEN_CLI_CRYPTO_BASE_KEY ?? fs.readFileSync("key").toString().split("\n")[0]
 
 const injectionFile = "build/buildInfo.js"
@@ -11,6 +12,7 @@ let content = fs.readFileSync(injectionFile).toString()
 const buildInfo = {
 	VERSION: `"${version}"`,
 	IS_CONTAINER: `${isContainer}`,
+	IS_NPM_PACKAGE: `${isNPMPackage}`,
 	CRYPTO_BASE_KEY: `"${key}"`,
 }
 Object.entries(buildInfo).forEach(entry => {

@@ -1,4 +1,4 @@
-import { disableUpdates, version } from "./buildInfo"
+import { disableUpdates, isRunningAsNPMPackage, version } from "./buildInfo"
 import { err, errExit, out, outVerbose, promptYesNo } from "./interface/interface"
 import path from "path"
 import { spawn } from "node:child_process"
@@ -41,10 +41,14 @@ export class Updater {
 			return
 		}
 
-		// todo: different update checking when executed as NPM package
-
 		if (version === "0.0.0") {
 			outVerbose("Skipping updates in development environment")
+			return
+		}
+
+		// check NPM registry instead if running as NPM package
+		if (isRunningAsNPMPackage) {
+			await this.checkNPMRegistryForUpdates()
 			return
 		}
 
@@ -124,6 +128,22 @@ export class Updater {
 
 		// save update cache
 		await this.writeUpdateCache({ ...updateCache, lastCheckedUpdate: Date.now() })
+	}
+
+	private async checkNPMRegistryForUpdates() {
+		try {
+			const response = await fetch("https://registry.npmjs.org/filen-cli")
+			if (response.status !== 200) throw new Error(`NPM registry API returned status ${response.status} ${response.statusText}`)
+			const data = await response.json()
+
+			const latestVersion = data["dist-tags"]["latest"]
+			if (latestVersion === undefined) throw new Error("latest version not found in NPM registry response")
+			if (latestVersion !== version) {
+				out(`Update available: ${version} -> ${latestVersion} (install via npm i -g @filen/cli@latest)`)
+			}
+		} catch (e) {
+			errExit("check NPM registry for updates", e)
+		}
 	}
 
 	/**

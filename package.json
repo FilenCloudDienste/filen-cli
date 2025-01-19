@@ -12,7 +12,8 @@
 		"package-dev": "npm run build && pkg -t node20 -o dist/filen-cli dist/bundle.js",
 		"package-dev-all": "npm run build && node packageAllPlatforms.mjs dev",
 		"package-all": "npm run build && node packageAllPlatforms.mjs",
-		"bump-filen-dependencies": "npm i @filen/sdk@latest @filen/sync@latest @filen/webdav@latest @filen/s3@latest @filen/network-drive@latest"
+		"bump-filen-dependencies": "npm i @filen/sdk@latest @filen/sync@latest @filen/webdav@latest @filen/s3@latest @filen/network-drive@latest",
+		"prepublishOnly": "node -e \"if (process.env.FILEN_IS_NPM_PACKAGE !== 'true') process.exit(1)\" && npm run build"
 	},
 	"bin": {
 		"filen": "build/index.js"
