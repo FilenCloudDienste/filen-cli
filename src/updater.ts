@@ -137,8 +137,8 @@ export class Updater {
 
 			const latestVersion = data["dist-tags"]["latest"]
 			if (latestVersion === undefined) throw new Error("latest version not found in NPM registry response")
-			if (latestVersion !== version) {
-				out(`Update available: ${version} -> ${latestVersion} (install via npm i -g @filen/cli@latest)`)
+			if (semver.neq(latestVersion, version)) {
+				out(`Update available: ${version} -> v${latestVersion} (install via npm i -g @filen/cli@latest)`)
 			} else {
 				outVerbose(`${version} is up to date.`)
 			}
