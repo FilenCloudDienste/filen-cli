@@ -75,10 +75,11 @@ jobs:
               with:
                   node-version: "20.x"
             - run: npm ci
-            - run: npm publish  # includes build
+            - run: npm publish --access public  # includes build
               env:
                 FILEN_CLI_CRYPTO_BASE_KEY: ${{ secrets.FILEN_CLI_CRYPTO_BASE_KEY }}
                 FILEN_IS_NPM_PACKAGE: true
+                NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
 
     build-and-publish-docker:
         name: Build docker image
