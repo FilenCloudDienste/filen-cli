@@ -132,7 +132,7 @@ export class Updater {
 
 	private async checkNPMRegistryForUpdates() {
 		try {
-			const response = await fetch("https://registry.npmjs.org/filen-cli")
+			const response = await fetch("https://registry.npmjs.org/@filen/cli")
 			if (response.status !== 200) throw new Error(`NPM registry API returned status ${response.status} ${response.statusText}`)
 			const data = await response.json()
 
