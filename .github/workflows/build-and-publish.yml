@@ -82,6 +82,7 @@ jobs:
     build-and-publish-docker:
         name: Build docker image
         runs-on: ubuntu-latest
+        if: ${{ github.event.release.prerelease == false }}
         steps:
             - uses: actions/checkout@v3
             - name: Set version
