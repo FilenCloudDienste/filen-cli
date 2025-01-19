@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import arg from "arg"
 import FilenSDK from "@filen/sdk"
 import path from "path"

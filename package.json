@@ -1,5 +1,5 @@
 {
-	"name": "filen-cli",
+	"name": "@filen/cli",
 	"version": "0.0.0",
 	"description": "Filen CLI",
 	"main": "build/index.js",
@@ -14,6 +14,10 @@
 		"package-all": "npm run build && node packageAllPlatforms.mjs",
 		"bump-filen-dependencies": "npm i @filen/sdk@latest @filen/sync@latest @filen/webdav@latest @filen/s3@latest @filen/network-drive@latest"
 	},
+	"bin": {
+		"filen": "build/index.js"
+	},
+	"files": [ "build" ],
 	"engines": {
 		"node": "20"
 	},
@@ -28,9 +32,9 @@
 	"license": "AGPLv3",
 	"dependencies": {
 		"@filen/network-drive": "^0.9.40",
-		"@filen/s3": "^0.2.50",
-		"@filen/sdk": "^0.1.191",
-		"@filen/sync": "^0.1.95",
+		"@filen/s3": "^0.2.51",
+		"@filen/sdk": "^0.1.192",
+		"@filen/sync": "^0.1.96",
 		"@filen/webdav": "^0.2.64",
 		"@types/mute-stream": "^0.0.4",
 		"arg": "^5.0.2",

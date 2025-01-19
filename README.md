@@ -26,6 +26,8 @@ Use the `--auto-update` flag to skip the confirmation prompt and update automati
 
 You can always install any version using `filen install <version>`, `filen install latest` or `filen install canary`.
 
+The CLI is also available as an NPM package, which can be installed with `npm install --global @filen/cli` and then invoked as `filen`. The NPM repository always contains the latest canary releases (see below).
+
 ### Canary releases
 
 If you want to be among the first to try out new features and fixes, you can enable canary releases,

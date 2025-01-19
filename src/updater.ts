@@ -36,6 +36,13 @@ export class Updater {
 	 * @param autoUpdate the `--auto-update` CLI argument
 	 */
 	public async checkForUpdates(forceUpdateCheck: boolean, autoUpdate: boolean): Promise<void> {
+		if ((process.pkg === undefined ? __filename : process.argv[0]!).endsWith(".js")) {
+			outVerbose("Skipping updates for non-binary installation")
+			return
+		}
+
+		// todo: different update checking when executed as NPM package
+
 		if (version === "0.0.0") {
 			outVerbose("Skipping updates in development environment")
 			return
@@ -260,6 +267,7 @@ export class Updater {
 
 	private async installVersion(currentVersionName: string, publishedVersionName: string, downloadUrl: string) {
 		const selfApplicationFile = process.pkg === undefined ? __filename : process.argv[0]!
+		if (selfApplicationFile.endsWith(".js")) errExit("Updater only supported for CLI binaries")
 		const downloadedFile = path.join(path.dirname(selfApplicationFile), `filen_update_${publishedVersionName}`)
 
 		out("Downloading update...")
