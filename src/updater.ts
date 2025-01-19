@@ -36,6 +36,11 @@ export class Updater {
 	 * @param autoUpdate the `--auto-update` CLI argument
 	 */
 	public async checkForUpdates(forceUpdateCheck: boolean, autoUpdate: boolean): Promise<void> {
+		if (isRunningAsNPMPackage) {
+			await this.checkNPMRegistryForUpdates()
+			return
+		}
+
 		if ((process.pkg === undefined ? __filename : process.argv[0]!).endsWith(".js")) {
 			outVerbose("Skipping updates for non-binary installation")
 			return
@@ -43,12 +48,6 @@ export class Updater {
 
 		if (version === "0.0.0") {
 			outVerbose("Skipping updates in development environment")
-			return
-		}
-
-		// check NPM registry instead if running as NPM package
-		if (isRunningAsNPMPackage) {
-			await this.checkNPMRegistryForUpdates()
 			return
 		}
 
@@ -140,6 +139,8 @@ export class Updater {
 			if (latestVersion === undefined) throw new Error("latest version not found in NPM registry response")
 			if (latestVersion !== version) {
 				out(`Update available: ${version} -> ${latestVersion} (install via npm i -g @filen/cli@latest)`)
+			} else {
+				outVerbose(`${version} is up to date.`)
 			}
 		} catch (e) {
 			errExit("check NPM registry for updates", e)
