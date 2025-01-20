@@ -57,9 +57,35 @@ jobs:
                       dist/filen-cli-${{ github.event.release.tag_name }}-linux-arm64
                       dist/filen-cli-${{ github.event.release.tag_name }}-macos-arm64
 
+    build-and-publish-npm:
+        name: Build and publish to npm
+        runs-on: ubuntu-latest
+        if: ${{ github.event.release.prerelease == false }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+            - name: Set version
+              uses: jacobtomlinson/gha-find-replace@v3
+              with:
+                  include: "package.json"
+                  find: '"version": "0.0.0"'
+                  replace: '"version": "${{ github.event.release.tag_name }}"'
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20.x"
+                  registry-url: "https://registry.npmjs.org"
+            - run: npm ci
+            - run: npm publish --access public  # includes build
+              env:
+                FILEN_CLI_CRYPTO_BASE_KEY: ${{ secrets.FILEN_CLI_CRYPTO_BASE_KEY }}
+                FILEN_IS_NPM_PACKAGE: true
+                NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+
     build-and-publish-docker:
         name: Build docker image
         runs-on: ubuntu-latest
+        if: ${{ github.event.release.prerelease == false }}
         steps:
             - uses: actions/checkout@v3
             - name: Set version

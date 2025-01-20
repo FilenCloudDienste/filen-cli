@@ -16,7 +16,11 @@ The Filen CLI provides a set of useful tools for interacting with the cloud:
 
 # Installation and updates
 
-You can download the latest binaries from the [release page](https://github.com/FilenCloudDienste/filen-cli/releases/latest).
+You can download the latest binaries from the [release page](https://github.com/FilenCloudDienste/filen-cli/releases/latest), or execute the install script (Linux and macOS):
+```console
+curl -s https://raw.githubusercontent.com/FilenCloudDienste/filen-cli/refs/heads/main/install.sh | bash
+```
+
 Docker images are also available as [filen/cli](https://hub.docker.com/repository/docker/filen/cli) (see [below](#using-docker)).
 
 The Filen CLI includes an automatic updater that checks for a new release every time the CLI is invoked
@@ -25,6 +29,8 @@ Invoke the CLI with the `--skip-update` flag to skip checking for updates, or us
 Use the `--auto-update` flag to skip the confirmation prompt and update automatically (the CLI will still abort after updating).
 
 You can always install any version using `filen install <version>`, `filen install latest` or `filen install canary`.
+
+The CLI is also available as an NPM package, which can be installed with `npm install --global @filen/cli` and then invoked as `filen`. The NPM repository always contains the latest canary releases (see below).
 
 ### Canary releases
 

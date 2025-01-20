@@ -1,5 +1,5 @@
 {
-	"name": "filen-cli",
+	"name": "@filen/cli",
 	"version": "0.0.0",
 	"description": "Filen CLI",
 	"main": "build/index.js",
@@ -12,8 +12,13 @@
 		"package-dev": "npm run build && pkg -t node20 -o dist/filen-cli dist/bundle.js",
 		"package-dev-all": "npm run build && node packageAllPlatforms.mjs dev",
 		"package-all": "npm run build && node packageAllPlatforms.mjs",
-		"bump-filen-dependencies": "npm i @filen/sdk@latest @filen/sync@latest @filen/webdav@latest @filen/s3@latest @filen/network-drive@latest"
+		"bump-filen-dependencies": "npm i @filen/sdk@latest @filen/sync@latest @filen/webdav@latest @filen/s3@latest @filen/network-drive@latest",
+		"prepublishOnly": "node -e \"if (process.env.FILEN_IS_NPM_PACKAGE !== 'true') process.exit(1)\" && npm run build"
 	},
+	"bin": {
+		"filen": "build/index.js"
+	},
+	"files": [ "build" ],
 	"engines": {
 		"node": "20"
 	},
@@ -28,7 +33,7 @@
 	"license": "AGPLv3",
 	"dependencies": {
 		"@filen/network-drive": "^0.9.40",
-		"@filen/s3": "^0.2.50",
+    "@filen/s3": "^0.2.51",
 		"@filen/sdk": "^0.1.192",
 		"@filen/sync": "^0.1.96",
 		"@filen/webdav": "^0.2.64",

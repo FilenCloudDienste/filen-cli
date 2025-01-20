@@ -1,4 +1,4 @@
-import { disableUpdates, version } from "./buildInfo"
+import { disableUpdates, isRunningAsNPMPackage, version } from "./buildInfo"
 import { err, errExit, out, outVerbose, promptYesNo } from "./interface/interface"
 import path from "path"
 import { spawn } from "node:child_process"
@@ -36,6 +36,16 @@ export class Updater {
 	 * @param autoUpdate the `--auto-update` CLI argument
 	 */
 	public async checkForUpdates(forceUpdateCheck: boolean, autoUpdate: boolean): Promise<void> {
+		if (isRunningAsNPMPackage) {
+			await this.checkNPMRegistryForUpdates()
+			return
+		}
+
+		if ((process.pkg === undefined ? __filename : process.argv[0]!).endsWith(".js")) {
+			outVerbose("Skipping updates for non-binary installation")
+			return
+		}
+
 		if (version === "0.0.0") {
 			outVerbose("Skipping updates in development environment")
 			return
@@ -117,6 +127,24 @@ export class Updater {
 
 		// save update cache
 		await this.writeUpdateCache({ ...updateCache, lastCheckedUpdate: Date.now() })
+	}
+
+	private async checkNPMRegistryForUpdates() {
+		try {
+			const response = await fetch("https://registry.npmjs.org/@filen/cli")
+			if (response.status !== 200) throw new Error(`NPM registry API returned status ${response.status} ${response.statusText}`)
+			const data = await response.json()
+
+			const latestVersion = data["dist-tags"]["latest"]
+			if (latestVersion === undefined) throw new Error("latest version not found in NPM registry response")
+			if (semver.neq(latestVersion, version)) {
+				out(`Update available: ${version} -> v${latestVersion} (install via npm i -g @filen/cli@latest)`)
+			} else {
+				outVerbose(`${version} is up to date.`)
+			}
+		} catch (e) {
+			errExit("check NPM registry for updates", e)
+		}
 	}
 
 	/**
@@ -260,6 +288,7 @@ export class Updater {
 
 	private async installVersion(currentVersionName: string, publishedVersionName: string, downloadUrl: string) {
 		const selfApplicationFile = process.pkg === undefined ? __filename : process.argv[0]!
+		if (selfApplicationFile.endsWith(".js")) errExit("Updater only supported for CLI binaries")
 		const downloadedFile = path.join(path.dirname(selfApplicationFile), `filen_update_${publishedVersionName}`)
 
 		out("Downloading update...")
