@@ -16,7 +16,11 @@ The Filen CLI provides a set of useful tools for interacting with the cloud:
 
 # Installation and updates
 
-You can download the latest binaries from the [release page](https://github.com/FilenCloudDienste/filen-cli/releases/latest).
+You can download the latest binaries from the [release page](https://github.com/FilenCloudDienste/filen-cli/releases/latest), or execute the install script (Linux and macOS):
+```console
+curl -s https://raw.githubusercontent.com/FilenCloudDienste/filen-cli/refs/heads/main/install.sh | bash
+```
+
 Docker images are also available as [filen/cli](https://hub.docker.com/repository/docker/filen/cli) (see [below](#using-docker)).
 
 The Filen CLI includes an automatic updater that checks for a new release every time the CLI is invoked
