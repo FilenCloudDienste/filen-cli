@@ -33,7 +33,7 @@
 	"license": "AGPLv3",
 	"dependencies": {
 		"@filen/network-drive": "^0.9.40",
-		"@filen/s3": "^0.2.51",
+    "@filen/s3": "^0.2.51",
 		"@filen/sdk": "^0.1.192",
 		"@filen/sync": "^0.1.96",
 		"@filen/webdav": "^0.2.64",
