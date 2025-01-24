@@ -24,7 +24,7 @@ Optionally, also include screenshots of other applications if necessary.
 
 **System (please complete the following information):**
 - **Filen CLI version:** (can be found using `filen --version`)
-- which build of the CLI you're using (e. g. `filen-cli-v0.0.20-linux-x64`, `filen-cli-v0.0.20-win-arm64`)
+- which build of the CLI you're using (e. g. `filen-cli-v0.0.20-linux-x64`, `filen-cli-v0.0.20-win-arm64`, Docker image, NPM package)
 - OS: (e. g. Windows, macOS, Ubuntu)
 - hardware configuration (e. g. CPU, RAM, Disk)
 - filesystem and disk type used (e. g. SSD, NFTS, ext4)
