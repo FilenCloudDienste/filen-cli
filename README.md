@@ -137,7 +137,7 @@ Invoke `filen sync` to sync any locations with your Filen Drive. This is the sam
 
 You must specify the sync pairs (`[sync pairs...]` above) as follows:
 - **(central registry)** `filen sync`: Read the sync pairs from `$APP_DATA/filen_cli/syncPairs.json`. 
-  This file must contain JSON of the type `{local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean, ignore?: string[], excludeDotFiles?: boolean}[]`.
+  This file must contain JSON of the type[^type] `{local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean, ignore?: string[], excludeDotFiles?: boolean}[]`.
   `syncMode` can be `twoWay`, `localToCloud`, `localBackup`, `cloudToLocal` or `cloudBackup` (see [here](https://blog.filen.io/how-to-desktop-client/#:~:text=for%20this%20sync.-,Sync%20Modes,-%3A) on what that means). Note that since this is a JSON file, backslashes (`\`) in strings need to be escaped, e. g. `"C:\\some\\path"`).
 - **(custom registry)** `filen sync <file>`: Read the sync pairs from a custom JSON file (same type as above).
 - **(aliases)** `filen sync mypair myotherpair`: Sync the sync pairs from the central registry that were given the aliases `mypair` and `myotherpair`.
@@ -148,6 +148,8 @@ You must specify the sync pairs (`[sync pairs...]` above) as follows:
 - **(disable local trash)** `filen sync /local:/cloud --disable-local-trash`: Disable local trash
 
 You can set the `--continuous` flag to keep syncing (instead of only syncing once).
+
+[^type]: This is a [TypeScript type definition](https://www.typescriptlang.org/docs/handbook/2/objects.html), where `?` means an optional field.
 
 
 ## Network drive mounting
