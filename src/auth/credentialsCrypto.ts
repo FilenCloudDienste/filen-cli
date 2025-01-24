@@ -1,10 +1,10 @@
 import path from "path"
 import fsModule from "node:fs"
 import crypto from "node:crypto"
-import { platformConfigPath } from "../util/util"
 import { key } from "../buildInfo"
 import { FilenSDKConfig } from "@filen/sdk"
 import { errExit } from "../interface/interface"
+import { dataDir } from ".."
 
 /**
  * Handles cryptography for securely storing credentials in a file.
@@ -17,7 +17,7 @@ export class CredentialsCrypto {
 		this.key = key
 
 		try {
-			const saltFile = path.join(platformConfigPath(), ".credentials.salt")
+			const saltFile = path.join(dataDir, ".credentials.salt")
 			if (!fsModule.existsSync(saltFile)) {
 				this.salt = crypto.randomBytes(32).toString("hex")
 				fsModule.writeFileSync(saltFile, this.salt)

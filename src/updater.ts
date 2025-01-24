@@ -1,10 +1,11 @@
-import { disableUpdates, isRunningAsNPMPackage, version } from "./buildInfo"
+import { isRunningAsContainer, isRunningAsNPMPackage, version } from "./buildInfo"
 import { err, errExit, out, outVerbose, promptYesNo } from "./interface/interface"
 import path from "path"
 import { spawn } from "node:child_process"
-import { downloadFile, exists, platformConfigPath } from "./util/util"
+import { downloadFile, exists } from "./util/util"
 import * as fs from "node:fs"
 import semver from "semver/preload"
+import { dataDir } from "."
 
 type UpdateCache = {
 	lastCheckedUpdate: number
@@ -26,7 +27,7 @@ type ReleaseInfo = {
  * Manages updates.
  */
 export class Updater {
-	private readonly updateCacheDirectory = platformConfigPath()
+	private readonly updateCacheDirectory = dataDir
 	private readonly updateCacheFile = path.join(this.updateCacheDirectory, "updateCache.json")
 	private readonly updateCheckExpiration = 10 * 60 * 1000 // check again after 10min
 
@@ -72,7 +73,7 @@ export class Updater {
 		const currentVersion = version
 		const latestVersion = latestRelease.tag_name
 
-		if (disableUpdates && latestDownloadUrl !== undefined && currentVersion !== latestVersion) {
+		if (isRunningAsContainer && latestDownloadUrl !== undefined && currentVersion !== latestVersion) {
 			// don't prompt for update in a container environment
 			out(`${(semver.gt(latestVersion, currentVersion) ? "Update available" : "Other version recommended")}: ${currentVersion} -> ${latestVersion}`)
 			return

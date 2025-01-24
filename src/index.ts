@@ -6,7 +6,7 @@ import path from "path"
 import os from "os"
 import { err, errExit, out, outVerbose, setOutputFlags, setupLogs } from "./interface/interface"
 import { Authentication } from "./auth/auth"
-import { checkInjectedBuildInfo, version } from "./buildInfo"
+import { checkInjectedBuildInfo, isRunningAsContainer, isRunningAsNPMPackage, version } from "./buildInfo"
 import { Updater } from "./updater"
 import { HelpPage } from "./interface/helpPage"
 import { FSInterface, fsOptions } from "./featureInterfaces/fs/fsInterface"
@@ -17,6 +17,7 @@ import { TrashInterface } from "./featureInterfaces/trashInterface"
 import { PublicLinksInterface } from "./featureInterfaces/publicLinksInterface"
 import { DriveMountingInterface } from "./featureInterfaces/driveMountingInterface"
 import { ANONYMOUS_SDK_CONFIG } from "./constants"
+import { determineDataDir } from "./util/util"
 
 const args = arg(
 	{
@@ -42,6 +43,7 @@ const args = arg(
 		"-c": "--two-factor-code",
 
 		"--log-file": String,
+		"--data-dir": String,
 
 		"--skip-update": Boolean,
 		"--force-update": Boolean,
@@ -66,6 +68,11 @@ if (!checkInjectedBuildInfo()) {
  */
 export const isDevelopment = args["--dev"] ?? false
 
+/**
+ * The directory where data files (configuration files, cache, credentials etc.) are stored.
+ */
+export const dataDir = determineDataDir(args["--data-dir"])
+
 // eslint-disable-next-line no-extra-semi
 ;(async () => {
 	if ((args["--version"] ?? false) || args["_"][0] === "version") {
@@ -77,7 +84,13 @@ export const isDevelopment = args["--dev"] ?? false
 	setupLogs(args["--log-file"])
 
 	outVerbose(`Filen CLI ${version}`)
-	if (isDevelopment) outVerbose("Running in development environment")
+
+	let environment = "Environment: "
+	environment += `data-dir=${dataDir}`
+	if (isRunningAsContainer) environment += ", in container"
+	if (isRunningAsNPMPackage) environment += ", as NPM package"
+	if (isDevelopment) environment += ", development"
+	outVerbose(environment)
 
 	if ((args["--help"] ?? false) || args["_"][0] === "help") {
 		const topic = (args["_"][0] === "help" ? args["_"][1] : args["_"][0])?.toLowerCase() ?? "general"

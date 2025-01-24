@@ -4,11 +4,12 @@ import pathModule from "path"
 import { SyncMessage, SyncMode, SyncPair } from "@filen/sync/dist/types"
 import { err, errExit, out, outVerbose, quiet } from "../interface/interface"
 import fsModule, { PathLike } from "node:fs"
-import { exists, platformConfigPath } from "../util/util"
+import { exists } from "../util/util"
 import getUuidByString from "uuid-by-string"
 import { displayTransferProgressBar } from "../interface/util"
 import { InterruptHandler } from "../interface/interrupt"
 import os from "os"
+import { dataDir } from ".."
 
 export const syncOptions = {
 	"--continuous": Boolean,
@@ -51,7 +52,7 @@ const syncModeMappings = new Map<string, SyncMode>([
 export class SyncInterface {
 	private readonly filen
 
-	private readonly defaultSyncPairsRegistry = pathModule.join(platformConfigPath(), "syncPairs.json")
+	private readonly defaultSyncPairsRegistry = pathModule.join(dataDir, "syncPairs.json")
 
 	constructor(filen: FilenSDK) {
 		this.filen = filen
@@ -99,7 +100,7 @@ export class SyncInterface {
 		const progressBar = continuous ? null : displayTransferProgressBar("Transferring", "files", 0)
 		const worker = new SyncWorker({
 			syncPairs: fullSyncPairs,
-			dbPath: pathModule.join(platformConfigPath(), "sync"),
+			dbPath: pathModule.join(dataDir, "sync"),
 			sdk: this.filen,
 			onMessage: msg => {
 				outVerbose(JSON.stringify(msg, null, 2))

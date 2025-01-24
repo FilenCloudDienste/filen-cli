@@ -1,11 +1,12 @@
 import FilenSDK, { APIError } from "@filen/sdk"
 import { err, errExit, out, outVerbose, prompt, promptConfirm } from "../interface/interface"
 import fsModule from "node:fs"
-import { exists, platformConfigPath } from "../util/util"
+import { exists } from "../util/util"
 import path from "path"
 import { CredentialsCrypto } from "./credentialsCrypto"
 import { wrapRedTerminalText } from "../interface/util"
 import { ANONYMOUS_SDK_CONFIG } from "../constants"
+import { dataDir } from ".."
 
 export type Credentials = {
 	email: string
@@ -20,7 +21,7 @@ export class Authentication {
 	private readonly filen: FilenSDK
 
 	private readonly crypto = new CredentialsCrypto()
-	private readonly credentialsDirectory = platformConfigPath()
+	private readonly credentialsDirectory = dataDir
 	private readonly credentialsFile = path.join(this.credentialsDirectory, ".credentials")
 	private readonly sdkConfigFile = ".filen-cli-auth-config"
 

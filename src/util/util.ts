@@ -55,17 +55,14 @@ export async function directorySize(path: PathLike) {
 	return (await Promise.all(stats)).reduce((accumulator, { size }) => accumulator + size, 0)
 }
 
-let _platformConfigPath: string | undefined = undefined
 /**
- * Returns the platform-specific directory for storing configuration files.
+ * Determines the platform-specific directory for storing data files.
  * Creates the directory if it doesn't exist.
- * - Windows: `%APPDATA%\filen-cli`
- * - OS X: `~/Library/Application Support/filen-cli` (or `~/.filen-cli`)
- * - Unix: `$XDG_CONFIG_HOME/filen-cli` or `~/.config/filen-cli` (or `~/.filen-cli`)
+ * Default locations are: `%APPDATA%\filen-cli` (Windows), `~/Library/Application Support/filen-cli` (macOS), `$XDG_CONFIG_HOME/filen-cli` or `~/.config/filen-cli` (Unix). 
+ * If it exists, `~/.filen-cli` is used instead.
+ * If the `--data-dir` flag or `FILEN_CLI_DATA_DIR` environment variable is set, its value is used instead.
  */
-export function platformConfigPath(): string {
-	if (_platformConfigPath !== undefined) return _platformConfigPath
-
+export function determineDataDir(dataDirFlag: string | undefined): string {
 	// default config path, see https://github.com/jprichardson/ospath/blob/master/index.js
 	let configPath: string = (() => {
 		switch (process.platform) {
@@ -94,13 +91,19 @@ export function platformConfigPath(): string {
 		configPath = pathModule.join(configPath, "dev")
 	}
 
+	if (dataDirFlag !== undefined) {
+		configPath = dataDirFlag
+	}
+	if (process.env.FILEN_CLI_DATA_DIR !== undefined) {
+		configPath = process.env.FILEN_CLI_DATA_DIR
+	}
+
 	if (!fsModule.existsSync(configPath)) {
 		fsModule.mkdirSync(configPath, {
 			recursive: true
 		})
 	}
 
-	_platformConfigPath = configPath
 	return configPath
 }
 

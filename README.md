@@ -66,6 +66,10 @@ There are several ways to authenticate:
 
 If you have 2FA enabled and don't specify a 2FA code, you will be prompted for it.
 
+### Data directory
+
+The data directory is where configuration files, credentials, cache etc. are stored and read from. By default, it is `%APPDATA%/filen-cli` (Windows), `~/Library/Application Support/filen-cli` (macOS) or `$XDG_CONFIG_HOME/filen-cli` or `~/.config/filen-cli` (Unix). If there is a directory named `.filen-cli` at the home directory `~`, it is used instead (for instance, the install script installs to this location). You can overwrite the location using the `--data-dir` flag or the `FILEN_CLI_DATA_DIR` environment variable. 
+
 
 ## Access your Filen Drive
 
@@ -136,7 +140,7 @@ $ filen sync [sync pairs...] [--continuous]
 Invoke `filen sync` to sync any locations with your Filen Drive. This is the same functionality you get with the Desktop app.
 
 You must specify the sync pairs (`[sync pairs...]` above) as follows:
-- **(central registry)** `filen sync`: Read the sync pairs from `$APP_DATA/filen_cli/syncPairs.json`. 
+- **(central registry)** `filen sync`: Read the sync pairs from `syncPairs.json` (inside the [data dir](#data-directory)). 
   This file must contain JSON of the type[^type] `{local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean, ignore?: string[], excludeDotFiles?: boolean}[]`.
   `syncMode` can be `twoWay`, `localToCloud`, `localBackup`, `cloudToLocal` or `cloudBackup` (see [here](https://blog.filen.io/how-to-desktop-client/#:~:text=for%20this%20sync.-,Sync%20Modes,-%3A) on what that means). Note that since this is a JSON file, backslashes (`\`) in strings need to be escaped, e. g. `"C:\\some\\path"`).
 - **(custom registry)** `filen sync <file>`: Read the sync pairs from a custom JSON file (same type as above).
