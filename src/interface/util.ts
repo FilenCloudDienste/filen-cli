@@ -68,26 +68,26 @@ export function displayTransferProgressBar(
 		const progressBar = new cliProgress.SingleBar(
 			{
 				format: `${action} ${file} [{bar}] {percentage}% | {speed} | ETA: {eta_formatted} | ${isApproximate ? "~ " : ""}{value} / {total}`,
-				// of a number is <= 100, it is likely a percentage; otherwise format as byte (library used here doesn't provide other options)
+				// if a number is <= 100, it is likely a percentage; otherwise format as byte (library used here doesn't provide other options)
 				formatValue: n => (n <= 100 ? n.toString() : formatBytes(n))
 			},
 			cliProgress.Presets.legacy
 		)
-		progressBar.start(total, 0, {speed: "N/A"})
+		progressBar.start(total, 0, { speed: "N/A" })
+
 		const startTime = Date.now()
-		let lastUpdate = startTime
+		let speedLastUpdated = startTime
 		let accumulatedTransferred = 0
 		let currentSpeed = 0
 
 		const onProgress = (transferred: number) => {
 			const now = Date.now()
-			const elapsedSinceLastUpdate = (now - lastUpdate) / 1000
 			accumulatedTransferred += transferred
-
-			// Update speed if at least 1 second has passed
-			if (elapsedSinceLastUpdate  >= 1) {
-				currentSpeed = Math.round(accumulatedTransferred  / elapsedSinceLastUpdate)
-				lastUpdate = now
+			const elapsedSinceLastUpdate = now - speedLastUpdated
+			if (elapsedSinceLastUpdate >= 1000) {
+				// update speed if at least 1 second has passed
+				currentSpeed = Math.round(accumulatedTransferred / (elapsedSinceLastUpdate / 1000))
+				speedLastUpdated = Date.now()
 				accumulatedTransferred = 0
 			}
 			progressBar.increment(transferred, {
@@ -95,11 +95,7 @@ export function displayTransferProgressBar(
 			})
 
 			if (progressBar.getProgress() >= 1.0) {
-				// Update the final average speed
-				const totalElapsedSecs = (now - startTime) / 1000
-				progressBar.update({
-					speed: `Avg: ${formatBytes(total / totalElapsedSecs)}/s`
-				})
+				progressBar.update({ speed: `Avg: ${formatBytes(total / (now - startTime) / 1000)}/s` })
 				progressBar.stop()
 			}
 		}
