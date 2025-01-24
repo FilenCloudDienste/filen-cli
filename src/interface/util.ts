@@ -95,7 +95,7 @@ export function displayTransferProgressBar(
 			})
 
 			if (progressBar.getProgress() >= 1.0) {
-				progressBar.update({ speed: `Avg: ${formatBytes(total / (now - startTime) / 1000)}/s` })
+				progressBar.update({ speed: `Avg: ${formatBytes(total / (now - startTime) / 1000)}/s | ${((now - startTime) / 1000).toFixed(1)}s` })
 				progressBar.stop()
 			}
 		}
