@@ -26,35 +26,43 @@ else
   version=$(echo "$latest_release" | grep "tag_name" | cut -d \" -f 4)
   download_url=$(echo "$latest_release" | grep "browser_download_url.*$platform-$arch" | cut -d \" -f 4)
 
-  echo "Installing Filen CLI $version ($platform-$arch)"
+  if [[ ${#download_url} == 0 ]] ; then
 
-  # prepare install location ~/.filen-cli
-  if [ ! -d ~/.filen-cli ] ; then mkdir -p ~/.filen-cli/bin ; fi
+    echo "Filen CLI $version is not available for $platform-$arch"
 
-  # download binary and make executable
-  echo "Downloading $download_url..."
-  curl -o ~/.filen-cli/bin/filen -L --progress-bar $download_url
-  chmod +x ~/.filen-cli/bin/filen
-
-  # add to PATH
-  if [[ $PATH == *$(echo ~)/\.filen-cli* ]] ; then
-    echo "\$PATH already contains ~/.filen-cli"
   else
-    export PATH=$PATH:~/.filen-cli/bin
-    profileFileFound=0
-    for profileFile in ~/.bashrc ~/.bash_profile ~/.zshrc ~/.profile ; do
-      if [[ -f $profileFile ]] ; then
-        profileFileFound=1
-        printf "\n\n# filen-cli\nPATH=\$PATH:~/.filen-cli/bin\n" >> $profileFile
-        echo "Added ~/.filen-cli/bin to \$PATH in $profileFile"
-      fi
-    done
-    if [[ $profileFileFound == "0" ]] ; then
-      echo "ERR: No shell profile file found (checked: ~/.bashrc ~/.bash_profile ~/.zshrc ~/.profile)"
-    fi
-  fi
-  echo "Filen CLI installed as \`filen\` (you might need to restart your shell)"
 
-  echo "To uninstall, delete ~/.filen-cli and revert changes to your shell profile(s)"
+    echo "Installing Filen CLI $version ($platform-$arch)"
+
+    # prepare install location ~/.filen-cli
+    if [ ! -d ~/.filen-cli ] ; then mkdir -p ~/.filen-cli/bin ; fi
+
+    # download binary and make executable
+    echo "Downloading $download_url..."
+    curl -o ~/.filen-cli/bin/filen -L --progress-bar $download_url
+    chmod +x ~/.filen-cli/bin/filen
+
+    # add to PATH
+    if [[ $PATH == *$(echo ~)/\.filen-cli* ]] ; then
+      echo "\$PATH already contains ~/.filen-cli"
+    else
+      export PATH=$PATH:~/.filen-cli/bin
+      profileFileFound=0
+      for profileFile in ~/.bashrc ~/.bash_profile ~/.zshrc ~/.profile ; do
+        if [[ -f $profileFile ]] ; then
+          profileFileFound=1
+          printf "\n\n# filen-cli\nPATH=\$PATH:~/.filen-cli/bin\n" >> $profileFile
+          echo "Added ~/.filen-cli/bin to \$PATH in $profileFile"
+        fi
+      done
+      if [[ $profileFileFound == "0" ]] ; then
+        echo "ERR: No shell profile file found (checked: ~/.bashrc ~/.bash_profile ~/.zshrc ~/.profile)"
+      fi
+    fi
+    echo "Filen CLI installed as \`filen\` (you might need to restart your shell)"
+
+    echo "To uninstall, delete ~/.filen-cli and revert changes to your shell profile(s)"
+
+  fi
 
 fi
