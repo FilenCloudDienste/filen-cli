@@ -44,7 +44,7 @@ jobs:
         run: ${{ matrix.test-binary }} help
       - name: (Debug) Copy binaries  #todo remove
         if: ${{ matrix.os == 'macos-latest' }}
-        run: cp dist/filen-cli-${{ github.event.release.tag_name }}-macos-arm64 dist/filen-cli-${{ github.event.release.tag_name }}-macos-arm64-copy
+        run: cp dist/filen-cli-macos-arm64 dist/filen-cli-macos-arm64-copy
       - name: Codesign and notarize on macOS
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
