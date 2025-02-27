@@ -42,6 +42,8 @@ jobs:
       - name: Test binary
         if: ${{ matrix.test-binary }}
         run: ${{ matrix.test-binary }} help
+      - name: (Debug) Copy binaries  #todo remove
+        run: cp dist/filen-cli-${{ github.event.release.tag_name }}-macos-arm64 dist/filen-cli-${{ github.event.release.tag_name }}-macos-arm64-copy
       - name: Codesign and notarize on macOS
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
@@ -69,6 +71,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/filen-cli-${{ github.event.release.tag_name }}-*
+      - name: (Debug) tmate  #todo remove
+        uses: mxschmitt/action-tmate@v3
 
   build-and-publish-docker:
     name: Build Docker image
