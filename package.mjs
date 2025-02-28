@@ -64,7 +64,7 @@ for (const target of targets) {
 	})
 
 	// build binary using pkg via SEA
-	await pkg.exec(`--sea -t ${target.platform}-${target.arch} -o ${workingDirectory}/filen-cli-${target.name} ${workingDirectory}/bundle-${target.name}-2.js${target.name.includes("macos") ? "" : " --options max-old-space-size=16384"}`.split(" "))
+	await pkg.exec(`--sea -t ${target.platform}-${target.arch} -o ${workingDirectory}/filen-cli-${target.name} ${workingDirectory}/bundle-${target.name}-2.js --options max-old-space-size=16384`.split(" "))
 
 	// replace app icon (Windows)
 	if (target.platform === "win32") {
