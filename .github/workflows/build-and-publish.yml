@@ -60,7 +60,7 @@ jobs:
           codesign --sign "Developer ID Application: Filen Cloud Dienste UG (haftungsbeschraenkt)" --options runtime --force --keychain ~/Library/Keychains/build.keychain dist/filen-cli-macos-x64 dist/filen-cli-macos-arm64
           # notarize
           #todo remove : /usr/bin/ditto -c -k --keepParent dist/filen-cli-macos-arm64 dist/filen-cli-macos-arm64.zip
-          zip filen-cli-macos.zip dist/filen-cli-macos-x64 dist/filen-cli-macos-arm64
+          zip dist/filen-cli-macos.zip dist/filen-cli-macos-x64 dist/filen-cli-macos-arm64
           xcrun notarytool submit dist/filen-cli-macos.zip --apple-id $APPLE_NOTARIZE_ID --password $APPLE_NOTARIZE_PASS --team-id $APPLE_NOTARIZE_TEAM_ID --output-format json --wait 2>&1 | tee notarization_info.json
           id=$(cat notarization_info.json | jq -r '.id')
           xcrun notarytool log $id --apple-id $APPLE_NOTARIZE_ID --password $APPLE_NOTARIZE_PASS --team-id $APPLE_NOTARIZE_TEAM_ID
