@@ -157,7 +157,8 @@ export const dataDir = determineDataDir(args["--data-dir"])
 				args["--email"],
 				args["--password"],
 				args["--two-factor-code"],
-				args["_"][0] === "export-auth-config"
+				args["_"][0] === "export-auth-config",
+				args["_"][0] === "export-api-key",
 			)
 		} catch (e) {
 			errExit("authenticate", e)

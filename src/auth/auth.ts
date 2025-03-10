@@ -45,12 +45,15 @@ export class Authentication {
 	 * @param emailArg the `--email` CLI argument
 	 * @param passwordArg the `--password` CLI argument
 	 * @param twoFactorCodeArg the `--two-factor-code` CLI argument
+	 * @param saveSDKConfigFile the `filen export-auth-config` command
+	 * @param printApiKey the `filen export-api-key` command
 	 */
 	public async authenticate(
 		emailArg: string | undefined,
 		passwordArg: string | undefined,
 		twoFactorCodeArg: string | undefined,
-		saveSDKConfigFile: boolean
+		saveSDKConfigFile: boolean,
+		printApiKey: boolean,
 	) {
 		let credentials: Credentials | undefined = undefined
 		const needCredentials = () => credentials === undefined && (this.filen.config.email === "anonymous" || !this.filen.config.email)
@@ -153,7 +156,7 @@ export class Authentication {
 			}
 		}
 
-		// save credentials as .filen-cli-auth-config
+		// `filen export-auth-config`: save credentials as .filen-cli-auth-config
 		if (saveSDKConfigFile) {
 			if (await exists(this.sdkConfigFile)) {
 				if (!(await promptConfirm(`overwrite ${this.sdkConfigFile}`))) process.exit()
@@ -177,6 +180,14 @@ export class Authentication {
 			} catch (e) {
 				errExit("save auth config", e)
 			}
+		}
+
+		// `filen export-api-key`: print API key to the terminal (for Rclone integration)
+		if (printApiKey) {
+			const input = await prompt("You are about to print your API Key, which gives full access to your account,\nto the screen. Proceed? (y/N) ")
+			if (input.toLowerCase() !== "y") errExit("Cancelled.")
+			out(`API Key for ${this.filen.config.email}: ${this.filen.config.apiKey}`)
+			process.exit()
 		}
 
 		// save credentials from prompt
