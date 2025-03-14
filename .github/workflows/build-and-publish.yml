@@ -29,6 +29,7 @@ jobs:
         run: |
           # install ldid
           curl -o ldid -L https://github.com/ProcursusTeam/ldid/releases/download/v2.1.5-procursus7/ldid_linux_x86_64
+          chmod +x ./ldid
           # import certificate
           echo "${{ secrets.APPLE_DEVELOPER_ID_CERT }}" | base64 --decode > certificate.p12
           # sign using ldid
