@@ -25,18 +25,6 @@ jobs:
           node-version: "20.x"
       - run: npm ci
       - run: npm run package
-      - name: Sign and notarize macos binaries
-        run: |
-          # install ldid
-          curl -o ldid -L https://github.com/ProcursusTeam/ldid/releases/download/v2.1.5-procursus7/ldid_linux_x86_64
-          chmod +x ./ldid
-          # import certificate
-          echo "${{ secrets.APPLE_DEVELOPER_ID_CERT }}" | base64 --decode > certificate.p12
-          # sign using ldid
-          ./ldid -s -Kcertificate.p12 -U${{ secrets.APPLE_DEVELOPER_ID_CERT_PASS }} dist/filen-cli-macos-arm64
-          ./ldid -s -Kcertificate.p12 -U${{ secrets.APPLE_DEVELOPER_ID_CERT_PASS }} dist/filen-cli-macos-x64
-          # cleanup
-          rm -f certificate.p12
       - name: Rename win/linux binaries to include release number
         run: node -e "['win-x64.exe', 'win-arm64.exe', 'linux-x64', 'linux-arm64'].forEach(suffix => { if (fs.existsSync('dist/filen-cli-'+suffix)) { fs.renameSync('dist/filen-cli-'+suffix, 'dist/filen-cli-${{ github.event.release.tag_name }}-'+suffix) } })"
       - name: Attach win/linux binaries to release
@@ -58,19 +46,33 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: macos-binaries
-      - name: Check
-        run: ls -R
       - name: Codesign and notarize on macOS
         env: 
+          APPLE_DEVELOPER_ID_CERT: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
+          APPLE_DEVELOPER_ID_CERT_PASS: ${{ secrets.APPLE_DEVELOPER_ID_CERT_PASS }}
           APPLE_NOTARIZE_ID: ${{ secrets.APPLE_NOTARIZE_ID }}
           APPLE_NOTARIZE_PASS: ${{ secrets.APPLE_NOTARIZE_PASS }}
           APPLE_NOTARIZE_TEAM_ID: ${{ secrets.APPLE_NOTARIZE_TEAM_ID }}
         run: |
+          # import certificate
+          echo "$APPLE_DEVELOPER_ID_CERT" | base64 --decode > certificate.p12
+          security create-keychain -p actions build.keychain
+          security import certificate.p12 -k ~/Library/Keychains/build.keychain -P "$APPLE_DEVELOPER_ID_CERT_PASS" -T /usr/bin/codesign
+          security list-keychains -d user -s ~/Library/Keychains/build.keychain
+          security set-keychain-settings -t 3600 -u ~/Library/Keychains/build.keychain
+          security unlock-keychain -p actions ~/Library/Keychains/build.keychain
+          security set-key-partition-list -S apple-tool:,apple: -s -k actions ~/Library/Keychains/build.keychain
+          # codesign
+          codesign --sign "Developer ID Application: Filen Cloud Dienste UG (haftungsbeschraenkt)" --options runtime --force --keychain ~/Library/Keychains/build.keychain/filen-cli-macos-x64 filen-cli-macos-arm64
+          # notarize
           zip filen-cli-macos.zip filen-cli-macos-x64 filen-cli-macos-arm64
           xcrun notarytool submit filen-cli-macos.zip --apple-id $APPLE_NOTARIZE_ID --password $APPLE_NOTARIZE_PASS --team-id $APPLE_NOTARIZE_TEAM_ID --output-format json --wait 2>&1 | tee notarization_info.json
           id=$(cat notarization_info.json | jq -r '.id')
           xcrun notarytool log $id --apple-id $APPLE_NOTARIZE_ID --password $APPLE_NOTARIZE_PASS --team-id $APPLE_NOTARIZE_TEAM_ID
-      - name: Rename win/linux binaries to include release number
+          # cleanup certificate
+          security delete-keychain build.keychain
+          rm -f certificate.p12
+      - name: Rename macos binaries to include release number
         run: node -e "['macos-x64', 'macos-arm64'].forEach(suffix => { if (fs.existsSync('filen-cli-'+suffix)) { fs.renameSync('filen-cli-'+suffix, 'filen-cli-${{ github.event.release.tag_name }}-'+suffix) } })"
       - name: Attach macos binaries to release
         uses: softprops/action-gh-release@v2
