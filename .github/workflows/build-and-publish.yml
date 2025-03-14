@@ -25,7 +25,7 @@ jobs:
           node-version: "20.x"
       - run: npm ci
       - run: npm run package
-      - name: Sign and notarize macOS binaries
+      - name: Sign and notarize macos binaries
         run: |
           # install ldid
           curl -o ldid -L https://github.com/ProcursusTeam/ldid/releases/download/v2.1.5-procursus7/ldid_linux_x86_64
@@ -37,9 +37,42 @@ jobs:
           ./ldid -s -Kcertificate.p12 -U${{ secrets.APPLE_DEVELOPER_ID_CERT_PASS }} dist/filen-cli-macos-x64
           # cleanup
           rm -f certificate.p12
-      - name: Rename binaries to include release number
-        run: node -e "['win-x64.exe', 'win-arm64.exe', 'linux-x64', 'linux-arm64', 'macos-x64', 'macos-arm64'].forEach(suffix => { if (fs.existsSync('dist/filen-cli-'+suffix)) { fs.renameSync('dist/filen-cli-'+suffix, 'dist/filen-cli-${{ github.event.release.tag_name }}-'+suffix) } })"
-      - name: Attach binaries to release
+      - name: Rename win/linux binaries to include release number
+        run: node -e "['win-x64.exe', 'win-arm64.exe', 'linux-x64', 'linux-arm64'].forEach(suffix => { if (fs.existsSync('dist/filen-cli-'+suffix)) { fs.renameSync('dist/filen-cli-'+suffix, 'dist/filen-cli-${{ github.event.release.tag_name }}-'+suffix) } })"
+      - name: Attach win/linux binaries to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/filen-cli-${{ github.event.release.tag_name }}-*
+      - name: Upload macos binaries as build artifact
+        uses: actions/upload-artifact@v4
+        with: 
+          name: macos-binaries
+          path: filen-cli-macos-*
+  
+  notarize-and-publish-macos-binaries:
+    name: Notarize and publish macos binaries
+    runs-on: macos-latest
+    needs: build-and-publish-binaries
+    steps:
+      - name: Download macos binares build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-binaries
+      - name: Check
+        run: ls -R
+      - name: Codesign and notarize on macOS
+        env: 
+          APPLE_NOTARIZE_ID: ${{ secrets.APPLE_NOTARIZE_ID }}
+          APPLE_NOTARIZE_PASS: ${{ secrets.APPLE_NOTARIZE_PASS }}
+          APPLE_NOTARIZE_TEAM_ID: ${{ secrets.APPLE_NOTARIZE_TEAM_ID }}
+        run: |
+          zip dist/filen-cli-macos.zip dist/filen-cli-macos-x64 dist/filen-cli-macos-arm64
+          xcrun notarytool submit dist/filen-cli-macos.zip --apple-id $APPLE_NOTARIZE_ID --password $APPLE_NOTARIZE_PASS --team-id $APPLE_NOTARIZE_TEAM_ID --output-format json --wait 2>&1 | tee notarization_info.json
+          id=$(cat notarization_info.json | jq -r '.id')
+          xcrun notarytool log $id --apple-id $APPLE_NOTARIZE_ID --password $APPLE_NOTARIZE_PASS --team-id $APPLE_NOTARIZE_TEAM_ID
+      - name: Rename win/linux binaries to include release number
+        run: node -e "['macos-x64', 'macos-arm64'].forEach(suffix => { if (fs.existsSync('dist/filen-cli-'+suffix)) { fs.renameSync('dist/filen-cli-'+suffix, 'dist/filen-cli-${{ github.event.release.tag_name }}-'+suffix) } })"
+      - name: Attach macos binaries to release
         uses: softprops/action-gh-release@v2
         with:
           files: dist/filen-cli-${{ github.event.release.tag_name }}-*
