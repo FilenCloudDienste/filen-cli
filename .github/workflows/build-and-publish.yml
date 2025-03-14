@@ -47,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with: 
           name: macos-binaries
-          path: filen-cli-macos-*
+          path: dist/filen-cli-macos-*
   
   notarize-and-publish-macos-binaries:
     name: Notarize and publish macos binaries
