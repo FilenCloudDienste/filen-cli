@@ -6,24 +6,10 @@ on:
 
 jobs:
   build-and-publish-binaries:
-    name: Build binaries (${{ matrix.os }})
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            test-binary: dist/filen-cli-win-x64.exe
-          - os: ubuntu-latest
-          - os: macos-latest
-            test-binary: dist/filen-cli-macos-arm64
-    runs-on: ${{ matrix.os }}
+    name: Build binaries
+    runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
-      APPLE_DEVELOPER_ID_CERT: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
-      APPLE_DEVELOPER_ID_CERT_PASS: ${{ secrets.APPLE_DEVELOPER_ID_CERT_PASS }}
-      APPLE_NOTARIZE_ID: ${{ secrets.APPLE_NOTARIZE_ID }}
-      APPLE_NOTARIZE_PASS: ${{ secrets.APPLE_NOTARIZE_PASS }}
-      APPLE_NOTARIZE_TEAM_ID: ${{ secrets.APPLE_NOTARIZE_TEAM_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -39,33 +25,16 @@ jobs:
           node-version: "20.x"
       - run: npm ci
       - run: npm run package
-      - name: Test binary
-        if: ${{ matrix.test-binary }}
-        run: ${{ matrix.test-binary }} help
-      - name: (Debug) Copy binaries  #todo remove
-        if: ${{ matrix.os == 'macos-latest' }}
-        run: cp dist/filen-cli-macos-arm64 dist/filen-cli-macos-arm64-copy
-      - name: Codesign and notarize on macOS
-        if: ${{ matrix.os == 'macos-latest' }}
+      - name: Sign and notarize macOS binaries
         run: |
+          # install ldid
+          curl -o ldid -L https://github.com/ProcursusTeam/ldid/releases/download/v2.1.5-procursus7/ldid_linux_x86_64
           # import certificate
-          echo "$APPLE_DEVELOPER_ID_CERT" | base64 --decode > certificate.p12
-          security create-keychain -p actions build.keychain
-          security import certificate.p12 -k ~/Library/Keychains/build.keychain -P "$APPLE_DEVELOPER_ID_CERT_PASS" -T /usr/bin/codesign
-          security list-keychains -d user -s ~/Library/Keychains/build.keychain
-          security set-keychain-settings -t 3600 -u ~/Library/Keychains/build.keychain
-          security unlock-keychain -p actions ~/Library/Keychains/build.keychain
-          security set-key-partition-list -S apple-tool:,apple: -s -k actions ~/Library/Keychains/build.keychain
-          # codesign
-          codesign --sign "Developer ID Application: Filen Cloud Dienste UG (haftungsbeschraenkt)" --options runtime --force --keychain ~/Library/Keychains/build.keychain dist/filen-cli-macos-x64 dist/filen-cli-macos-arm64
-          # notarize
-          #todo remove : /usr/bin/ditto -c -k --keepParent dist/filen-cli-macos-arm64 dist/filen-cli-macos-arm64.zip
-          zip dist/filen-cli-macos.zip dist/filen-cli-macos-x64 dist/filen-cli-macos-arm64
-          xcrun notarytool submit dist/filen-cli-macos.zip --apple-id $APPLE_NOTARIZE_ID --password $APPLE_NOTARIZE_PASS --team-id $APPLE_NOTARIZE_TEAM_ID --output-format json --wait 2>&1 | tee notarization_info.json
-          id=$(cat notarization_info.json | jq -r '.id')
-          xcrun notarytool log $id --apple-id $APPLE_NOTARIZE_ID --password $APPLE_NOTARIZE_PASS --team-id $APPLE_NOTARIZE_TEAM_ID
-          # cleanup keychain
-          security delete-keychain build.keychain
+          echo "${{ secrets.APPLE_DEVELOPER_ID_CERT }}" | base64 --decode > certificate.p12
+          # sign using ldid
+          ./ldid -s -Kcertificate.p12 -U${{ secrets.APPLE_DEVELOPER_ID_CERT_PASS }} dist/filen-cli-macos-arm64
+          ./ldid -s -Kcertificate.p12 -U${{ secrets.APPLE_DEVELOPER_ID_CERT_PASS }} dist/filen-cli-macos-x64
+          # cleanup
           rm -f certificate.p12
       - name: Rename binaries to include release number
         run: node -e "['win-x64.exe', 'win-arm64.exe', 'linux-x64', 'linux-arm64', 'macos-x64', 'macos-arm64'].forEach(suffix => { if (fs.existsSync('dist/filen-cli-'+suffix)) { fs.renameSync('dist/filen-cli-'+suffix, 'dist/filen-cli-${{ github.event.release.tag_name }}-'+suffix) } })"
@@ -73,9 +42,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/filen-cli-${{ github.event.release.tag_name }}-*
-      - name: (Debug) tmate  #todo remove
-        if: ${{ matrix.os == 'macos-latest' }}
-        uses: mxschmitt/action-tmate@v3
 
   build-and-publish-docker:
     name: Build Docker image
