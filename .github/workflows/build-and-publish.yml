@@ -63,7 +63,7 @@ jobs:
           security unlock-keychain -p actions ~/Library/Keychains/build.keychain
           security set-key-partition-list -S apple-tool:,apple: -s -k actions ~/Library/Keychains/build.keychain
           # codesign
-          codesign --sign "Developer ID Application: Filen Cloud Dienste UG (haftungsbeschraenkt)" --options runtime --force --keychain ~/Library/Keychains/build.keychain filen-cli-macos-x64 filen-cli-macos-arm64
+          codesign --sign "Developer ID Application: Filen Cloud Dienste UG (haftungsbeschraenkt)" --options runtime --force --keychain ~/Library/Keychains/build.keychain --entitlements=.github/workflows/entitlements.plist filen-cli-macos-x64 filen-cli-macos-arm64
           # notarize
           zip filen-cli-macos.zip filen-cli-macos-x64 filen-cli-macos-arm64
           xcrun notarytool submit filen-cli-macos.zip --apple-id $APPLE_NOTARIZE_ID --password $APPLE_NOTARIZE_PASS --team-id $APPLE_NOTARIZE_TEAM_ID --output-format json --wait 2>&1 | tee notarization_info.json
