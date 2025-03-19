@@ -42,6 +42,8 @@ jobs:
     runs-on: macos-latest
     needs: build-and-publish-binaries
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Download macos binares build artifact
         uses: actions/download-artifact@v4
         with:
