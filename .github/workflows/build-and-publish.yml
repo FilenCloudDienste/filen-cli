@@ -36,6 +36,8 @@ jobs:
         with: 
           name: macos-binaries
           path: dist/filen-cli-macos-*
+      - name: (Debug) tmate   # todo remove
+        uses: mxschmitt/action-tmate@v3
   
   notarize-and-publish-macos-binaries:
     name: Notarize and publish macos binaries
