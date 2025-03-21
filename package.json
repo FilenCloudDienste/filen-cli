@@ -9,6 +9,7 @@
 		"test": "jest",
 		"build": "tsc && node injectBuildInfo.mjs && esbuild build/index.js --bundle --outfile=dist/bundle.js \"--external:*keytar.node\" --external:keytar --format=cjs --platform=node",
 		"package": "npm run build && node package.mjs",
+		"package-dev": "npm run build && node package.mjs --dev",
 		"bump-filen-dependencies": "npm i @filen/sdk@latest @filen/sync@latest @filen/webdav@latest @filen/s3@latest @filen/network-drive@latest"
 	},
 	"engines": {

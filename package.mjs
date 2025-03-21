@@ -11,6 +11,10 @@ console.log(`Build running on ${process.platform}-${process.arch}`)
 const buildScriptDirectory = import.meta.dirname
 const workingDirectory = path.resolve("./dist")
 
+// to be used in development only; builds only for current platform & arch
+const dev = process.argv.includes("--dev");
+if (dev) console.log("Running with --dev set.")
+
 const targets = [
 	{ name: "win-x64", platform: "win32", arch: "x64", parcelWatcherVariant: "win32-x64" },
 	{ name: "win-arm64", platform: "win32", arch: "arm64", parcelWatcherVariant: "win32-arm64" },
@@ -18,7 +22,7 @@ const targets = [
 	{ name: "linux-arm64", platform: "linux", arch: "arm64", parcelWatcherVariant: "linux-arm64" },
 	{ name: "macos-x64", platform: "darwin", arch: "x64", parcelWatcherVariant: "darwin-x64" },
 	{ name: "macos-arm64", platform: "darwin", arch: "arm64", parcelWatcherVariant: "darwin-arm64" }
-]
+].filter(t => !dev || (t.platform === process.platform && t.arch === process.arch))
 
 // install temporary @parcel/watcher-${variant} dependencies
 const parcelWatcherDependencies = [
@@ -44,7 +48,11 @@ for (const target of targets) {
 	const injectSnippet = target.name.startsWith("linux")
 		? `const { MUSL, family } = require_detect_libc(); binding = family === MUSL ? require("@parcel/watcher-${target.parcelWatcherVariant}-musl") : require("@parcel/watcher-${target.parcelWatcherVariant}-glibc");`
 		: `binding = require("@parcel/watcher-${target.parcelWatcherVariant}");`
-	bundle = bundle.replace(/binding = require\(name\);/, injectSnippet)
+	bundle = bundle.replaceAll(
+		/(binding = require\(name\);)|(binding = require\("\.\/build\/((Release)|(Debug))\/watcher\.node"\);)/g,
+		injectSnippet
+	)
+	bundle = bundle.replace("var fn = require(mod).__express;", "console.error('this should never be required; see package.mjs');")
 
 	// write bundle-${variant}.js
 	fs.writeFileSync(path.join(workingDirectory, `bundle-${target.name}.js`), bundle)
