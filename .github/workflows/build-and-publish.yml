@@ -22,7 +22,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
+          node-version: "23.x"
       - run: npm ci
       - run: npm run package
       - name: Rename win/linux binaries to include release number

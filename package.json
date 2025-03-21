@@ -13,7 +13,7 @@
 		"bump-filen-dependencies": "npm i @filen/sdk@latest @filen/sync@latest @filen/webdav@latest @filen/s3@latest @filen/network-drive@latest"
 	},
 	"engines": {
-		"node": "20"
+		"node": "23"
 	},
 	"keywords": [
 		"filen"
