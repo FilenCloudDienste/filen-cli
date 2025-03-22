@@ -36,8 +36,6 @@ jobs:
         with: 
           name: macos-binaries
           path: dist/filen-cli-macos-*
-      - name: (Debug) tmate   # todo remove
-        uses: mxschmitt/action-tmate@v3
   
   notarize-and-publish-macos-binaries:
     name: Notarize and publish macos binaries
@@ -50,6 +48,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: macos-binaries
+      - name: (Debug) tmate   # todo remove
+        uses: mxschmitt/action-tmate@v3
       - name: Codesign and notarize on macOS
         env: 
           APPLE_DEVELOPER_ID_CERT: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
@@ -76,6 +76,8 @@ jobs:
           # cleanup certificate
           security delete-keychain build.keychain
           rm -f certificate.p12
+      - name: (Debug) tmate   # todo remove
+        uses: mxschmitt/action-tmate@v3
       - name: Rename macos binaries to include release number
         run: node -e "['macos-x64', 'macos-arm64'].forEach(suffix => { if (fs.existsSync('filen-cli-'+suffix)) { fs.renameSync('filen-cli-'+suffix, 'filen-cli-${{ github.event.release.tag_name }}-'+suffix) } })"
       - name: Attach macos binaries to release
