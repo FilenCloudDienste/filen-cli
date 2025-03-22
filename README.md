@@ -56,12 +56,12 @@ Options:
 
 There are several ways to authenticate:
 
-- Invoke the CLI and specify your Filen email and password. You can then choose to save them in a local encrypted configuration file. You can delete them later using `filen delete-credentials`.
+- Invoke the CLI and specify your Filen email and password. You'll have the option to save them in a local encrypted configuration file, which you can delete later using `filen logout`.
 - Invoke the CLI with the `--email` and `--password` (optionally `--two-factor-code`) arguments set.
 - Put your credentials in the `FILEN_EMAIL` and `FILEN_PASSWORD` (optionally `FILEN_2FA_CODE`) environment variables.
 - Store your Filen email and password in a file named `.filen-cli-credentials` where you invoke the CLI. Put your email and password in separate lines, in plain text (optionally 2FA code in third line).
 - Export an "auth config" (which includes your Filen email, password and other details) using `filen export-auth-config`.
-  This will produce a file named `.filen-cli-auth-config`, which you need to place where you invoke the CLI from.
+  This will produce a file named `.filen-cli-auth-config`, which the CLI will detect when placed in the data directory or the current working directory.
   This option can be useful especially for clustered WebDAV/S3 servers, where otherwise too many login requests result in rate limiting.
 
 If you have 2FA enabled and don't specify a 2FA code, you will be prompted for it.

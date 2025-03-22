@@ -145,8 +145,8 @@ export const dataDir = determineDataDir(args["--data-dir"])
 		// skip authentication for webdav proxy mode
 		const authentication = new Authentication(filen)
 		try {
-			if (args["_"][0] === "delete-credentials") {
-				await authentication.deleteStoredCredentials()
+			if (args["_"][0] === "logout") {
+				await authentication.deleteSavedCredentials()
 				process.exit()
 			}
 		} catch (e) {
