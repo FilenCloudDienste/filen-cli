@@ -1,13 +1,14 @@
 import FilenSDK, { APIError, FilenSDKConfig } from "@filen/sdk"
 import { err, errExit, out, outVerbose, prompt, promptConfirm } from "../interface/interface"
 import fs from "node:fs"
-import { exists, platformConfigPath } from "../util/util"
+import { exists } from "../util/util"
 import path from "path"
 import { wrapRedTerminalText } from "../interface/util"
 import { ANONYMOUS_SDK_CONFIG } from "../constants"
 import keytar from "keytar"
 import crypto from "node:crypto"
 import { isDevelopment } from "../index"
+import { dataDir } from ".."
 
 /**
  * Handles authentication.
@@ -16,7 +17,7 @@ export class Authentication {
 	private readonly filen: FilenSDK
 
 	private readonly authConfigFileName = ".filen-cli-auth-config"
-	private readonly keepMeLoggedInFile = path.join(platformConfigPath(), ".filen-cli-keep-me-logged-in")
+	private readonly keepMeLoggedInFile = path.join(dataDir, ".filen-cli-keep-me-logged-in")
 
 	private readonly keychainServiceName = "filen-cli"
 	private readonly keychainAccountName = "auth-config-crypto-key" + (isDevelopment ? "-dev" : "")
@@ -49,10 +50,11 @@ export class Authentication {
 		emailArg: string | undefined,
 		passwordArg: string | undefined,
 		twoFactorCodeArg: string | undefined,
-		exportAuthConfig: boolean
+		exportAuthConfig: boolean,
+		exportApiKey: boolean
 	) {
 		// delete legacy saved credentials
-		for (const file of [path.join(platformConfigPath(), ".credentials"), path.join(platformConfigPath(), ".credentials.salt")]) {
+		for (const file of [path.join(dataDir, ".credentials"), path.join(dataDir, ".credentials.salt")]) {
 			if (await exists(file)) await fs.promises.unlink(file)
 		}
 
@@ -92,7 +94,7 @@ export class Authentication {
 		if (needCredentials()) {
 			const authConfigFilePath = await (async () => {
 				if (await exists(this.authConfigFileName)) return this.authConfigFileName
-				if (await exists(path.join(platformConfigPath(), this.authConfigFileName))) return path.join(platformConfigPath(), this.authConfigFileName)
+				if (await exists(path.join(dataDir, this.authConfigFileName))) return path.join(dataDir, this.authConfigFileName)
 				return undefined
 			})()
 			if (authConfigFilePath !== undefined) {
@@ -193,7 +195,7 @@ export class Authentication {
 			}
 		}
 
-		// export credentials to .filen-cli-auth-config
+		// `filen export-auth-config`: export credentials to .filen-cli-auth-config
 		if (exportAuthConfig) {
 			if (await exists(this.authConfigFileName)) {
 				if (!(await promptConfirm(`overwrite ${this.authConfigFileName}`))) process.exit()
@@ -212,7 +214,7 @@ export class Authentication {
 			if (input.toLowerCase() !== "i am aware of the risks") errExit("Cancelled.")
 			const exportLocation = await prompt("Choose an export location: [1] $APP_DATA/filen-cli, [2] here:")
 			const exportPath = (() => {
-				if (exportLocation === "1") return path.join(platformConfigPath(), ".filen-cli-auth-config")
+				if (exportLocation === "1") return path.join(dataDir, ".filen-cli-auth-config")
 				if (exportLocation === "2") return path.join(process.cwd(), ".filen-cli-auth-config")
 				errExit("Invalid input, please choose \"1\" or \"2\"")
 			})()
@@ -224,6 +226,14 @@ export class Authentication {
 			} catch (e) {
 				errExit("save auth config", e)
 			}
+		}
+
+		// `filen export-api-key`: print API key to the terminal (for Rclone integration)
+		if (exportApiKey) {
+			const input = await prompt("You are about to print your API Key, which gives full access to your account,\nto the screen. Proceed? (y/N) ")
+			if (input.toLowerCase() !== "y") errExit("Cancelled.")
+			out(`API Key for ${this.filen.config.email}: ${this.filen.config.apiKey}`)
+			process.exit()
 		}
 
 		// save credentials from prompt

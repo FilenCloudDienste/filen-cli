@@ -9,16 +9,34 @@ The Filen CLI provides a set of useful tools for interacting with the cloud:
 - Running a [WebDAV mirror server](#webdav-server) of your [personal drive](#single-user), or multiple drives in [proxy mode](#proxy-mode)
 - Running an [S3 mirror server](#s3-server)
 
+> [!Note]
+> Please **report bugs** on our [issues page](https://github.com/FilenCloudDienste/filen-cli/issues)! \
+> **Feature requests** can be submitted on [features.filen.io](https://features.filen.io/?tags=cli).
+
 
 # Installation and updates
 
-You can download the latest binaries from the [release page](https://github.com/FilenCloudDienste/filen-cli/releases/latest).
+You can download the latest binaries from the [release page](https://github.com/FilenCloudDienste/filen-cli/releases/latest), or execute the install script (Linux and macOS):
+```
+curl -sL https://filen.io/cli.sh | bash
+```
+
 Docker images are also available as [filen/cli](https://hub.docker.com/repository/docker/filen/cli) (see [below](#using-docker)).
 
 The Filen CLI includes an automatic updater that checks for a new release every time the CLI is invoked
 (after checking for updates, it will not check again for the next 10 minutes).
-Invoke the CLI with the `--skip-update` flag to skip checking for updates.
-(Use the `--force-update` flag to check for updates even if it was recently checked.)
+Invoke the CLI with the `--skip-update` flag to skip checking for updates, or use the `--force-update` flag to check for updates even if it was recently checked.
+Use the `--auto-update` flag to skip the confirmation prompt and update automatically (the CLI will still abort after updating).
+
+You can always install any version using `filen install <version>`, `filen install latest` or `filen install canary`.
+
+The CLI is also available as an NPM package, which can be installed with `npm install --global @filen/cli` and then invoked as `filen`. The NPM repository always contains the latest canary releases (see below).
+
+### Canary releases
+
+If you want to be among the first to try out new features and fixes, you can enable canary releases,
+which are early releases meant for a subset of users to test before they are declared as stable.
+To enable or disable canary releases, invoke the CLI with the command `filen canary`.
 
 
 # Usage
@@ -47,6 +65,10 @@ There are several ways to authenticate:
   This option can be useful especially for clustered WebDAV/S3 servers, where otherwise too many login requests result in rate limiting.
 
 If you have 2FA enabled and don't specify a 2FA code, you will be prompted for it.
+
+### Data directory
+
+The data directory is where configuration files, credentials, cache etc. are stored and read from. By default, it is `%APPDATA%/filen-cli` (Windows), `~/Library/Application Support/filen-cli` (macOS) or `$XDG_CONFIG_HOME/filen-cli` or `~/.config/filen-cli` (Unix). If there is a directory named `.filen-cli` at the home directory `~`, it is used instead (for instance, the install script installs to this location). You can overwrite the location using the `--data-dir` flag or the `FILEN_CLI_DATA_DIR` environment variable. 
 
 
 ## Access your Filen Drive
@@ -118,9 +140,9 @@ $ filen sync [sync pairs...] [--continuous]
 Invoke `filen sync` to sync any locations with your Filen Drive. This is the same functionality you get with the Desktop app.
 
 You must specify the sync pairs (`[sync pairs...]` above) as follows:
-- **(central registry)** `filen sync`: Read the sync pairs from `$APP_DATA/filen_cli/syncPairs.json`. 
-  This file must contain JSON of the type `{local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean, ignore?: string[]}[]`.
-  `syncMode` can be `twoWay`, `localToCloud`, `localBackup`, `cloudToLocal` or `cloudBackup` (see the FAQ [here](https://filen.io/apps/desktop) on what that means).
+- **(central registry)** `filen sync`: Read the sync pairs from `syncPairs.json` (inside the [data dir](#data-directory)). 
+  This file must contain JSON of the type[^type] `{local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean, ignore?: string[], excludeDotFiles?: boolean}[]`.
+  `syncMode` can be `twoWay`, `localToCloud`, `localBackup`, `cloudToLocal` or `cloudBackup` (see [here](https://blog.filen.io/how-to-desktop-client/#:~:text=for%20this%20sync.-,Sync%20Modes,-%3A) on what that means). Note that since this is a JSON file, backslashes (`\`) in strings need to be escaped, e. g. `"C:\\some\\path"`).
 - **(custom registry)** `filen sync <file>`: Read the sync pairs from a custom JSON file (same type as above).
 - **(aliases)** `filen sync mypair myotherpair`: Sync the sync pairs from the central registry that were given the aliases `mypair` and `myotherpair`.
 - **(literal pair)** `filen sync /local/path:twoWay:/cloud/path`: Sync the local path `/local/path` with the cloud path `/cloud/path` in two-way sync.
@@ -130,6 +152,8 @@ You must specify the sync pairs (`[sync pairs...]` above) as follows:
 - **(disable local trash)** `filen sync /local:/cloud --disable-local-trash`: Disable local trash
 
 You can set the `--continuous` flag to keep syncing (instead of only syncing once).
+
+[^type]: This is a [TypeScript type definition](https://www.typescriptlang.org/docs/handbook/2/objects.html), where `?` means an optional field.
 
 
 ## Network drive mounting

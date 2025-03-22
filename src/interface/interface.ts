@@ -2,9 +2,11 @@ import { Autocompletion } from "../featureInterfaces/fs/autocompletion"
 import { InterruptHandler } from "./interrupt"
 import * as fs from "node:fs"
 import { formatTimestamp, wrapRedTerminalText } from "./util"
-import { version } from "../buildInfo"
 import { CompleterResult } from "node:readline"
-import { read } from "./read"
+import { read } from "read"
+import { Mutex } from "async-mutex"
+import * as buffer from "buffer"
+import { randomUUID } from "node:crypto"
 
 /**
  * `--quiet` flag is set
@@ -27,20 +29,33 @@ export function setOutputFlags(quietFlag: boolean, verboseFlag: boolean) {
  */
 export function setupLogs(logsFile: string | undefined = undefined) {
 	if (logsFile === undefined) return
-	process.on("exit", () => {
+	writeLogsToDisk = () => {
 		try {
 			if (fs.readFileSync(logsFile).length > 1) logs = "\n\n" + logs
 		} catch (e) {
 			// do nothing
 		}
-		logs = `${formatTimestamp(new Date().getTime())}       Filen CLI ${version}\n${formatTimestamp(new Date().getTime())}       > ${process.argv.join(" ")}\n` + logs
 		fs.appendFileSync(logsFile, logs)
-	})
+	}
+	process.on("exit", () => writeLogsToDisk!())
+	writeLog(`> ${process.argv.join(" ")}`, "log")
 }
+let writeLogsToDisk: () => void = () => {}
 
 let logs = ""
+const logsMutex = new Mutex()
 function writeLog(message: string, type: "log" | "input" | "error") {
-	logs += message.split("\n").map(line => `${formatTimestamp(new Date().getTime())} ${type === "log" ? "[LOG]" : type === "error" ? "[ERR]" : "[IN ]"} ${line}\n`).join("")
+	logsMutex.acquire().then(() => {
+		logs += message.split("\n").map(line => `${formatTimestamp(new Date().getTime())} ${type === "log" ? "[LOG]" : type === "error" ? "[ERR]" : "[IN ]"} ${line}\n`).join("")
+		if (buffer.constants.MAX_STRING_LENGTH - logs.length < 10_000) {
+			// the in-memory log file is too large, flush it to disk
+			const randomTag = randomUUID()
+			logs += `                              (these logs are continued at #${randomTag})\n`
+			writeLogsToDisk?.()
+			logs = `                              (this is the continuation of #${randomTag})\n`
+		}
+		logsMutex.release()
+	})
 }
 
 /**
@@ -176,11 +191,32 @@ process.stdin.on("keypress", () => {
 /**
  * Global confirmation prompting method
  * @param action The action to include in the prompt (e.g. "delete file.txt"), or undefined for a generic prompt.
+ * @param allowExit Whether to allow to exit the application here via `^C`
  */
-export async function promptConfirm(action: string | undefined) {
+export async function promptConfirm(action: string | undefined, allowExit: boolean = false) {
+	return promptYesNo(action !== undefined ? `Are you sure you want to ${action}?` : "Are you sure?", allowExit)
+}
+
+/**
+ * Global confirmation prompting method
+ * @param question The question to include in the prompt
+ * @param defaultAnswer The default answer if there's no input
+ * @param allowExit Whether to allow to exit the application here via `^C`
+ */
+export async function promptYesNo(question: string, defaultAnswer: boolean = false, allowExit: boolean = false) {
 	return new Promise<boolean>((resolve) => {
-		prompt(action !== undefined ? `Are you sure you want to ${action}? [y/N] ` : "Are you sure? [y/N] ").then(result => {
-			resolve(result.toLowerCase() === "y")
+		prompt(`${question} ${defaultAnswer ? "[Y/n]" : "[y/N]"} `, { allowExit }).then(result => {
+			const input = result.toLowerCase()
+			if (input === "n" || input === "no") {
+				resolve(false)
+			} else if (input === "y" || input === "yes") {
+				resolve(true)
+			} else if (input.trim() === "") {
+				resolve(defaultAnswer)
+			} else {
+				err("Invalid input, please enter 'y' or 'n'!")
+				promptYesNo(question, defaultAnswer).then(resolve)
+			}
 		})
 	})
 }

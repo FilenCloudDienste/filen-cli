@@ -1,5 +1,5 @@
 import FilenSDK from "@filen/sdk"
-import VirtualDrive, { isFUSE3InstalledOnLinux, isWinFSPInstalled } from "@filen/network-drive"
+import VirtualDrive, { isFUSE3InstalledOnLinux, isWinFSPInstalled, isMacFUSEInstalled, isFUSETInstalledOnMacOS } from "@filen/network-drive"
 import { InterruptHandler } from "../interface/interrupt"
 import { errExit, out } from "../interface/interface"
 
@@ -18,10 +18,13 @@ export class DriveMountingInterface {
 		out(`Mounting network drive for ${this.filen.config.email} at ${mountPoint}`)
 
 		if (process.platform === "win32") {
-			if (!await isWinFSPInstalled()) errExit("WinFSP is needed on Windows for network drive mounting. WinFSP could not be found.")
+			if (!await isWinFSPInstalled()) errExit("WinFSP is needed on Windows for network drive mounting, but it could not be found.")
 		}
 		if (process.platform === "linux") {
-			if (!await isFUSE3InstalledOnLinux()) errExit("FUSE 3 is needed in Linux for network drive mounting. FUSE 3 could not be found.")
+			if (!await isFUSE3InstalledOnLinux()) errExit("FUSE 3 is needed on Linux for network drive mounting, but it could not be found.")
+		}
+		if (process.platform === "darwin") {
+			if (!await isMacFUSEInstalled() && !await isFUSETInstalledOnMacOS()) errExit("macFUSE or FUSE-T is needed on macOS for network drive mounting, but neither could be found.")
 		}
 
 		const virtualDrive = new VirtualDrive({

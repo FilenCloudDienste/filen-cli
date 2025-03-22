@@ -67,16 +67,37 @@ export function displayTransferProgressBar(
 	try {
 		const progressBar = new cliProgress.SingleBar(
 			{
-				format: `${action} ${file} [{bar}] {percentage}% | ETA: {eta_formatted} | ${isApproximate ? "~ " : ""}{value} / {total}`,
-				// of a number is <= 100, it is likely a percentage; otherwise format as byte (library used here doesn't provide other options)
+				format: `${action} ${file} [{bar}] {percentage}% | {speed} | ETA: {eta_formatted} | ${isApproximate ? "~ " : ""}{value} / {total}`,
+				// if a number is <= 100, it is likely a percentage; otherwise format as byte (library used here doesn't provide other options)
 				formatValue: n => (n <= 100 ? n.toString() : formatBytes(n))
 			},
 			cliProgress.Presets.legacy
 		)
-		progressBar.start(total, 0)
+		progressBar.start(total, 0, { speed: "N/A" })
+
+		const startTime = Date.now()
+		let speedLastUpdated = startTime
+		let accumulatedTransferred = 0
+		let currentSpeed = 0
+
 		const onProgress = (transferred: number) => {
-			progressBar.increment(transferred)
-			if (progressBar.getProgress() >= 1.0) progressBar.stop()
+			const now = Date.now()
+			accumulatedTransferred += transferred
+			const elapsedSinceLastUpdate = now - speedLastUpdated
+			if (elapsedSinceLastUpdate >= 1000) {
+				// update speed if at least 1 second has passed
+				currentSpeed = Math.round(accumulatedTransferred / (elapsedSinceLastUpdate / 1000))
+				speedLastUpdated = Date.now()
+				accumulatedTransferred = 0
+			}
+			progressBar.increment(transferred, {
+				speed: `${formatBytes(currentSpeed)}/s`
+			})
+
+			if (progressBar.getProgress() >= 1.0) {
+				progressBar.update({ speed: `Avg: ${formatBytes(total / (now - startTime) / 1000)}/s | ${((now - startTime) / 1000).toFixed(1)}s` })
+				progressBar.stop()
+			}
 		}
 		return { progressBar, onProgress }
 	} catch (e) {
