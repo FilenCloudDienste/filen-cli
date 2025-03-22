@@ -152,7 +152,7 @@ export class HelpPage {
 		
 		Examples:
 		${formatTable([
-			["filen sync", "read sync pairs from $APP_DATA/filen_cli/syncPairs.json of type {local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean, ignore?: string[], excludeDotFiles?: boolean}[]"],
+			["filen sync", "read sync pairs from {dataDir}/syncPairs.json of type {local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean, ignore?: string[], excludeDotFiles?: boolean}[]"],
 			["filen sync <file>", "read sync pairs from custom JSON file"],
 			["filen sync mypair myotherpair", "use aliases as defined in syncPairs.json"],
 			["filen sync /local/path:/cloud/path", "sync a local path with a cloud path in two-way sync"],
@@ -214,7 +214,7 @@ export class HelpPage {
 			Arch:           sudo pacman -S libsecret
 		
 		Alternatively, you can export an auth config containing your credentials using \`filen export-auth-config\`.
-		Exporting this file to $APPDATA/filen-cli will make it visible to the CLI.
+		Exporting this file to the data directory will make it visible to the CLI.
 		`
 
 	private readonly updatesHelpPage: string = dedent`

@@ -212,7 +212,7 @@ export class Authentication {
 				{ allowExit: true }
 			)
 			if (input.toLowerCase() !== "i am aware of the risks") errExit("Cancelled.")
-			const exportLocation = await prompt("Choose an export location: [1] $APP_DATA/filen-cli, [2] here:")
+			const exportLocation = await prompt("Choose an export location: [1] data directory, [2] here:")
 			const exportPath = (() => {
 				if (exportLocation === "1") return path.join(dataDir, ".filen-cli-auth-config")
 				if (exportLocation === "2") return path.join(process.cwd(), ".filen-cli-auth-config")
