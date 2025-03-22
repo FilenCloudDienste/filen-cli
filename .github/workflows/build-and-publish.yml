@@ -6,8 +6,17 @@ on:
 
 jobs:
   build-and-publish-binaries:
-    name: Build binaries
-    runs-on: ubuntu-latest
+    name: Build binaries (${{ matrix.target }})
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            target: win
+          - os: ubuntu-latest
+            target: linux
+          - os: macos-latest
+            target: macos
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: write
     steps:
@@ -24,39 +33,16 @@ jobs:
         with:
           node-version: "23.x"
       - run: npm ci
-      - run: npm run package
-      - name: Rename win/linux binaries to include release number
-        run: node -e "['win-x64.exe', 'win-arm64.exe', 'linux-x64', 'linux-arm64'].forEach(suffix => { if (fs.existsSync('dist/filen-cli-'+suffix)) { fs.renameSync('dist/filen-cli-'+suffix, 'dist/filen-cli-${{ github.event.release.tag_name }}-'+suffix) } })"
-      - name: Attach win/linux binaries to release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/filen-cli-${{ github.event.release.tag_name }}-*
-      - name: Upload macos binaries as build artifact
-        uses: actions/upload-artifact@v4
-        with: 
-          name: macos-binaries
-          path: dist/filen-cli-macos-*
-  
-  notarize-and-publish-macos-binaries:
-    name: Notarize and publish macos binaries
-    runs-on: macos-latest
-    needs: build-and-publish-binaries
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Download macos binares build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: macos-binaries
-      - name: (Debug) tmate   # todo remove
-        uses: mxschmitt/action-tmate@v3
+      - run: npm run package-${{ matrix.target }}
       - name: Codesign and notarize on macOS
+        if: ${{ matrix.target == 'macos' }}
         env: 
           APPLE_DEVELOPER_ID_CERT: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
           APPLE_DEVELOPER_ID_CERT_PASS: ${{ secrets.APPLE_DEVELOPER_ID_CERT_PASS }}
           APPLE_NOTARIZE_ID: ${{ secrets.APPLE_NOTARIZE_ID }}
           APPLE_NOTARIZE_PASS: ${{ secrets.APPLE_NOTARIZE_PASS }}
           APPLE_NOTARIZE_TEAM_ID: ${{ secrets.APPLE_NOTARIZE_TEAM_ID }}
+        working-directory: ./dist
         run: |
           # import certificate
           echo "$APPLE_DEVELOPER_ID_CERT" | base64 --decode > certificate.p12
@@ -76,14 +62,12 @@ jobs:
           # cleanup certificate
           security delete-keychain build.keychain
           rm -f certificate.p12
-      - name: (Debug) tmate   # todo remove
-        uses: mxschmitt/action-tmate@v3
-      - name: Rename macos binaries to include release number
-        run: node -e "['macos-x64', 'macos-arm64'].forEach(suffix => { if (fs.existsSync('filen-cli-'+suffix)) { fs.renameSync('filen-cli-'+suffix, 'filen-cli-${{ github.event.release.tag_name }}-'+suffix) } })"
-      - name: Attach macos binaries to release
+      - name: Rename binaries to include release number
+        run: node -e "['win-x64.exe', 'win-arm64.exe', 'linux-x64', 'linux-arm64', 'macos-x64', 'macos-arm64'].forEach(suffix => { if (fs.existsSync('dist/filen-cli-'+suffix)) { fs.renameSync('dist/filen-cli-'+suffix, 'dist/filen-cli-${{ github.event.release.tag_name }}-'+suffix) } })"
+      - name: Attach binaries to release
         uses: softprops/action-gh-release@v2
         with:
-          files: filen-cli-${{ github.event.release.tag_name }}-*
+          files: dist/filen-cli-${{ github.event.release.tag_name }}-*
 
   build-and-publish-docker:
     name: Build Docker image
