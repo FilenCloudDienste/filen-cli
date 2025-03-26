@@ -1,13 +1,13 @@
 import FilenSDK, { APIError, FilenSDKConfig } from "@filen/sdk"
-import { err, errExit, out, outVerbose, prompt, promptConfirm } from "../interface/interface"
+import { err, errExit, out, outVerbose, prompt, promptConfirm } from "./interface/interface"
 import fs from "node:fs"
-import { exists } from "../util/util"
+import { exists } from "./util/util"
 import path from "path"
-import { wrapRedTerminalText } from "../interface/util"
-import { ANONYMOUS_SDK_CONFIG } from "../constants"
+import { wrapRedTerminalText } from "./interface/util"
+import { ANONYMOUS_SDK_CONFIG } from "./constants"
 import crypto from "node:crypto"
-import { isDevelopment } from "../index"
-import { dataDir } from ".."
+import { isDevelopment } from "./index"
+import { dataDir } from "."
 
 /**
  * Handles authentication.
