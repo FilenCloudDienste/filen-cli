@@ -13,7 +13,7 @@
 		"package-macos": "npm run build && node package.mjs macos",
 		"package-dev": "npm run build && node package.mjs --dev",
 		"bump-filen-dependencies": "npm i @filen/sdk@latest @filen/sync@latest @filen/webdav@latest @filen/s3@latest @filen/network-drive@latest",
-        "prepublishOnly": "node -e \"if (process.env.FILEN_IS_NPM_PACKAGE !== 'true') process.exit(1)\" && npm run build"
+		"prepublishOnly": "node -e \"if (process.env.FILEN_IS_NPM_PACKAGE !== 'true') process.exit(1)\" && npm run build"
 	},
 	"engines": {
 		"node": "23"

@@ -28,7 +28,7 @@ const targets = [
 	{ name: "linux-arm64", platform: "linux", arch: "arm64", parcelWatcherVariant: "linux-arm64" },
 	{ name: "macos-x64", platform: "darwin", arch: "x64", parcelWatcherVariant: "darwin-x64" },
 	{ name: "macos-arm64", platform: "darwin", arch: "arm64", parcelWatcherVariant: "darwin-arm64" }
-].filter(t => (targetPlatform === undefined || t.platform === targetPlatform) && (!dev || t.arch === process.arch))
+].filter(t => (targetPlatform === undefined || t.platform === targetPlatform) && (!dev || t.platform === process.platform) && (!dev || t.arch === process.arch))
 
 // install temporary @parcel/watcher-${variant} dependencies
 const parcelWatcherDependencies = [

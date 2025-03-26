@@ -1,4 +1,4 @@
-FROM node:23-alpine as build
+FROM node:23-alpine AS build
 WORKDIR /filen-cli
 COPY . .
 ENV FILEN_IS_CONTAINER=true

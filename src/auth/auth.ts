@@ -5,7 +5,6 @@ import { exists } from "../util/util"
 import path from "path"
 import { wrapRedTerminalText } from "../interface/util"
 import { ANONYMOUS_SDK_CONFIG } from "../constants"
-import keytar from "keytar"
 import crypto from "node:crypto"
 import { isDevelopment } from "../index"
 import { dataDir } from ".."
@@ -115,7 +114,7 @@ export class Authentication {
 		if (needCredentials() && await exists(this.keepMeLoggedInFile)) {
 			const cryptoKey = await (async () => {
 				try {
-					const key = await keytar.getPassword(this.keychainServiceName, this.keychainAccountName)
+					const key = await this.getKeychainCryptoKey()
 					if (key === null) errExit("There's a saved credentials file, but no crypto key in the keychain. Try `filen logout` and login again.")
 					return key
 				} catch (e) {
@@ -241,7 +240,7 @@ export class Authentication {
 			if ((await prompt("Keep me logged in? [y/N] ", { allowExit: true })).toLowerCase() === "y") {
 				const cryptoKey = this.generateCryptoKey()
 				try {
-					await keytar.setPassword(this.keychainServiceName, this.keychainAccountName, cryptoKey)
+					await this.setKeychainCryptoKey(cryptoKey)
 				} catch (e) {
 					errExit("save credentials crypto key in keychain", e, process.platform === "linux" ? "You seem to be running Linux, is libsecret installed? Please see `filen help libsecret` for more information" : undefined)
 				}
@@ -289,5 +288,16 @@ export class Authentication {
 		decipher.setAuthTag(authTag)
 		const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf-8")
 		return JSON.parse(decrypted) as FilenSDKConfig
+	}
+
+	// `keytar` is imported dynamically so that errors not finding e.g. `libsecret-1.so.0`
+	// can be caught when actually attempting to access the keychain, not when importing the module
+	private async getKeychainCryptoKey(): Promise<string | null> {
+		const keytar = await import("keytar")
+		return await keytar.getPassword(this.keychainServiceName, this.keychainAccountName)
+	}
+	private async setKeychainCryptoKey(cryptoKey: string): Promise<void> {
+		const keytar = await import("keytar")
+		await keytar.setPassword(this.keychainServiceName, this.keychainAccountName, cryptoKey)
 	}
 }

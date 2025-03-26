@@ -1,0 +1,7 @@
+.github
+.idea
+.vscode
+bin-dev
+build
+dist
+node_modules
