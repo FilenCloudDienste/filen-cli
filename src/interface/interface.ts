@@ -193,8 +193,8 @@ process.stdin.on("keypress", () => {
  * @param action The action to include in the prompt (e.g. "delete file.txt"), or undefined for a generic prompt.
  * @param allowExit Whether to allow to exit the application here via `^C`
  */
-export async function promptConfirm(action: string | undefined, allowExit: boolean = false) {
-	return promptYesNo(action !== undefined ? `Are you sure you want to ${action}?` : "Are you sure?", allowExit)
+export async function promptConfirm(action: string | undefined, options: { allowExit?: boolean } = { allowExit: false }) {
+	return promptYesNo(action !== undefined ? `Are you sure you want to ${action}?` : "Are you sure?", options)
 }
 
 /**
@@ -203,19 +203,19 @@ export async function promptConfirm(action: string | undefined, allowExit: boole
  * @param defaultAnswer The default answer if there's no input
  * @param allowExit Whether to allow to exit the application here via `^C`
  */
-export async function promptYesNo(question: string, defaultAnswer: boolean = false, allowExit: boolean = false) {
+export async function promptYesNo(question: string, options: { defaultAnswer?: boolean, allowExit?: boolean } = { defaultAnswer: false, allowExit: false }) {
 	return new Promise<boolean>((resolve) => {
-		prompt(`${question} ${defaultAnswer ? "[Y/n]" : "[y/N]"} `, { allowExit }).then(result => {
+		prompt(`${question} ${options.defaultAnswer ? "[Y/n]" : "[y/N]"} `, options).then(result => {
 			const input = result.toLowerCase()
 			if (input === "n" || input === "no") {
 				resolve(false)
 			} else if (input === "y" || input === "yes") {
 				resolve(true)
 			} else if (input.trim() === "") {
-				resolve(defaultAnswer)
+				resolve(options.defaultAnswer ?? false)
 			} else {
 				err("Invalid input, please enter 'y' or 'n'!")
-				promptYesNo(question, defaultAnswer).then(resolve)
+				promptYesNo(question, options).then(resolve)
 			}
 		})
 	})

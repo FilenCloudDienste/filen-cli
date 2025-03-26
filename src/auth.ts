@@ -1,5 +1,5 @@
 import FilenSDK, { APIError, FilenSDKConfig } from "@filen/sdk"
-import { err, errExit, out, outVerbose, prompt, promptConfirm } from "./interface/interface"
+import { err, errExit, out, outVerbose, prompt, promptConfirm, promptYesNo } from "./interface/interface"
 import fs from "node:fs"
 import { exists } from "./util/util"
 import path from "path"
@@ -237,7 +237,7 @@ export class Authentication {
 
 		// save credentials from prompt
 		if (authenticateUsingPrompt) {
-			if ((await prompt("Keep me logged in? [y/N] ", { allowExit: true })).toLowerCase() === "y") {
+			if (await promptYesNo("Keep me logged in? [y/N] ", { allowExit: true })) {
 				const cryptoKey = this.generateCryptoKey()
 				try {
 					await this.setKeychainCryptoKey(cryptoKey)
