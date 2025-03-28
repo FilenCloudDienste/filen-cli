@@ -81,13 +81,13 @@ export class Updater {
 		if (releases.filter(release => release.tag_name === currentVersion).length === 0) {
 			// current version doesn't exist as release, so it was intentionally deleted to prompt for downgrade
 			if (updateCache.canary && canaryDownloadUrl !== undefined) {
-				if (autoUpdate || await promptYesNo(`It is highly recommended to ${semver.gt(currentVersion, canaryRelease.tag_name) ? "downgrade" : "update"} from ${currentVersion} to${latestVersion === canaryRelease.tag_name ? "" : " canary release"} ${canaryRelease.tag_name}. Please confirm:`, true)) {
+				if (autoUpdate || await promptYesNo(`It is highly recommended to ${semver.gt(currentVersion, canaryRelease.tag_name) ? "downgrade" : "update"} from ${currentVersion} to${latestVersion === canaryRelease.tag_name ? "" : " canary release"} ${canaryRelease.tag_name}. Please confirm:`, { defaultAnswer: true })) {
 					out(`${semver.gt(currentVersion, canaryRelease.tag_name) ? "Downgrading" : "Updating"} from ${currentVersion} to${latestVersion === canaryRelease.tag_name ? "" : " canary release"} ${canaryRelease.tag_name}...`)
 					await this.showChangelogs(releases, canaryRelease.tag_name, autoUpdate)
 					await this.installVersion(currentVersion, canaryRelease.tag_name, canaryDownloadUrl)
 				}
 			} else if (latestDownloadUrl !== undefined) {
-				if (autoUpdate || await promptYesNo(`It is highly recommended to ${semver.gt(currentVersion, latestVersion) ? "downgrade" : "update"} from ${currentVersion} to ${latestVersion}. Please confirm:`, true)) {
+				if (autoUpdate || await promptYesNo(`It is highly recommended to ${semver.gt(currentVersion, latestVersion) ? "downgrade" : "update"} from ${currentVersion} to ${latestVersion}. Please confirm:`, { defaultAnswer: true })) {
 					out(`${semver.gt(currentVersion, latestVersion) ? "Downgrading" : "Updating"} from ${currentVersion} to ${latestVersion}...`)
 					await this.showChangelogs(releases, latestVersion, autoUpdate)
 					await this.installVersion(currentVersion, latestVersion, latestDownloadUrl)
@@ -155,7 +155,7 @@ export class Updater {
 		const updateCache = await this.readUpdateCache()
 		if (updateCache.canary) {
 			out("Canary releases are enabled.")
-			if (await promptYesNo("Disable canary releases?", false)) {
+			if (await promptYesNo("Disable canary releases?")) {
 				await this.writeUpdateCache({ ...updateCache, canary: false })
 				out("Canary releases disabled. If you wish to rollback to the latest stable version, invoke `filen install latest`.")
 			}
@@ -280,7 +280,7 @@ export class Updater {
 	
 	private async showChangelogs(releases: ReleaseInfo[], targetRelease: string, skipConfirmation: boolean) {
 		if (semver.lt(targetRelease, version)) return
-		if (skipConfirmation || await promptYesNo("Show changelogs?", true)) {
+		if (skipConfirmation || await promptYesNo("Show changelogs?", { defaultAnswer: true })) {
 			const passingReleases = releases.sort((a, b) => semver.compare(a.tag_name, b.tag_name)).filter(release => semver.gt(release.tag_name, version) && semver.lte(release.tag_name, targetRelease) && !release.prerelease)
 			const releaseBodies = passingReleases.map(release => `========== ${release.tag_name} ==========\n${release.body}\n${"=".repeat(22 + release.tag_name.length)}`)
 			out("\n\n" + releaseBodies.join("\n\n\n") + "\n\n")
