@@ -23,8 +23,8 @@ Add the full CLI output (the `--log-file <file>` CLI flag might be helpful).
 Optionally, also include screenshots of other applications if necessary.
 
 **System (please complete the following information):**
-- **Filen CLI version:** (can be found using `filen --version`)
-- which build of the CLI you're using (e. g. `filen-cli-v0.0.20-linux-x64`, `filen-cli-v0.0.20-win-arm64`, Docker image, NPM package)
+- **Filen CLI version:** (can be found using `filen --version`; for Docker running `filen/cli:latest`, please determine the actual versionf)
+- which build of the CLI you're using (e. g. `filen-cli-v*-linux-x64`, `filen-cli-v*-win-arm64`, Docker image, NPM package)
 - OS: (e. g. Windows, macOS, Ubuntu)
 - hardware configuration (e. g. CPU, RAM, Disk)
 - filesystem and disk type used (e. g. SSD, NFTS, ext4)
