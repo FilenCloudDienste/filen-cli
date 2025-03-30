@@ -1,5 +1,5 @@
 import FilenSDK, { APIError, FilenSDKConfig } from "@filen/sdk"
-import { err, errExit, out, outVerbose, prompt, promptConfirm, promptYesNo } from "./interface/interface"
+import { err, errExit, out, outVerbose, prompt, promptConfirm, promptYesNo, quiet } from "./interface/interface"
 import fs from "node:fs"
 import { exists } from "./util/util"
 import path from "path"
@@ -30,11 +30,18 @@ export class Authentication {
 	 */
 	public async deleteSavedCredentials() {
 		try {
-			if (await exists(this.keepMeLoggedInFile)) await fs.promises.unlink(this.keepMeLoggedInFile)
+			if (await exists(this.keepMeLoggedInFile)) {
+				await fs.promises.unlink(this.keepMeLoggedInFile)
+				out("Credentials deleted")
+			} else {
+				out("No saved credentials")
+			}
 		} catch (e) {
 			errExit("delete saved credentials file", e)
 		}
-		out("Credentials deleted")
+		if (await exists(this.authConfigFileName) || await exists(path.join(dataDir, this.authConfigFileName))) {
+			if (!quiet) out(`There is a .filen-cli-auth-config file`)
+		}
 	}
 
 	/**
@@ -195,37 +202,7 @@ export class Authentication {
 		}
 
 		// `filen export-auth-config`: export credentials to .filen-cli-auth-config
-		if (exportAuthConfig) {
-			if (await exists(this.authConfigFileName)) {
-				if (!(await promptConfirm(`overwrite ${this.authConfigFileName}`))) process.exit()
-			}
-			const input = await prompt(
-				wrapRedTerminalText(
-					"You are about to export a Filen CLI auth config," +
-						"\nwhich is a file containing your unencrypted credentials." +
-						"\nA person in possession of this file's content has full access to your Filen Drive," +
-						"\nincluding reading, writing and deleting all your files, as well as all account operations." +
-						// eslint-disable-next-line quotes
-						'\nType "I am aware of the risks" to proceed: '
-				),
-				{ allowExit: true }
-			)
-			if (input.toLowerCase() !== "i am aware of the risks") errExit("Cancelled.")
-			const exportLocation = await prompt("Choose an export location: [1] data directory, [2] here:")
-			const exportPath = (() => {
-				if (exportLocation === "1") return path.join(dataDir, ".filen-cli-auth-config")
-				if (exportLocation === "2") return path.join(process.cwd(), ".filen-cli-auth-config")
-				errExit("Invalid input, please choose \"1\" or \"2\"")
-			})()
-			try {
-				const encodedConfig = await this.encodeAuthConfig(this.filen.config)
-				await fs.promises.writeFile(exportPath, encodedConfig)
-				out(`Saved auth config to ${exportPath}`)
-				process.exit()
-			} catch (e) {
-				errExit("save auth config", e)
-			}
-		}
+		if (exportAuthConfig) this.exportAuthConfig()
 
 		// `filen export-api-key`: print API key to the terminal (for Rclone integration)
 		if (exportApiKey) {
@@ -237,22 +214,61 @@ export class Authentication {
 
 		// save credentials from prompt
 		if (authenticateUsingPrompt) {
-			if (await promptYesNo("Keep me logged in? [y/N] ", { allowExit: true })) {
+			if (await promptYesNo("Keep me logged in?", { defaultAnswer: false, allowExit: true })) {
 				const cryptoKey = this.generateCryptoKey()
 				try {
+					throw Error("test")
 					await this.setKeychainCryptoKey(cryptoKey)
 				} catch (e) {
-					errExit("save credentials crypto key in keychain", e, process.platform === "linux" ? "You seem to be running Linux, is libsecret installed? Please see `filen help libsecret` for more information" : undefined)
+					err("save credentials crypto key in keychain", e, process.platform === "linux" ? "You seem to be running Linux, is libsecret installed? Please see `filen help libsecret` for more information" : undefined)
+					if (await promptYesNo("Use less secure unencrypted local credential storage instead?"), { defaultAnswer: false }) {
+						await this.exportAuthConfig(true)
+					}
 				}
 				try {
 					const encryptedAuthConfig = await this.encryptAuthConfig(this.filen.config, cryptoKey)
 					await fs.promises.writeFile(this.keepMeLoggedInFile, encryptedAuthConfig)
 					out("You can delete these credentials using `filen logout`")
 				} catch (e) {
-					errExit("save credentials", e, process.platform === "linux" ? "You seem to be running Linux, is libsecret installed? Please see `filen help libsecret` for more information" : undefined)
+					errExit("save credentials")
 				}
 			}
 			out("")
+		}
+	}
+
+	/**
+	 * The `filen export-auth-config` command (export credentials to .filen-cli-auth-config).
+	 */
+	private async exportAuthConfig(onlyExportToDataDir = false) {
+		if (await exists(this.authConfigFileName)) {
+			if (!(await promptConfirm(`overwrite ${this.authConfigFileName}`))) process.exit()
+		}
+		const input = await prompt(
+			wrapRedTerminalText(
+				"You are about to export a Filen CLI auth config," +
+					"\nwhich is a file containing your unencrypted credentials." +
+					"\nA person in possession of this file's content has full access to your Filen Drive," +
+					"\nincluding reading, writing and deleting all your files, as well as all account operations." +
+					// eslint-disable-next-line quotes
+					'\nType "I am aware of the risks" to proceed: '
+			),
+			{ allowExit: true }
+		)
+		if (input.toLowerCase() !== "i am aware of the risks") errExit("Cancelled.")
+		const exportLocation = onlyExportToDataDir ? "1" : await prompt("Choose an export location: [1] data directory, [2] here:")
+		const exportPath = (() => {
+			if (exportLocation === "1") return path.join(dataDir, ".filen-cli-auth-config")
+			if (exportLocation === "2") return path.join(process.cwd(), ".filen-cli-auth-config")
+			errExit("Invalid input, please choose \"1\" or \"2\"")
+		})()
+		try {
+			const encodedConfig = await this.encodeAuthConfig(this.filen.config)
+			await fs.promises.writeFile(exportPath, encodedConfig)
+			out(`Saved auth config to ${exportPath}`)
+			process.exit()
+		} catch (e) {
+			errExit("save auth config", e)
 		}
 	}
 
