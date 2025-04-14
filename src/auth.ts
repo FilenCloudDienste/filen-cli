@@ -8,6 +8,7 @@ import { ANONYMOUS_SDK_CONFIG } from "./constants"
 import crypto from "node:crypto"
 import { isDevelopment } from "./index"
 import { dataDir } from "."
+import { isRunningAsContainer } from "./buildInfo"
 
 /**
  * Handles authentication.
@@ -202,7 +203,10 @@ export class Authentication {
 		}
 
 		// `filen export-auth-config`: export credentials to .filen-cli-auth-config
-		if (exportAuthConfig) this.exportAuthConfig()
+		if (exportAuthConfig) {
+			await this.exportAuthConfig()
+			process.exit()
+		}
 
 		// `filen export-api-key`: print API key to the terminal (for Rclone integration)
 		if (exportApiKey) {
@@ -214,23 +218,28 @@ export class Authentication {
 
 		// save credentials from prompt
 		if (authenticateUsingPrompt) {
-			if (await promptYesNo("Keep me logged in?", { defaultAnswer: false, allowExit: true })) {
-				const cryptoKey = this.generateCryptoKey()
-				try {
-					throw Error("test")
-					await this.setKeychainCryptoKey(cryptoKey)
-				} catch (e) {
-					err("save credentials crypto key in keychain", e, process.platform === "linux" ? "You seem to be running Linux, is libsecret installed? Please see `filen help libsecret` for more information" : undefined)
-					if (await promptYesNo("Use less secure unencrypted local credential storage instead?"), { defaultAnswer: false }) {
-						await this.exportAuthConfig(true)
-					}
+			if (isRunningAsContainer) {
+				if (await promptYesNo("Keep me logged in using unencrypted local credential storage?", { defaultAnswer: false })) {
+					await this.exportAuthConfig(true)
 				}
-				try {
-					const encryptedAuthConfig = await this.encryptAuthConfig(this.filen.config, cryptoKey)
-					await fs.promises.writeFile(this.keepMeLoggedInFile, encryptedAuthConfig)
-					out("You can delete these credentials using `filen logout`")
-				} catch (e) {
-					errExit("save credentials")
+			} else {
+				if (await promptYesNo("Keep me logged in?", { defaultAnswer: false, allowExit: true })) {
+					try {
+						const cryptoKey = this.generateCryptoKey()
+						await this.setKeychainCryptoKey(cryptoKey)
+						try {
+							const encryptedAuthConfig = await this.encryptAuthConfig(this.filen.config, cryptoKey)
+							await fs.promises.writeFile(this.keepMeLoggedInFile, encryptedAuthConfig)
+							out("You can delete these credentials using `filen logout`")
+						} catch (e) {
+							errExit("save credentials")
+						}
+					} catch (e) {
+						err("save credentials crypto key in keychain", e, process.platform === "linux" ? "You seem to be running Linux, is libsecret installed? Please see `filen help libsecret` for more information" : undefined)
+						if (await promptYesNo("Use less secure unencrypted local credential storage instead?", { defaultAnswer: false })) {
+							await this.exportAuthConfig(true)
+						}
+					}
 				}
 			}
 			out("")
@@ -266,7 +275,6 @@ export class Authentication {
 			const encodedConfig = await this.encodeAuthConfig(this.filen.config)
 			await fs.promises.writeFile(exportPath, encodedConfig)
 			out(`Saved auth config to ${exportPath}`)
-			process.exit()
 		} catch (e) {
 			errExit("save auth config", e)
 		}
