@@ -215,6 +215,9 @@ export class HelpPage {
 		
 		Alternatively, you can export an auth config containing your credentials using \`filen export-auth-config\`.
 		Exporting this file to the data directory will make it visible to the CLI.
+
+		A collection of previous issues and solutions can be found at:
+		  https://github.com/FilenCloudDienste/filen-cli/issues/288
 		`
 
 	private readonly updatesHelpPage: string = dedent`
