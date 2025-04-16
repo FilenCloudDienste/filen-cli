@@ -212,12 +212,11 @@ export class HelpPage {
 			Debain/Ubuntu:  sudo apt-get install libsecret-1-dev
 			Red Hat based:  sudo yum install libsecret-devel
 			Arch:           sudo pacman -S libsecret
+
+		A collection of issues and possible solutions can be found at: https://github.com/FilenCloudDienste/filen-cli/issues/288
 		
 		Alternatively, you can export an auth config containing your credentials using \`filen export-auth-config\`.
 		Exporting this file to the data directory will make it visible to the CLI.
-
-		A collection of previous issues and solutions can be found at:
-		  https://github.com/FilenCloudDienste/filen-cli/issues/288
 		`
 
 	private readonly updatesHelpPage: string = dedent`
