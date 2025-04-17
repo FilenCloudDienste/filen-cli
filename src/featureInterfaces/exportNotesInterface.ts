@@ -18,7 +18,7 @@ export class ExportNotesInterface {
 
     public async invoke(args: string[]) {
         // determine export path
-        if (args.length !== 1) errExit("Invalid usage! See filen -h other for more info.");
+        if (args.length !== 1) errExit("Invalid usage! See filen -h fs for more info.");
         const exportRoot = await (async () => {
             try {
                 const path = pathModule.resolve(args[0]!)
