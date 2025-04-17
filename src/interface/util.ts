@@ -1,38 +1,13 @@
 import cliProgress from "cli-progress"
 import { errExit } from "./interface"
+import dateFormat from "dateformat"
 
 /**
- * Formats a timestamp as yyyy-MM-dd.hh.mm.ss.SSS
+ * Formats a timestamp like 2024-04-22 15:50:28.00
  * @param ms timestamp
  */
 export function formatTimestamp(ms: number): string {
-	// see https://stackoverflow.com/a/19448513
-	const pad2 = (n: number) => {
-		return n < 10 ? "0" + n : n
-	}
-
-	const padDecimals3 = (n: number) => {
-		const str = n.toString()
-		return str + "0".repeat(3 - str.length)
-	}
-
-	const date = new Date(ms)
-
-	return (
-		date.getFullYear().toString() +
-		"-" +
-		pad2(date.getMonth() + 1) +
-		"-" +
-		pad2(date.getDate()) +
-		" " +
-		pad2(date.getHours()) +
-		":" +
-		pad2(date.getMinutes()) +
-		":" +
-		pad2(date.getSeconds()) +
-		"." +
-		padDecimals3(date.getMilliseconds())
-	)
+	return dateFormat(new Date(ms), "yyyy-mm-dd HH:MM:ss.L")
 }
 
 /**

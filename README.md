@@ -130,6 +130,13 @@ Additional available commands:
 - `filen links`: view all public links
 - `filen links <path>`: create, view, edit or delete a public link for the given path
 
+### Exporting notes
+
+- `filen export-notes <path>`:
+Exports all Notes to the specified path. If the specified directory doesn't exist, it will be created.
+If it is not empty, a subdirectory will be created with the name "filen-notes-export-\<timestamp\>".
+Richtext notes are exported as HTML. Checklist notes are converted to markdown.
+
 
 ## Syncing
 

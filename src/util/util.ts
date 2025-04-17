@@ -143,3 +143,10 @@ export async function getItemPaths(filen: FilenSDK, items: CloudItem[]): Promise
 		return { ...item, path }
 	}))
 }
+
+/**
+ * Sanitize a string to make it a valid file name.
+ */
+export function sanitizeFileName(fileName: string): string {
+	return fileName.replace(/[<>:"/\\|?*]/g, "_")
+}

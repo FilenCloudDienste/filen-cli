@@ -18,6 +18,7 @@ import { PublicLinksInterface } from "./featureInterfaces/publicLinksInterface"
 import { DriveMountingInterface } from "./featureInterfaces/driveMountingInterface"
 import { ANONYMOUS_SDK_CONFIG } from "./constants"
 import { determineDataDir } from "./util/util"
+import { ExportNotesInterface } from "./featureInterfaces/exportNotesInterface"
 
 const args = arg(
 	{
@@ -80,10 +81,11 @@ export const dataDir = determineDataDir(args["--data-dir"])
 		process.exit()
 	}
 
-	setOutputFlags(args["--quiet"] ?? false, (args["--help"] ?? false) || (args["--verbose"] ?? false))
+	setOutputFlags(args["--quiet"] ?? false, args["--verbose"] ?? false)
 	setupLogs(args["--log-file"])
 
-	outVerbose(`Filen CLI ${version}`)
+	if (args["--help"]) out(`Filen CLI ${version}`)
+	else outVerbose(`Filen CLI ${version}`)
 
 	let environment = "Environment: "
 	environment += `data-dir=${dataDir}`
@@ -224,6 +226,14 @@ export const dataDir = determineDataDir(args["--data-dir"])
 			await driveMountingInterface.invoke(args["_"][1])
 		} catch (e) {
 			errExit("execute mount command", e)
+		}
+	} else if (args["_"][0] === "export-notes") {
+		// export notes
+		const exportNotesInterface = new ExportNotesInterface(filen)
+		try {
+			await exportNotesInterface.invoke(args["_"].slice(1))
+		} catch (e) {
+			errExit("export notes", e)
 		}
 	} else {
 		// fs commands

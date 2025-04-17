@@ -21,7 +21,7 @@ export class PublicLinksInterface {
 				errExit("list public links", e)
 			}
 		} else {
-			if (args.length > 1) errExit("Invalid command! See `filen -h fs` for more info.")
+			if (args.length > 1) errExit("Invalid usage! See `filen -h fs` for more info.")
 			try {
 				await this.editPublicLink(args[0]!)
 			} catch (e) {
