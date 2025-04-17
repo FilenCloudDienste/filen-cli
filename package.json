@@ -15,6 +15,9 @@
 		"bump-filen-dependencies": "npm i @filen/sdk@latest @filen/sync@latest @filen/webdav@latest @filen/s3@latest @filen/network-drive@latest",
 		"prepublishOnly": "node -e \"if (process.env.FILEN_IS_NPM_PACKAGE !== 'true') process.exit(1)\" && npm run build"
 	},
+	"bin": {
+		"filen": "build/index.js"
+	},
 	"engines": {
 		"node": "23"
 	},
