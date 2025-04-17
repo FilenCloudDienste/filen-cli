@@ -23,5 +23,5 @@ jobs:
               repo: 'filen-docs',
               title: 'Update CLI docs',
               labels: ['update-cli-docs'],
-              body: 'The CLI docs have been updated: ${{ github.event.head_commit.url }}',
+              body: 'The Filen CLI docs in FilenCloudDienste/filen-cli have been updated, so these docs should update accordingly.\n\n${{ github.event.head_commit.url }}\n\n<sub>This action has been performed automatically by [a bot](https://github.com/FilenCloudDienste/filen-cli/actions/workflows/update-filen-docs.yml).</sub>',
             })

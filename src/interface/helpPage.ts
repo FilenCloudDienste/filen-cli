@@ -211,9 +211,6 @@ export class HelpPage {
 		Read the full documentation at: https://github.com/FilenCloudDienste/filen-cli${this.versionUrlSegment}#s3-server
 		`
 
-	// small change somewhere to test docs alert issues
-	// another small change
-
 	private readonly libsecretHelpPage: string = dedent`
 		On Linux, the Filen CLI uses libsecret to store the credentials crypto key in the system Secret Service.
 		
