@@ -212,6 +212,7 @@ export class HelpPage {
 		`
 
 	// small change somewhere to test docs alert issues
+	// another small change
 
 	private readonly libsecretHelpPage: string = dedent`
 		On Linux, the Filen CLI uses libsecret to store the credentials crypto key in the system Secret Service.
