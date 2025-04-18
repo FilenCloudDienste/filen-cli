@@ -60,7 +60,7 @@
 		"@yao-pkg/pkg": "^6.2.0",
 		"bpkg": "^0.9.2",
 		"esbuild": "^0.23.1",
-		"eslint": "^8.56.0",
+		"eslint": "^9.25.0",
 		"jest": "^29.7.0",
 		"pe-library": "^1.0.1",
 		"resedit": "^2.0.3",
