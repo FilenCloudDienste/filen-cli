@@ -1,24 +1,20 @@
 import FilenSDK from "@filen/sdk"
-import { errExit, out, quiet } from "../interface/interface"
 import * as pathModule  from "path"
 import fs from "fs/promises"
 import { exists, sanitizeFileName } from "../util/util"
 import dateFormat from "dateformat"
 import * as cheerio from "cheerio"
+import { App } from "../app"
 
 /**
  * Provides the interface for exporting notes.
  */
 export class ExportNotesInterface {
-    private readonly filen
-
-    constructor(filen: FilenSDK) {
-        this.filen = filen
-    }
+    constructor(private app: App, private filen: FilenSDK) {}
 
     public async invoke(args: string[]) {
         // determine export path
-        if (args.length !== 1) errExit("Invalid usage! See filen -h fs for more info.");
+        if (args.length !== 1) this.app.errExit("Invalid usage! See filen -h fs for more info.");
         const exportRoot = await (async () => {
             try {
                 const path = pathModule.resolve(args[0]!)
@@ -38,7 +34,7 @@ export class ExportNotesInterface {
                     return exportRoot
                 }
             } catch (e) {
-                errExit("determine export path", e)
+                this.app.errExit("determine export path", e)
             }
         })()
 
@@ -64,11 +60,11 @@ export class ExportNotesInterface {
 
                 await fs.writeFile(file!, content)
             } catch (e) {
-                errExit(`export note "${note.title}" (${note.uuid})`, e)
+                this.app.errExit(`export note "${note.title}" (${note.uuid})`, e)
             }
         })()))
 
-        if (!quiet) out(`Exported notes to ${exportRoot}`)
+        this.app.outUnlessQuiet(`Exported notes to ${exportRoot}`)
         process.exit()
     }
 

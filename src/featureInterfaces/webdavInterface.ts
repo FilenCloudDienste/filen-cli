@@ -1,8 +1,7 @@
 import WebDAVServer, { WebDAVServerCluster } from "@filen/webdav"
 import FilenSDK from "@filen/sdk"
-import { errExit, out } from "../interface/interface"
-import { InterruptHandler } from "../interface/interrupt"
 import cluster from "node:cluster"
+import { App } from "../app"
 
 export const webdavOptions = {
 	"--w-hostname": String,
@@ -18,11 +17,7 @@ export const webdavOptions = {
  * Provides the interface for configuring and running a WebDAV server.
  */
 export class WebDAVInterface {
-	private readonly filen
-
-	constructor(filen: FilenSDK) {
-		this.filen = filen
-	}
+	constructor(private app: App, private filen: FilenSDK) {}
 
 	public async invoke(proxyMode: boolean, args: {
 		username: string | undefined,
@@ -34,7 +29,7 @@ export class WebDAVInterface {
 		threads: number | undefined,
 	}) {
 		if (!proxyMode && (args.username === undefined || args.password === undefined)) {
-			errExit("Need to specify --w-user and --w-password")
+			this.app.errExit("Need to specify --w-user and --w-password")
 		}
 
 		const https = args.https
@@ -42,10 +37,10 @@ export class WebDAVInterface {
 		const port = args.port ?? (args.https ? 443 : 80)
 
 		if (args.authScheme !== undefined && args.authScheme !== "basic" && args.authScheme !== "digest") {
-			errExit("The only valid options for auth scheme are \"basic\" (default), \"digest\"")
+			this.app.errExit("The only valid options for auth scheme are \"basic\" (default), \"digest\"")
 		}
 		if (proxyMode && args.authScheme === "digest") {
-			errExit("Only basic auth is supported in proxy mode")
+			this.app.errExit("Only basic auth is supported in proxy mode")
 		}
 		const authScheme = args.authScheme ?? "basic"
 
@@ -70,9 +65,9 @@ export class WebDAVInterface {
 		await webdavServer.start()
 		let location = `${https ? "https" : "http"}://${hostname}:${port}`
 		if (hostname === "127.0.0.1" || hostname === "0.0.0.0") location += ` or ${https ? "https" : "http"}://local.webdav.filen.io:${port}`
-		out(`WebDAV ${proxyMode ? "proxy server" : "server for " + this.filen.config.email} started on ${location}`)
-		InterruptHandler.instance.addListener(() => {
-			out("Stopping WebDAV server")
+		this.app.out(`WebDAV ${proxyMode ? "proxy server" : "server for " + this.filen.config.email} started on ${location}`)
+		this.app.addInterruptListener(() => {
+			this.app.out("Stopping WebDAV server")
 			webdavServer.stop()
 				.then(() => process.exit())
 		})

@@ -1,15 +1,14 @@
-import { err, out, outJson, outVerbose, prompt, promptConfirm, quiet } from "../../interface/interface"
 import FilenSDK from "@filen/sdk"
 import pathModule from "path"
 import { directorySize, doNothing, getItemPaths, hashFile } from "../../util/util"
 import { CloudPath } from "../../util/cloudPath"
 import * as fsModule from "node:fs"
-import { InterruptHandler } from "../../interface/interrupt"
 import open from "open"
 import { fsCommands } from "./commands"
 import { HelpPage } from "../../interface/helpPage"
 import { displayTransferProgressBar, formatBytes, formatTable, formatTimestamp } from "../../interface/util"
 import arg from "arg"
+import { App } from "../../app"
 
 type CommandParameters = {
 	cloudWorkingPath: CloudPath
@@ -22,11 +21,7 @@ type CommandParameters = {
  * @see FSInterface
  */
 export class FS {
-	private readonly filen: FilenSDK
-
-	public constructor(filen: FilenSDK) {
-		this.filen = filen
-	}
+	constructor(private app: App, private filen: FilenSDK) {}
 
 	/**
 	 * Executes a filesystem command.
@@ -48,7 +43,7 @@ export class FS {
 		if (cmd === "exit") return { exit: true }
 
 		if (cmd === "help" || cmd === "?") {
-			out("\n" + new HelpPage().getInteractiveModeHelpPage() + "\n")
+			this.app.out("\n" + new HelpPage().getInteractiveModeHelpPage() + "\n")
 			return {}
 		}
 
@@ -59,13 +54,13 @@ export class FS {
 		const command = fsCommands.find(command => [command.cmd, ...command.aliases].includes(cmd))
 
 		if (command === undefined) {
-			err(`Unknown command: ${cmd}`)
+			this.app.err(`Unknown command: ${cmd}`)
 			return {}
 		}
 
 		const minArgumentsCount = command.arguments.filter(arg => arg.optional !== true).length
 		if (args.length < minArgumentsCount) {
-			err(`Need to specify all arguments: ${command.arguments.map(arg => arg.name + (arg.optional ? " (optional)" : "")).join(", ")}`)
+			this.app.err(`Need to specify all arguments: ${command.arguments.map(arg => arg.name + (arg.optional ? " (optional)" : "")).join(", ")}`)
 			return {}
 		}
 
@@ -141,7 +136,7 @@ export class FS {
 					break
 			}
 		} catch (e) {
-			err(`execute ${command.cmd} command`, e)
+			this.app.err(`execute ${command.cmd} command`, e)
 		}
 		return {}
 	}
@@ -154,10 +149,10 @@ export class FS {
 		const path = params.cloudWorkingPath.navigate(params.args[0]!)
 		try {
 			const directory = await this.filen.fs().stat({ path: path.toString() })
-			if (!directory.isDirectory()) err("Not a directory")
+			if (!directory.isDirectory()) this.app.err("Not a directory")
 			else return path
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") err("No such directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such directory")
 			else throw e
 		}
 	}
@@ -172,12 +167,12 @@ export class FS {
 			if (args["-l"]) {
 				const uuid = (await this.filen.fs().pathToItemUUID({ path: path.toString() }))
 				if (uuid === null) {
-					err("No such directory")
+					this.app.err("No such directory")
 					return
 				}
 				const items = await this.filen.cloud().listDirectory({ uuid })
 				if (params.formatJson) {
-					outJson(items.map(item => {
+					this.app.outJson(items.map(item => {
 						return {
 							name: item.name,
 							type: item.type,
@@ -187,7 +182,7 @@ export class FS {
 						}
 					}))
 				} else {
-					out(formatTable(items.map(item => [
+					this.app.out(formatTable(items.map(item => [
 						item.type === "file" ? formatBytes(item.size) : "",
 						formatTimestamp(item.lastModified),
 						item.name,
@@ -196,11 +191,11 @@ export class FS {
 				}
 			} else {
 				const output = await this.filen.fs().readdir({ path: path.toString() })
-				if (params.formatJson) outJson(output)
-				else out(output.join("  "))
+				if (params.formatJson) this.app.outJson(output)
+				else this.app.out(output.join("  "))
 			}
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") err("No such directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such directory")
 			else throw e
 		}
 	}
@@ -213,14 +208,14 @@ export class FS {
 		try {
 			const fileSize = (await this.filen.fs().stat({ path: path.toString() })).size
 			if (fileSize > 8192) {
-				const result = await prompt(`This file is ${formatBytes(fileSize)} large. Continue? [y/N] `)
+				const result = await this.app.prompt(`This file is ${formatBytes(fileSize)} large. Continue? [y/N] `)
 				if (result.toLowerCase() !== "y") return
 			}
 			const content = (await this.filen.fs().readFile({ path: path.toString() })).toString()
-			if (params.formatJson) outJson({ text: content })
-			else out(content)
+			if (params.formatJson) this.app.outJson({ text: content })
+			else this.app.out(content)
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file")
 			else throw e
 		}
 	}
@@ -235,10 +230,10 @@ export class FS {
 		try {
 			const lines = (await this.filen.fs().readFile({ path: path.toString() })).toString().split("\n")
 			const output = (command === "head" ? lines.slice(0, n) : lines.slice(lines.length - n)).join("\n")
-			if (params.formatJson) outJson({ text: output })
-			else out(output)
+			if (params.formatJson) this.app.outJson({ text: output })
+			else this.app.out(output)
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file")
 			else throw e
 		}
 	}
@@ -257,11 +252,11 @@ export class FS {
 		const args = arg({ "--no-trash": Boolean }, { argv: params.args })
 		try {
 			const path = params.cloudWorkingPath.navigate(args["_"][0]!).toString()
-			if (!await promptConfirm(`${args["--no-trash"] ? "permanently delete": "delete"} ${path}`)) return
-			if (args["--no-trash"]) if (!await promptConfirm(undefined)) return
+			if (!await this.app.promptConfirm(`${args["--no-trash"] ? "permanently delete": "delete"} ${path}`)) return
+			if (args["--no-trash"]) if (!await this.app.promptConfirm(undefined)) return
 			await this.filen.fs().rm({ path, permanent: args["--no-trash"] ?? false })
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file or directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file or directory")
 			else throw e
 		}
 	}
@@ -273,23 +268,23 @@ export class FS {
 		const source = params.args[0]!
 		const stat = fsModule.statSync(source, { throwIfNoEntry: false })
 		if (stat === undefined) {
-			err("No such source directory")
+			this.app.err("No such source directory")
 			return
 		}
 		const size = stat.isDirectory() ? (await directorySize(source)) : stat.size
 		const path = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(this.filen, params.args[1]!, source.split(/[/\\]/)[source.split(/[/\\]/).length - 1]!)
-		const progressBar = quiet ? null : displayTransferProgressBar("Uploading", path.getLastSegment(), size)
+		const progressBar = this.app.quiet ? null : displayTransferProgressBar(this.app, "Uploading", path.getLastSegment(), size)
 		try {
-			const abortSignal = InterruptHandler.instance.createAbortSignal()
+			const abortSignal = this.app.createAbortSignal()
 			await this.filen.fs().upload({
 				path: path.toString(),
 				source,
-				onProgress: quiet ? doNothing : progressBar!.onProgress,
+				onProgress: this.app.quiet ? doNothing : progressBar!.onProgress,
 				abortSignal
 			})
 		} catch (e) {
 			if (progressBar) progressBar.progressBar.stop()
-			if (e instanceof Error && e.message.toLowerCase() === "aborted") err("Aborted")
+			if (e instanceof Error && e.message.toLowerCase() === "aborted") this.app.err("Aborted")
 			else throw e
 		}
 	}
@@ -303,9 +298,9 @@ export class FS {
 			const rawPath = params.args[1] === undefined || params.args[1] === "." ? process.cwd() + "/" : params.args[1]
 			const path = rawPath.endsWith("/") || rawPath.endsWith("\\") ? pathModule.join(rawPath, source.cloudPath[source.cloudPath.length - 1]!) : rawPath
 			const size = (await this.filen.fs().stat({ path: source.toString() })).size
-			const progressBar = quiet ? null : displayTransferProgressBar("Downloading", source.getLastSegment(), size)
+			const progressBar = this.app.quiet ? null : displayTransferProgressBar(this.app, "Downloading", source.getLastSegment(), size)
 			try {
-				const abortSignal = InterruptHandler.instance.createAbortSignal()
+				const abortSignal = this.app.createAbortSignal()
 				await this.filen.fs().download({
 					path: source.toString(),
 					destination: path,
@@ -314,11 +309,11 @@ export class FS {
 				})
 			} catch (e) {
 				if (progressBar) progressBar.progressBar.stop()
-				if (e instanceof Error && e.message.toLowerCase() === "aborted") err("Aborted")
+				if (e instanceof Error && e.message.toLowerCase() === "aborted") this.app.err("Aborted")
 				else throw e
 			}
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file")
 			else throw e
 		}
 	}
@@ -333,7 +328,7 @@ export class FS {
 			const size = stat.isFile() ? stat.size : (await this.filen.cloud().directorySize({ uuid: stat.uuid })).size
 
 			if (params.formatJson) {
-				outJson({
+				this.app.outJson({
 					file: stat.name,
 					type: stat.type,
 					size: size,
@@ -341,14 +336,14 @@ export class FS {
 					birthtimeMs: stat.birthtimeMs
 				})
 			} else {
-				out(`  File: ${stat.name}`)
-				out(`  Type: ${stat.type}`)
-				out(`  Size: ${formatBytes(size)}`)
-				out(`Modify: ${formatTimestamp(stat.mtimeMs)}`)
-				out(` Birth: ${formatTimestamp(stat.birthtimeMs)}`)
+				this.app.out(`  File: ${stat.name}`)
+				this.app.out(`  Type: ${stat.type}`)
+				this.app.out(`  Size: ${formatBytes(size)}`)
+				this.app.out(`Modify: ${formatTimestamp(stat.mtimeMs)}`)
+				this.app.out(` Birth: ${formatTimestamp(stat.birthtimeMs)}`)
 			}
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file")
 			else throw e
 		}
 	}
@@ -359,13 +354,13 @@ export class FS {
 	private async _statfs(params: CommandParameters) {
 		const statfs = await this.filen.fs().statfs()
 		if (params.formatJson) {
-			outJson({
+			this.app.outJson({
 				used: statfs.used,
 				max: statfs.max
 			})
 		} else {
-			out(`Used: ${formatBytes(statfs.used)}`)
-			out(` Max: ${formatBytes(statfs.max)}`)
+			this.app.out(`Used: ${formatBytes(statfs.used)}`)
+			this.app.out(` Max: ${formatBytes(statfs.max)}`)
 		}
 	}
 
@@ -375,9 +370,9 @@ export class FS {
 	private async _whoami(params: CommandParameters) {
 		const email = this.filen.config.email
 		if (params.formatJson) {
-			outJson({ email })
+			this.app.outJson({ email })
 		} else {
-			out(email ?? "")
+			this.app.out(email ?? "")
 		}
 	}
 
@@ -390,7 +385,7 @@ export class FS {
 			const to = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(this.filen, params.args[1]!, from.cloudPath[from.cloudPath.length - 1]!)
 			await this.filen.fs().rename({ from: from.toString(), to: to.toString() })
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file or directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file or directory")
 			else throw e
 		}
 	}
@@ -406,27 +401,27 @@ export class FS {
 				from.cloudPath[from.cloudPath.length - 1]!
 			)
 			const fromSize = (await this.filen.fs().stat({ path: from.toString() })).size
-			let progressBar = quiet ? null : displayTransferProgressBar("Downloading", from.getLastSegment(), fromSize, true)
+			let progressBar = this.app.quiet ? null : displayTransferProgressBar(this.app, "Downloading", from.getLastSegment(), fromSize, true)
 			let stillDownloading = true
-			const onProgress = quiet
+			const onProgress = this.app.quiet
 				? doNothing
 				: (transferred: number) => {
 					progressBar!.onProgress(transferred)
 					if (progressBar!.progressBar.getProgress() >= 1 && stillDownloading) {
 						stillDownloading = false
-						progressBar = displayTransferProgressBar("Uploading", from.getLastSegment(), fromSize, true)
+						progressBar = displayTransferProgressBar(this.app, "Uploading", from.getLastSegment(), fromSize, true)
 					}
 				}
 			try {
-				const abortSignal = InterruptHandler.instance.createAbortSignal()
+				const abortSignal = this.app.createAbortSignal()
 				await this.filen.fs().copy({ from: from.toString(), to: to.toString(), onProgress, abortSignal })
 			} catch (e) {
 				if (progressBar) progressBar.progressBar.stop()
-				if (e instanceof Error && e.message.toLowerCase() === "aborted") err("Aborted")
+				if (e instanceof Error && e.message.toLowerCase() === "aborted") this.app.err("Aborted")
 				else throw e
 			}
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file or directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file or directory")
 			else throw e
 		}
 	}
@@ -456,7 +451,7 @@ export class FS {
 			}
 			setTimeout(() => fsModule.unlinkSync(downloadPath), 500)
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file")
 			else throw e
 		}
 		return {}
@@ -478,13 +473,13 @@ export class FS {
 			}
 			const urlSegments = await getUrlSegments(path)
 			const url = `https://drive.filen.io/#/${urlSegments.join("/")}`
-			if (!quiet) {
-				if (params.formatJson) outJson({ url })
-				else out(url)
+			if (!this.app.quiet) {
+				if (params.formatJson) this.app.outJson({ url })
+				else this.app.out(url)
 			}
 			await open(url, { wait: true })
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file or directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file or directory")
 			else throw e
 		}
 	}
@@ -497,11 +492,11 @@ export class FS {
 			? await this.filen.cloud().listFavorites()
 			: await this.filen.cloud().listRecents()
 		if (params.formatJson) {
-			outJson((await getItemPaths(this.filen, items)).map(item => {
+			this.app.outJson((await getItemPaths(this.filen, items)).map(item => {
 				return { path: item.path }
 		 	}))
 		} else {
-			out((await getItemPaths(this.filen, items)).map(item => item.path).join("\n"))
+			this.app.out((await getItemPaths(this.filen, items)).map(item => item.path).join("\n"))
 		}
 	}
 
@@ -517,9 +512,9 @@ export class FS {
 			} else {
 				await this.filen.cloud().favoriteDirectory({ uuid: item.uuid, favorite: command === "favorite" })
 			}
-			outVerbose(`${path.toString()} ${command}d.`)
+			this.app.outVerbose(`${path.toString()} ${command}d.`)
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") err("No such file or directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file or directory")
 			else throw e
 		}
 	}

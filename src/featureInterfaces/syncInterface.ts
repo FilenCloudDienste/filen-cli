@@ -2,14 +2,12 @@ import FilenSDK from "@filen/sdk"
 import SyncWorker, { SerializedError } from "@filen/sync"
 import pathModule from "path"
 import { SyncMessage, SyncMode, SyncPair } from "@filen/sync/dist/types"
-import { err, errExit, out, outVerbose, quiet } from "../interface/interface"
 import fsModule, { PathLike } from "node:fs"
 import { exists } from "../util/util"
 import getUuidByString from "uuid-by-string"
 import { displayTransferProgressBar } from "../interface/util"
-import { InterruptHandler } from "../interface/interrupt"
 import os from "os"
-import { dataDir } from ".."
+import { App } from "../app"
 
 export const syncOptions = {
 	"--continuous": Boolean,
@@ -50,18 +48,14 @@ const syncModeMappings = new Map<string, SyncMode>([
  * Provides the interface for syncing.
  */
 export class SyncInterface {
-	private readonly filen
+	private readonly defaultSyncPairsRegistry = pathModule.join(this.app.dataDir, "syncPairs.json")
 
-	private readonly defaultSyncPairsRegistry = pathModule.join(dataDir, "syncPairs.json")
-
-	constructor(filen: FilenSDK) {
-		this.filen = filen
-	}
+	constructor(private app: App, private filen: FilenSDK) {}
 
 	public async invoke(locationsStr: string[], continuous: boolean, disableLocalTrashFlag: boolean) {
 		const syncPairs = await this.resolveSyncPairs(locationsStr, disableLocalTrashFlag)
 		for (const syncPair of syncPairs) {
-			if (!quiet) out(`Syncing ${syncPair.local} to ${syncPair.remote} (${syncPair.syncMode})...`)
+			this.app.outUnlessQuiet(`Syncing ${syncPair.local} to ${syncPair.remote} (${syncPair.syncMode})...`)
 		}
 
 		const fullSyncPairs: SyncPair[] = []
@@ -72,7 +66,7 @@ export class SyncInterface {
 					return await this.filen.fs().stat({ path: syncPair.remote })
 				} catch (e) {
 					if (e instanceof Error && e.name === "FileNotFoundError") {
-						err(`No such cloud file or directory: ${syncPair.remote}`)
+						this.app.err(`No such cloud file or directory: ${syncPair.remote}`)
 						return undefined
 					}
 					else throw e
@@ -97,13 +91,13 @@ export class SyncInterface {
 			})
 		}
 		const syncPairsExited = new Set<string>()
-		const progressBar = continuous ? null : displayTransferProgressBar("Transferring", "files", 0)
+		const progressBar = continuous ? null : displayTransferProgressBar(this.app, "Transferring", "files", 0)
 		const worker = new SyncWorker({
 			syncPairs: fullSyncPairs,
-			dbPath: pathModule.join(dataDir, "sync"),
+			dbPath: pathModule.join(this.app.dataDir, "sync"),
 			sdk: this.filen,
 			onMessage: msg => {
-				outVerbose(JSON.stringify(msg, null, 2))
+				this.app.outVerbose(JSON.stringify(msg, null, 2))
 
 				// update progress
 				if (progressBar !== null && msg.type === "transfer") {
@@ -122,15 +116,15 @@ export class SyncInterface {
 
 				// success messages
 				if (continuous && msg.type === "cycleSuccess") {
-					if (!quiet) out(`Done syncing ${msg.syncPair.localPath} to ${msg.syncPair.remotePath} (${msg.syncPair.mode})`)
+					this.app.outUnlessQuiet(`Done syncing ${msg.syncPair.localPath} to ${msg.syncPair.remotePath} (${msg.syncPair.mode})`)
 				}
 				if (!continuous && msg.type === "cycleExited") {
 					syncPairsExited.add(msg.syncPair.uuid)
 					if (syncPairsExited.size >= syncPairs.length) {
 						if (progressBar !== null) progressBar.progressBar.stop()
-						if (!quiet) {
-							if (progressBar?.progressBar.getTotal() ?? 0 > 0) out("Done.")
-							else out("Done (no files to transfer).")
+						if (!this.app.quiet) {
+							if (progressBar?.progressBar.getTotal() ?? 0 > 0) this.app.out("Done.")
+							else this.app.out("Done (no files to transfer).")
 						}
 						process.exit()
 					}
@@ -143,8 +137,8 @@ export class SyncInterface {
 			worker.updateIgnorerContent(ignorerContent.uuid, ignorerContent.content)
 		}
 		if (continuous) {
-			InterruptHandler.instance.addListener(() => {
-				out("Stop syncing")
+			this.app.addInterruptListener(() => {
+				this.app.out("Stop syncing")
 				process.exit()
 			})
 		}
@@ -153,7 +147,7 @@ export class SyncInterface {
 	private async resolveSyncPairs(locationsStr: string[], disableLocalTrashFlag: boolean): Promise<RawSyncPair[]> {
 		if (locationsStr.length === 0) {
 			if (!await exists(this.defaultSyncPairsRegistry)) {
-				errExit(`Cannot find central sync pairs registry at ${this.defaultSyncPairsRegistry}.\nCreate it with JSON of type {local: string, remote: string, syncMode: string, alias?: string, excludeDotFiles?: boolean, disableLocalTrash?: boolean, ignore?: []}[]`)
+				this.app.errExit(`Cannot find central sync pairs registry at ${this.defaultSyncPairsRegistry}.\nCreate it with JSON of type {local: string, remote: string, syncMode: string, alias?: string, excludeDotFiles?: boolean, disableLocalTrash?: boolean, ignore?: []}[]`)
 			}
 			return (await this.getSyncPairsFromFile(this.defaultSyncPairsRegistry)).syncPairs
 		} else if (
@@ -176,10 +170,10 @@ export class SyncInterface {
 		const aliases = new Map<string, RawSyncPair>()
 
 		if (!await exists(path)) {
-			errExit(`You need to create ${path} or specify another sync pairs registry using \`filen sync <path>\`!`)
+			this.app.errExit(`You need to create ${path} or specify another sync pairs registry using \`filen sync <path>\`!`)
 		}
 		const file = JSON.parse((await fsModule.promises.readFile(path)).toString())
-		const exitTypeErr = () => errExit("Invalid sync pairs registry! Needs to be of type: {local: string, remote: string, syncMode: string, alias?: string, excludeDotFiles?: boolean, disableLocalTrash?: boolean, ignore?: string[]}[]")
+		const exitTypeErr = () => this.app.errExit("Invalid sync pairs registry! Needs to be of type: {local: string, remote: string, syncMode: string, alias?: string, excludeDotFiles?: boolean, disableLocalTrash?: boolean, ignore?: string[]}[]")
 		const syncPairsObj = Array.isArray(file) ? file : [file]
 		for (const obj of syncPairsObj) {
 			if (typeof obj.local !== "string") exitTypeErr()
@@ -230,7 +224,7 @@ export class SyncInterface {
 			this._aliases = (await this.getSyncPairsFromFile(this.defaultSyncPairsRegistry)).aliases
 		}
 		const syncPair = this._aliases.get(str)
-		if (syncPair === undefined) errExit("Unknown sync pair alias: " + str)
+		if (syncPair === undefined) this.app.errExit("Unknown sync pair alias: " + str)
 		return syncPair
 	}
 
@@ -307,11 +301,11 @@ export class SyncInterface {
 				if ((error.name + error.message).includes(errorName)) {
 					const errorType = this.errorTypes[errorName]!
 					const [title, message] = this.errorMessages[errorType]!
-					err(`Error: ${title} (${message})`)
+					this.app.err(`Error: ${title} (${message})`)
 					return
 				}
 			}
 		}
-		out(JSON.stringify(msg, null, 2))
+		this.app.out(JSON.stringify(msg, null, 2))
 	}
 }

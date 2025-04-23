@@ -1,16 +1,12 @@
 import FilenSDK, { CloudItem } from "@filen/sdk"
-import { errExit, out, prompt, promptConfirm } from "../interface/interface"
 import { formatBytes, formatTable, formatTimestamp } from "../interface/util"
+import { App } from "../app"
 
 /**
  * Provides the interface for managing trash items.
  */
 export class TrashInterface {
-	private readonly filen
-
-	constructor(filen: FilenSDK) {
-		this.filen = filen
-	}
+	constructor(private app: App, private filen: FilenSDK) {}
 
 	public async invoke(args: string[]) {
 		if (args.length === 0 || args[0] === "view" || args[0] === "ls" || args[0] === "list") {
@@ -22,7 +18,7 @@ export class TrashInterface {
 		} else if (args[0] === "empty") {
 			await this.emptyTrash()
 		} else {
-			errExit("Invalid command! See `filen -h fs` for more info.")
+			this.app.errExit("Invalid command! See `filen -h fs` for more info.")
 		}
 		process.exit()
 	}
@@ -35,11 +31,11 @@ export class TrashInterface {
 	private async deleteOrRestoreTrashItem(doDelete: boolean) {
 		const items = await this.filen.cloud().listTrash()
 		this.printTrashItems(items, true)
-		const selection = parseInt(await prompt(`Select an item to ${doDelete ? "permanently delete" : "restore"} (1-${items.length}): `, { allowExit: true }))
-		if (isNaN(selection) || selection < 1 || selection > items.length) errExit("Invalid selection!")
+		const selection = parseInt(await this.app.prompt(`Select an item to ${doDelete ? "permanently delete" : "restore"} (1-${items.length}): `, { allowExit: true }))
+		if (isNaN(selection) || selection < 1 || selection > items.length) this.app.errExit("Invalid selection!")
 		if (doDelete) {
 			const item = items[selection-1]!
-			if (!await promptConfirm(`permanently delete ${item.name}`)) process.exit()
+			if (!await this.app.promptConfirm(`permanently delete ${item.name}`)) process.exit()
 			await this.filen.cloud().deleteFile({ uuid: item.uuid })
 		} else {
 			await this.filen.cloud().restoreFile({ uuid: items[selection-1]!.uuid })
@@ -47,7 +43,7 @@ export class TrashInterface {
 	}
 
 	private printTrashItems(items: CloudItem[], showIndices: boolean) {
-		out(formatTable(items.map((item, i) => [
+		this.app.out(formatTable(items.map((item, i) => [
 			...(showIndices ? [`(${i+1})`] : []),
 			item.type === "file" ? formatBytes(item.size) : "",
 			formatTimestamp(item.lastModified),
@@ -57,8 +53,8 @@ export class TrashInterface {
 
 	private async emptyTrash() {
 		const items = await this.filen.cloud().listTrash()
-		if (!await promptConfirm(`permanently delete all ${items.length} trash items`)) process.exit()
-		if (!await promptConfirm(undefined)) process.exit()
+		if (!await this.app.promptConfirm(`permanently delete all ${items.length} trash items`)) process.exit()
+		if (!await this.app.promptConfirm(undefined)) process.exit()
 		await this.filen.cloud().emptyTrash()
 	}
 }
