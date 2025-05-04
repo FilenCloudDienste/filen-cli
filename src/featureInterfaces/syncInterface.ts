@@ -67,7 +67,7 @@ export class SyncInterface {
 						return await this.filen.fs().stat({ path: syncPair.remote })
 					} catch (e) {
 						if (e instanceof Error && e.name === "FileNotFoundError") {
-							this.app.err(`No such cloud file or directory: ${syncPair.remote}`)
+							this.app.outErr(`No such cloud file or directory: ${syncPair.remote}`)
 							return undefined
 						}
 						else throw e
@@ -303,7 +303,7 @@ export class SyncInterface {
 				if ((error.name + error.message).includes(errorName)) {
 					const errorType = this.errorTypes[errorName]!
 					const [title, message] = this.errorMessages[errorType]!
-					this.app.err(`Error: ${title} (${message})`)
+					this.app.outErr(`Error: ${title} (${message})`)
 					return
 				}
 			}

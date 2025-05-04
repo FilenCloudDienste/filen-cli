@@ -53,7 +53,7 @@ class ConsoleInterfaceAdapter implements InterfaceAdapter {
 	}
 
 	err(error: any) {
-		console.error(error instanceof Error ? error.stack : error)
+		console.error(wrapRedTerminalText(error instanceof Error ? error.stack : error))
 	}
 
 	prompt(message: string, obfuscate: boolean, history: string[] | undefined, allowExit: boolean, autocompletion: Autocompletion | null): Promise<string> {
@@ -96,10 +96,6 @@ class ConsoleInterfaceAdapter implements InterfaceAdapter {
 
 	addInterruptListener(listener: () => void) {
 		this.interruptListeners.unshift(listener)
-	}
-
-	exit(ok: boolean): never {
-		process.exit(ok ? 0 : 1)
 	}
 }
 

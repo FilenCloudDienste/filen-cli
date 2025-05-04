@@ -2,7 +2,7 @@
 	"compilerOptions": {
 		"rootDir": "src",
 		"outDir": "build",
-		"lib": ["ES2017", "DOM"],
+		"lib": ["ES2022", "DOM"],
 		"module": "commonjs",
 		"target": "ES2017",
 		"strict": true,

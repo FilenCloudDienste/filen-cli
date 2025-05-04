@@ -43,9 +43,10 @@ export class FSInterface {
 		} else {
 			this.app.resetErrorOccurred()
 			const result = await fs.executeCommand(cloudRootPath, args.commandStr[0]!, args.commandStr.slice(1), args.formatJson)
-			if (this.app.errorOccurred) this.app.exit(false)
-			if (result.cloudWorkingPath !== undefined)
-				this.app.err("To navigate in a stateful environment, please invoke the CLI without any arguments.")
+			if (this.app.errorOccurred) return //TODO status code
+			if (result.cloudWorkingPath !== undefined) {
+				this.app.outErr("To navigate in a stateful environment, please invoke the CLI without any arguments.")
+			}
 		}
 	}
 }

@@ -54,13 +54,13 @@ export class FS {
 		const command = fsCommands.find(command => [command.cmd, ...command.aliases].includes(cmd))
 
 		if (command === undefined) {
-			this.app.err(`Unknown command: ${cmd}`)
+			this.app.outErr(`Unknown command: ${cmd}`)
 			return {}
 		}
 
 		const minArgumentsCount = command.arguments.filter(arg => arg.optional !== true).length
 		if (args.length < minArgumentsCount) {
-			this.app.err(`Need to specify all arguments: ${command.arguments.map(arg => arg.name + (arg.optional ? " (optional)" : "")).join(", ")}`)
+			this.app.outErr(`Need to specify all arguments: ${command.arguments.map(arg => arg.name + (arg.optional ? " (optional)" : "")).join(", ")}`)
 			return {}
 		}
 
@@ -136,7 +136,7 @@ export class FS {
 					break
 			}
 		} catch (e) {
-			this.app.err(`execute ${command.cmd} command`, e)
+			this.app.outErr(`execute ${command.cmd} command`, e)
 		}
 		return {}
 	}
@@ -149,10 +149,10 @@ export class FS {
 		const path = params.cloudWorkingPath.navigate(params.args[0]!)
 		try {
 			const directory = await this.filen.fs().stat({ path: path.toString() })
-			if (!directory.isDirectory()) this.app.err("Not a directory")
+			if (!directory.isDirectory()) this.app.outErr("Not a directory")
 			else return path
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.outErr("No such directory")
 			else throw e
 		}
 	}
@@ -167,7 +167,7 @@ export class FS {
 			if (args["-l"]) {
 				const uuid = (await this.filen.fs().pathToItemUUID({ path: path.toString() }))
 				if (uuid === null) {
-					this.app.err("No such directory")
+					this.app.outErr("No such directory")
 					return
 				}
 				const items = await this.filen.cloud().listDirectory({ uuid })
@@ -195,7 +195,7 @@ export class FS {
 				else this.app.out(output.join("  "))
 			}
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.outErr("No such directory")
 			else throw e
 		}
 	}
@@ -215,7 +215,7 @@ export class FS {
 			if (params.formatJson) this.app.outJson({ text: content })
 			else this.app.out(content)
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.outErr("No such file")
 			else throw e
 		}
 	}
@@ -233,7 +233,7 @@ export class FS {
 			if (params.formatJson) this.app.outJson({ text: output })
 			else this.app.out(output)
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.outErr("No such file")
 			else throw e
 		}
 	}
@@ -256,7 +256,7 @@ export class FS {
 			if (args["--no-trash"]) if (!await this.app.promptConfirm(undefined)) return
 			await this.filen.fs().rm({ path, permanent: args["--no-trash"] ?? false })
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file or directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.outErr("No such file or directory")
 			else throw e
 		}
 	}
@@ -268,7 +268,7 @@ export class FS {
 		const source = params.args[0]!
 		const stat = fsModule.statSync(source, { throwIfNoEntry: false })
 		if (stat === undefined) {
-			this.app.err("No such source directory")
+			this.app.outErr("No such source directory")
 			return
 		}
 		const size = stat.isDirectory() ? (await directorySize(source)) : stat.size
@@ -284,7 +284,7 @@ export class FS {
 			})
 		} catch (e) {
 			if (progressBar) progressBar.progressBar.stop()
-			if (e instanceof Error && e.message.toLowerCase() === "aborted") this.app.err("Aborted")
+			if (e instanceof Error && e.message.toLowerCase() === "aborted") this.app.outErr("Aborted")
 			else throw e
 		}
 	}
@@ -309,11 +309,11 @@ export class FS {
 				})
 			} catch (e) {
 				if (progressBar) progressBar.progressBar.stop()
-				if (e instanceof Error && e.message.toLowerCase() === "aborted") this.app.err("Aborted")
+				if (e instanceof Error && e.message.toLowerCase() === "aborted") this.app.outErr("Aborted")
 				else throw e
 			}
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.outErr("No such file")
 			else throw e
 		}
 	}
@@ -343,7 +343,7 @@ export class FS {
 				this.app.out(` Birth: ${formatTimestamp(stat.birthtimeMs)}`)
 			}
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.outErr("No such file")
 			else throw e
 		}
 	}
@@ -385,7 +385,7 @@ export class FS {
 			const to = await params.cloudWorkingPath.navigateAndAppendFileNameIfNecessary(this.filen, params.args[1]!, from.cloudPath[from.cloudPath.length - 1]!)
 			await this.filen.fs().rename({ from: from.toString(), to: to.toString() })
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file or directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.outErr("No such file or directory")
 			else throw e
 		}
 	}
@@ -417,11 +417,11 @@ export class FS {
 				await this.filen.fs().copy({ from: from.toString(), to: to.toString(), onProgress, abortSignal })
 			} catch (e) {
 				if (progressBar) progressBar.progressBar.stop()
-				if (e instanceof Error && e.message.toLowerCase() === "aborted") this.app.err("Aborted")
+				if (e instanceof Error && e.message.toLowerCase() === "aborted") this.app.outErr("Aborted")
 				else throw e
 			}
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file or directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.outErr("No such file or directory")
 			else throw e
 		}
 	}
@@ -451,7 +451,7 @@ export class FS {
 			}
 			setTimeout(() => fsModule.unlinkSync(downloadPath), 500)
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.outErr("No such file")
 			else throw e
 		}
 		return {}
@@ -479,7 +479,7 @@ export class FS {
 			}
 			await open(url, { wait: true })
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file or directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.outErr("No such file or directory")
 			else throw e
 		}
 	}
@@ -514,7 +514,7 @@ export class FS {
 			}
 			this.app.outVerbose(`${path.toString()} ${command}d.`)
 		} catch (e) {
-			if (e instanceof Error && e.name === "FileNotFoundError") this.app.err("No such file or directory")
+			if (e instanceof Error && e.name === "FileNotFoundError") this.app.outErr("No such file or directory")
 			else throw e
 		}
 	}

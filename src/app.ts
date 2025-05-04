@@ -171,47 +171,58 @@ export class App {
 	}
 
 	/**
-	 * Global error output method
+	 * Global error output method. Outputs an error without throwing it.
+	 * @see errExit
+	 */
+	public outErr(messageOrAction: string, underlyingError?: unknown, additionalMessage?: string) {
+		this.errorOccurred = true
+		try {
+			this.errExit(messageOrAction, underlyingError, additionalMessage)
+		} catch (e) {
+			this.handleExitError(e)
+		}
+	}
+
+	/**
+	 * Throws a user-facing error.
 	 * @param messageOrAction A simple message to display (e.g. "No such file"), or the failed action, when used together with `underlyingError (e.g. "authenticate").
 	 * @param underlyingError Optionally, the underlying error that was thrown.
 	 * @param additionalMessage Optionally, an additional message to display: "Error trying to {action}: {e}. ({additionalMessage})"
-	 */
-	public err(messageOrAction: string, underlyingError?: unknown, additionalMessage?: string) {
-		this.errorOccurred = true
-
-		let str = ""
-		if (underlyingError === undefined) {
-			str += messageOrAction
-		} else {
-			const errorStr = underlyingError instanceof Error && underlyingError.name === "Error" ? underlyingError.message : String(underlyingError)
-			str += `Error trying to ${messageOrAction}: ${errorStr}`
-		}
-		if (additionalMessage !== undefined) {
-			str += `. (${additionalMessage})`
-		}
-
-		this.adapter.errOut(str)
-		if (underlyingError !== undefined) this.adapter.err(underlyingError)
-
-		this.writeLog(str, "error")
-		if (underlyingError !== undefined) this.writeLog((underlyingError instanceof Error ? underlyingError.stack : undefined) ?? String(underlyingError), "error")
-	}
-
-	/**
-	 * Global error output method. Exits the application
-	 * @see err
+	 * @see outErr
 	 */
 	public errExit(messageOrAction: string, underlyingError?: unknown, additionalMessage?: string): never {
-		this.err(messageOrAction, underlyingError, additionalMessage)
-		this.adapter.exit(false)
+		if (underlyingError instanceof ExitError) throw underlyingError
+
+		let message = ""
+		if (underlyingError === undefined) {
+			message += messageOrAction
+		} else {
+			const errorStr = underlyingError instanceof Error && underlyingError.name === "Error" ? underlyingError.message : String(underlyingError)
+			message += `Error trying to ${messageOrAction}: ${errorStr}`
+		}
+		if (additionalMessage !== undefined) {
+			message += `. (${additionalMessage})`
+		}
+
+		throw new ExitError(message, { cause: underlyingError })
 	}
 
-	/**
-	 * Global exit method.
-	 */
-	public exit(ok: boolean = true): never {
-		this.writeLogsToDisk()
-		this.adapter.exit(ok)
+	private handleExitError(e: unknown) {
+		if (e instanceof ExitError) {
+			this.adapter.errOut(e.message)
+			if (e.cause) this.adapter.err(e.cause)
+			this.writeLog(e.message, "error")
+			if (e.cause !== undefined) this.writeLog((e.cause instanceof Error ? e.cause.stack : undefined) ?? String(e.cause), "error")
+		} else {
+			if (e instanceof Error) {
+				this.adapter.err(e)
+				this.writeLog(e.message, "error")
+				if (e.stack !== undefined) this.writeLog(e.stack, "error")
+			} else {
+				this.adapter.err(e)
+				this.writeLog("Unexpected error: " + e, "error")
+			}
+		}
 	}
 
 	// input
@@ -270,7 +281,7 @@ export class App {
 				} else if (input.trim() === "") {
 					resolve(options.defaultAnswer ?? false)
 				} else {
-					this.err("Invalid input, please enter 'y' or 'n'!")
+					this.outErr("Invalid input, please enter 'y' or 'n'!")
 					this.promptYesNo(question, options).then(resolve)
 				}
 			})
@@ -304,8 +315,13 @@ export class App {
 	 * Main entry point for the application.
 	 */
 	public async main() {
-		await this._main()
-		this.writeLogsToDisk()
+		try {
+			await this._main()
+		} catch (e) {
+			this.handleExitError(e)
+		} finally {
+			this.writeLogsToDisk()
+		}
 	}
 	private async _main() {
 
@@ -386,7 +402,7 @@ export class App {
 					return
 				}
 			} catch (e) {
-				this.err("delete credentials", e)
+				this.outErr("delete credentials", e)
 			}
 			try {
 				const { exit } = await authentication.authenticate(
@@ -490,5 +506,6 @@ export interface InterfaceAdapter {
 	err(error: any): void
 	prompt(message: string, obfuscate: boolean, history: string[] | undefined, allowExit: boolean, autocompletion: Autocompletion | null): Promise<string>
 	addInterruptListener(listener: () => void): void
-	exit(ok: boolean): never
 }
+
+export class ExitError extends Error {}

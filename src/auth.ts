@@ -106,7 +106,7 @@ export class Authentication {
 					this.filen.init(sdkConfig)
 					if (!(await this.filen.user().checkAPIKeyValidity())) throw new Error("invalid API key")
 				} catch (e) {
-					this.app.err(`login from ${authConfigFilePath}`, e, "try generating a new auth config")
+					this.app.outErr(`login from ${authConfigFilePath}`, e, "try generating a new auth config")
 					this.filen.logout()
 				}
 			}
@@ -130,7 +130,7 @@ export class Authentication {
 				this.filen.init(sdkConfig)
 				if (!(await this.filen.user().checkAPIKeyValidity())) throw new Error("invalid API key")
 			} catch (e) {
-				this.app.err("login from saved credentials", e)
+				this.app.outErr("login from saved credentials", e)
 				this.filen.logout()
 			}
 		}
@@ -229,7 +229,7 @@ export class Authentication {
 							this.app.errExit("save credentials")
 						}
 					} catch (e) {
-						this.app.err("save credentials crypto key in keychain", e, process.platform === "linux" ? "You seem to be running Linux, is libsecret installed? Please see `filen help libsecret` for more information" : undefined)
+						this.app.outErr("save credentials crypto key in keychain", e, process.platform === "linux" ? "You seem to be running Linux, is libsecret installed? Please see `filen help libsecret` for more information" : undefined)
 						if (await this.app.promptYesNo("Use less secure unencrypted local credential storage instead?", { defaultAnswer: false })) {
 							await this.exportAuthConfig(true)
 						}
