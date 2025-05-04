@@ -19,7 +19,7 @@ export const fsOptions = {
 export class FSInterface {
 	constructor(private app: App, private filen: FilenSDK) {}
 
-	public async invoke(args: { formatJson: boolean, root: string | undefined, noAutocomplete: boolean, commandStr: string[] }) {
+	public async invoke(args: { formatJson: boolean, root: string | undefined, noAutocomplete: boolean, commandStr: string[] }): Promise<{ exitWithError: boolean }> {
 		const cloudRootPath = args.root !== undefined ? new CloudPath([]).navigate(args.root) : new CloudPath([])
 		const fs = new FS(this.app, this.filen)
 		if (!args.noAutocomplete) Autocompletion.instance = new Autocompletion(this.filen, cloudRootPath)
@@ -41,12 +41,13 @@ export class FSInterface {
 				}
 			}
 		} else {
-			this.app.resetErrorOccurred()
+			this.app.resetThereHasBeenErrorOutput()
 			const result = await fs.executeCommand(cloudRootPath, args.commandStr[0]!, args.commandStr.slice(1), args.formatJson)
-			if (this.app.errorOccurred) return //TODO status code
+			if (this.app.thereHasBeenErrorOutput) return { exitWithError: true }
 			if (result.cloudWorkingPath !== undefined) {
 				this.app.outErr("To navigate in a stateful environment, please invoke the CLI without any arguments.")
 			}
 		}
+		return { exitWithError: false }
 	}
 }

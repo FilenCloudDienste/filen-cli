@@ -165,9 +165,9 @@ export class App {
 		this.writeLog(JSON.stringify(json), "log")
 	}
 
-	public errorOccurred = false
-	public resetErrorOccurred() {
-		this.errorOccurred = false
+	public thereHasBeenErrorOutput = false
+	public resetThereHasBeenErrorOutput() {
+		this.thereHasBeenErrorOutput = false
 	}
 
 	/**
@@ -175,7 +175,7 @@ export class App {
 	 * @see errExit
 	 */
 	public outErr(messageOrAction: string, underlyingError?: unknown, additionalMessage?: string) {
-		this.errorOccurred = true
+		this.thereHasBeenErrorOutput = true
 		try {
 			this.errExit(messageOrAction, underlyingError, additionalMessage)
 		} catch (e) {
@@ -320,7 +320,7 @@ export class App {
 		try {
 			await this._main()
 		} catch (e) {
-			this.handleExitError(e)
+			if (e !== exitCode1Error) this.handleExitError(e)
 			status = false
 		}
 		this.writeLogsToDisk()
@@ -492,12 +492,13 @@ export class App {
 		} else {
 			// fs commands
 			const fsInterface = new FSInterface(this, filen)
-			await fsInterface.invoke({
+			const { exitWithError } = await fsInterface.invoke({
 				formatJson: this.args["--json"]!,
 				root: this.args["--root"],
 				noAutocomplete: this.args["--no-autocomplete"] ?? false,
 				commandStr: this.args["_"]
 			})
+			if (exitWithError) throw exitCode1Error
 		}
 	}
 }
@@ -512,3 +513,6 @@ export interface InterfaceAdapter {
 }
 
 export class ExitError extends Error {}
+
+// throw this when no addition error should be printed, but exit code 1 should be returned
+const exitCode1Error = new ExitError("Exit code 1")

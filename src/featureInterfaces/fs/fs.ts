@@ -37,8 +37,9 @@ export class FS {
 		args: string[],
 		formatJson: boolean
 	): Promise<{
-		exit?: boolean
-		cloudWorkingPath?: CloudPath
+		exit?: boolean,
+		cloudWorkingPath?: CloudPath,
+		error?: boolean,
 	}> {
 		if (cmd === "exit") return { exit: true }
 
