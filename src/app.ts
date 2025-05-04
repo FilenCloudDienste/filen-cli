@@ -313,15 +313,18 @@ export class App {
 
 	/**
 	 * Main entry point for the application.
+	 * @returns an exit status (true for ok, false for error)
 	 */
 	public async main() {
+		let status = true
 		try {
 			await this._main()
 		} catch (e) {
 			this.handleExitError(e)
-		} finally {
-			this.writeLogsToDisk()
+			status = false
 		}
+		this.writeLogsToDisk()
+		return status
 	}
 	private async _main() {
 
