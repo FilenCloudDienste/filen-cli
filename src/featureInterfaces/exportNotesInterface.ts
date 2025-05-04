@@ -65,7 +65,6 @@ export class ExportNotesInterface {
         })()))
 
         this.app.outUnlessQuiet(`Exported notes to ${exportRoot}`)
-        process.exit()
     }
 
     private convertChecklistHTMLToMarkdown(html: string) {

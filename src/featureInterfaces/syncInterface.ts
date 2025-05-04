@@ -52,96 +52,98 @@ export class SyncInterface {
 
 	constructor(private app: App, private filen: FilenSDK) {}
 
-	public async invoke(locationsStr: string[], continuous: boolean, disableLocalTrashFlag: boolean) {
-		const syncPairs = await this.resolveSyncPairs(locationsStr, disableLocalTrashFlag)
-		for (const syncPair of syncPairs) {
-			this.app.outUnlessQuiet(`Syncing ${syncPair.local} to ${syncPair.remote} (${syncPair.syncMode})...`)
-		}
+	public invoke(locationsStr: string[], continuous: boolean, disableLocalTrashFlag: boolean) {
+		return new Promise<void>(async (resolve) => {
+			const syncPairs = await this.resolveSyncPairs(locationsStr, disableLocalTrashFlag)
+			for (const syncPair of syncPairs) {
+				this.app.outUnlessQuiet(`Syncing ${syncPair.local} to ${syncPair.remote} (${syncPair.syncMode})...`)
+			}
 
-		const fullSyncPairs: SyncPair[] = []
-		const ignorerContentsToSet: {uuid: string, content: string}[] = []
-		for (const syncPair of syncPairs) {
-			const remoteParentStat = await (async () => {
-				try {
-					return await this.filen.fs().stat({ path: syncPair.remote })
-				} catch (e) {
-					if (e instanceof Error && e.name === "FileNotFoundError") {
-						this.app.err(`No such cloud file or directory: ${syncPair.remote}`)
-						return undefined
-					}
-					else throw e
-				}
-			})()
-			if (remoteParentStat === undefined) continue
-			const uuid = getUuidByString(`${syncPair.local}:${syncPair.remote}`, getUuidByString("filen-cli"), 3)
-			fullSyncPairs.push({
-				name: `${syncPair.local}:${syncPair.remote}`,
-				uuid,
-				localPath: syncPair.local.startsWith("~") ? pathModule.join(os.homedir(), syncPair.local.slice(1)) : syncPair.local, // expand "~" to home directory
-				remotePath: syncPair.remote,
-				remoteParentUUID: remoteParentStat.uuid,
-				mode: syncPair.syncMode,
-				excludeDotFiles: syncPair.excludeDotFiles,
-				paused: false,
-				localTrashDisabled: syncPair.disableLocalTrash
-			})
-			ignorerContentsToSet.push({
-				uuid,
-				content: syncPair.ignoreContent,
-			})
-		}
-		const syncPairsExited = new Set<string>()
-		const progressBar = continuous ? null : displayTransferProgressBar(this.app, "Transferring", "files", 0)
-		const worker = new SyncWorker({
-			syncPairs: fullSyncPairs,
-			dbPath: pathModule.join(this.app.dataDir, "sync"),
-			sdk: this.filen,
-			onMessage: msg => {
-				this.app.outVerbose(JSON.stringify(msg, null, 2))
-
-				// update progress
-				if (progressBar !== null && msg.type === "transfer") {
-					if (msg.data.type === "queued") {
-						progressBar.progressBar.setTotal(progressBar.progressBar.getTotal() + msg.data.size)
-					}
-					if (msg.data.type === "progress") {
-						progressBar.onProgress(msg.data.bytes)
-					}
-				}
-
-				// print error
-				let isError = msg.type.toLowerCase().includes("error")
-				if (msg.type === "taskErrors" || msg.type === "localTreeErrors") isError = msg.data.errors.length > 0
-				if (isError) this.printErrorMessage(msg)
-
-				// success messages
-				if (continuous && msg.type === "cycleSuccess") {
-					this.app.outUnlessQuiet(`Done syncing ${msg.syncPair.localPath} to ${msg.syncPair.remotePath} (${msg.syncPair.mode})`)
-				}
-				if (!continuous && msg.type === "cycleExited") {
-					syncPairsExited.add(msg.syncPair.uuid)
-					if (syncPairsExited.size >= syncPairs.length) {
-						if (progressBar !== null) progressBar.progressBar.stop()
-						if (!this.app.quiet) {
-							if (progressBar?.progressBar.getTotal() ?? 0 > 0) this.app.out("Done.")
-							else this.app.out("Done (no files to transfer).")
+			const fullSyncPairs: SyncPair[] = []
+			const ignorerContentsToSet: {uuid: string, content: string}[] = []
+			for (const syncPair of syncPairs) {
+				const remoteParentStat = await (async () => {
+					try {
+						return await this.filen.fs().stat({ path: syncPair.remote })
+					} catch (e) {
+						if (e instanceof Error && e.name === "FileNotFoundError") {
+							this.app.err(`No such cloud file or directory: ${syncPair.remote}`)
+							return undefined
 						}
-						process.exit()
+						else throw e
 					}
-				}
-			},
-			runOnce: !continuous,
-		})
-		await worker.initialize()
-		for (const ignorerContent of ignorerContentsToSet) {
-			worker.updateIgnorerContent(ignorerContent.uuid, ignorerContent.content)
-		}
-		if (continuous) {
-			this.app.addInterruptListener(() => {
-				this.app.out("Stop syncing")
-				process.exit()
+				})()
+				if (remoteParentStat === undefined) continue
+				const uuid = getUuidByString(`${syncPair.local}:${syncPair.remote}`, getUuidByString("filen-cli"), 3)
+				fullSyncPairs.push({
+					name: `${syncPair.local}:${syncPair.remote}`,
+					uuid,
+					localPath: syncPair.local.startsWith("~") ? pathModule.join(os.homedir(), syncPair.local.slice(1)) : syncPair.local, // expand "~" to home directory
+					remotePath: syncPair.remote,
+					remoteParentUUID: remoteParentStat.uuid,
+					mode: syncPair.syncMode,
+					excludeDotFiles: syncPair.excludeDotFiles,
+					paused: false,
+					localTrashDisabled: syncPair.disableLocalTrash
+				})
+				ignorerContentsToSet.push({
+					uuid,
+					content: syncPair.ignoreContent,
+				})
+			}
+			const syncPairsExited = new Set<string>()
+			const progressBar = continuous ? null : displayTransferProgressBar(this.app, "Transferring", "files", 0)
+			const worker = new SyncWorker({
+				syncPairs: fullSyncPairs,
+				dbPath: pathModule.join(this.app.dataDir, "sync"),
+				sdk: this.filen,
+				onMessage: msg => {
+					this.app.outVerbose(JSON.stringify(msg, null, 2))
+
+					// update progress
+					if (progressBar !== null && msg.type === "transfer") {
+						if (msg.data.type === "queued") {
+							progressBar.progressBar.setTotal(progressBar.progressBar.getTotal() + msg.data.size)
+						}
+						if (msg.data.type === "progress") {
+							progressBar.onProgress(msg.data.bytes)
+						}
+					}
+
+					// print error
+					let isError = msg.type.toLowerCase().includes("error")
+					if (msg.type === "taskErrors" || msg.type === "localTreeErrors") isError = msg.data.errors.length > 0
+					if (isError) this.printErrorMessage(msg)
+
+					// success messages
+					if (continuous && msg.type === "cycleSuccess") {
+						this.app.outUnlessQuiet(`Done syncing ${msg.syncPair.localPath} to ${msg.syncPair.remotePath} (${msg.syncPair.mode})`)
+					}
+					if (!continuous && msg.type === "cycleExited") {
+						syncPairsExited.add(msg.syncPair.uuid)
+						if (syncPairsExited.size >= syncPairs.length) {
+							if (progressBar !== null) progressBar.progressBar.stop()
+							if (!this.app.quiet) {
+								if (progressBar?.progressBar.getTotal() ?? 0 > 0) this.app.out("Done.")
+								else this.app.out("Done (no files to transfer).")
+							}
+							resolve()
+						}
+					}
+				},
+				runOnce: !continuous,
 			})
-		}
+			await worker.initialize()
+			for (const ignorerContent of ignorerContentsToSet) {
+				worker.updateIgnorerContent(ignorerContent.uuid, ignorerContent.content)
+			}
+			if (continuous) {
+				this.app.addInterruptListener(() => {
+					this.app.out("Stop syncing")
+					resolve()
+				})
+			}
+		})
 	}
 
 	private async resolveSyncPairs(locationsStr: string[], disableLocalTrashFlag: boolean): Promise<RawSyncPair[]> {

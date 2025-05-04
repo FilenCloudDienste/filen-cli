@@ -3,7 +3,7 @@ import path from "path"
 import { spawn } from "node:child_process"
 import { downloadFile, exists } from "./util/util"
 import * as fs from "node:fs"
-import semver from "semver/preload"
+import semver from "semver"
 import { App } from "./app"
 
 type UpdateCache = {
@@ -315,7 +315,7 @@ export class Updater {
 			]
 			// for " escaping, see https://stackoverflow.com/a/15262019/13164753
 			spawn("cmd.exe", ["/c", "\"" + commands.join(" & ").replace(/"/g, "\"\"\"") + "\""], { shell: true, detached: true })
-			process.exit()
+			this.app.exit()
 		}
 		if (process.platform === "linux" || process.platform === "darwin") {
 			const newFileName = selfApplicationFile.replace(currentVersionName, publishedVersionName)
@@ -329,7 +329,7 @@ export class Updater {
 				"read -p \"Press enter to continue...\""
 			]
 			spawn("sh", ["-c", `${commands.join(" & ")}`], { detached: true })
-			process.exit()
+			this.app.exit()
 		}
 		this.app.errExit(`Could not install for platform ${process.platform}`)
 	}

@@ -20,7 +20,6 @@ export class TrashInterface {
 		} else {
 			this.app.errExit("Invalid command! See `filen -h fs` for more info.")
 		}
-		process.exit()
 	}
 
 	private async listTrash() {
@@ -35,7 +34,7 @@ export class TrashInterface {
 		if (isNaN(selection) || selection < 1 || selection > items.length) this.app.errExit("Invalid selection!")
 		if (doDelete) {
 			const item = items[selection-1]!
-			if (!await this.app.promptConfirm(`permanently delete ${item.name}`)) process.exit()
+			if (!await this.app.promptConfirm(`permanently delete ${item.name}`)) return
 			await this.filen.cloud().deleteFile({ uuid: item.uuid })
 		} else {
 			await this.filen.cloud().restoreFile({ uuid: items[selection-1]!.uuid })
@@ -53,8 +52,8 @@ export class TrashInterface {
 
 	private async emptyTrash() {
 		const items = await this.filen.cloud().listTrash()
-		if (!await this.app.promptConfirm(`permanently delete all ${items.length} trash items`)) process.exit()
-		if (!await this.app.promptConfirm(undefined)) process.exit()
+		if (!await this.app.promptConfirm(`permanently delete all ${items.length} trash items`)) return
+		if (!await this.app.promptConfirm(undefined)) return
 		await this.filen.cloud().emptyTrash()
 	}
 }

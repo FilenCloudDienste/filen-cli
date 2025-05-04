@@ -53,7 +53,7 @@ export class Authentication {
 		twoFactorCodeArg: string | undefined,
 		exportAuthConfig: boolean,
 		exportApiKey: boolean
-	) {
+	): Promise<{ exit: boolean }> {
 		// delete legacy saved credentials
 		for (const file of [path.join(this.app.dataDir, ".credentials"), path.join(this.app.dataDir, ".credentials.salt")]) {
 			if (await exists(file)) await fs.promises.unlink(file)
@@ -199,7 +199,7 @@ export class Authentication {
 		// `filen export-auth-config`: export credentials to .filen-cli-auth-config
 		if (exportAuthConfig) {
 			await this.exportAuthConfig()
-			process.exit()
+			return { exit: true }
 		}
 
 		// `filen export-api-key`: print API key to the terminal (for Rclone integration)
@@ -207,7 +207,7 @@ export class Authentication {
 			const input = await this.app.prompt("You are about to print your API Key, which gives full access to your account,\nto the screen. Proceed? (y/N) ")
 			if (input.toLowerCase() !== "y") this.app.errExit("Cancelled.")
 			this.app.out(`API Key for ${this.filen.config.email}: ${this.filen.config.apiKey}`)
-			process.exit()
+			return { exit: true }
 		}
 
 		// save credentials from prompt
@@ -238,6 +238,8 @@ export class Authentication {
 			}
 			this.app.out("")
 		}
+
+		return { exit: false }
 	}
 
 	/**
@@ -245,7 +247,7 @@ export class Authentication {
 	 */
 	private async exportAuthConfig(onlyExportToDataDir = false) {
 		if (await exists(this.authConfigFileName)) {
-			if (!(await this.app.promptConfirm(`overwrite ${this.authConfigFileName}`))) process.exit()
+			if (!(await this.app.promptConfirm(`overwrite ${this.authConfigFileName}`))) return
 		}
 		const input = await this.app.prompt(
 			wrapRedTerminalText(

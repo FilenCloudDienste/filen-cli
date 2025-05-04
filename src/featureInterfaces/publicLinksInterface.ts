@@ -27,7 +27,6 @@ export class PublicLinksInterface {
 				this.app.errExit("edit public link", e)
 			}
 		}
-		process.exit()
 	}
 
 	private async listPublicLinks() {

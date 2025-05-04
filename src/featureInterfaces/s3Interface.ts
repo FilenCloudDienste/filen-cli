@@ -17,7 +17,7 @@ export const s3Options = {
 export class S3Interface {
 	constructor(private app: App, private filen: FilenSDK) {}
 
-	public async invoke(args: {
+	public invoke(args: {
 		hostname: string | undefined,
 		port: number | undefined,
 		https: boolean,
@@ -25,35 +25,37 @@ export class S3Interface {
 		secretAccessKey: string | undefined,
 		threads: number | undefined,
 	}) {
-		if (args.accessKeyId === undefined || args.secretAccessKey === undefined) {
-			this.app.errExit("Need to specify --s3-access-key-id and --s3-secret-access-key")
-		}
-
-		const https = args.https
-		const hostname = args.hostname ?? "0.0.0.0"
-		const port = args.port ?? (args.https ? 443 : 80)
-
-		const configuration = {
-			hostname,
-			port,
-			https,
-			user: {
-				accessKeyId: args.accessKeyId,
-				secretKeyId: args.secretAccessKey,
-				sdk: this.filen
+		return new Promise<void>(async (resolve) => {
+			if (args.accessKeyId === undefined || args.secretAccessKey === undefined) {
+				this.app.errExit("Need to specify --s3-access-key-id and --s3-secret-access-key")
 			}
-		}
-		const s3Server = args.threads === undefined
-			? new S3Server(configuration)
-			: new S3ServerCluster({ ...configuration, threads: args.threads !== 0 ? args.threads : undefined })
-		await s3Server.start()
-		let location = `${https ? "https" : "http"}://${hostname}:${port}`
-		if (hostname === "127.0.0.1" || hostname === "0.0.0.0") location += ` or ${https ? "https" : "http"}://local.s3.filen.io:${port}`
-		this.app.out(`S3 server for ${this.filen.config.email} started on ${location}`)
-		this.app.addInterruptListener(() => {
-			this.app.out("Stopping S3 server")
-			s3Server.stop()
-				.then(() => process.exit())
+	
+			const https = args.https
+			const hostname = args.hostname ?? "0.0.0.0"
+			const port = args.port ?? (args.https ? 443 : 80)
+	
+			const configuration = {
+				hostname,
+				port,
+				https,
+				user: {
+					accessKeyId: args.accessKeyId,
+					secretKeyId: args.secretAccessKey,
+					sdk: this.filen
+				}
+			}
+			const s3Server = args.threads === undefined
+				? new S3Server(configuration)
+				: new S3ServerCluster({ ...configuration, threads: args.threads !== 0 ? args.threads : undefined })
+			await s3Server.start()
+			let location = `${https ? "https" : "http"}://${hostname}:${port}`
+			if (hostname === "127.0.0.1" || hostname === "0.0.0.0") location += ` or ${https ? "https" : "http"}://local.s3.filen.io:${port}`
+			this.app.out(`S3 server for ${this.filen.config.email} started on ${location}`)
+			this.app.addInterruptListener(() => {
+				this.app.out("Stopping S3 server")
+				s3Server.stop().then(() => resolve())
+				//TODO: how can I remove the "Terminate batch job (Y/N)?" message?
+			})
 		})
 	}
 }

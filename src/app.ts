@@ -206,6 +206,14 @@ export class App {
 		this.adapter.exit(false)
 	}
 
+	/**
+	 * Global exit method.
+	 */
+	public exit(ok: boolean = true): never {
+		this.writeLogsToDisk()
+		this.adapter.exit(ok)
+	}
+
 	// input
 	
 	private readlineHistory: string[] = []
@@ -296,11 +304,15 @@ export class App {
 	 * Main entry point for the application.
 	 */
 	public async main() {
+		await this._main()
+		this.writeLogsToDisk()
+	}
+	private async _main() {
 
 		// --version: print version and exit
 		if ((this.args["--version"] ?? false) || this.args["_"][0] === "version") {
 			this.out(version)
-			process.exit()
+			return
 		}
 	
 		// print version
@@ -324,7 +336,7 @@ export class App {
 			} else {
 				this.errExit(`Unknown help page ${topic}`)
 			}
-			process.exit()
+			return
 		}
 	
 		// check for updates
@@ -333,7 +345,7 @@ export class App {
 			if (this.args["_"][0] === "canary") {
 				try {
 					await updater.showCanaryPrompt()
-					process.exit()
+					return
 				} catch (e) {
 					this.errExit("change canary preferences", e)
 				}
@@ -343,7 +355,7 @@ export class App {
 					const version = this.args["_"][1]
 					if (version === undefined) this.errExit("Need to specify version")
 					await updater.fetchAndInstallVersion(version!)
-					process.exit()
+					return
 				} catch (e) {
 					this.errExit("install version", e)
 				}
@@ -371,19 +383,20 @@ export class App {
 			try {
 				if (this.args["_"][0] === "logout") {
 					await authentication.deleteSavedCredentials()
-					process.exit()
+					return
 				}
 			} catch (e) {
 				this.err("delete credentials", e)
 			}
 			try {
-				await authentication.authenticate(
+				const { exit } = await authentication.authenticate(
 					this.args["--email"],
 					this.args["--password"],
 					this.args["--two-factor-code"],
 					this.args["_"][0] === "export-auth-config",
 					this.args["_"][0] === "export-api-key",
 				)
+				if (exit) return
 			} catch (e) {
 				this.errExit("authenticate", e)
 			}
