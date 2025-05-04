@@ -28,6 +28,7 @@ export class WebDAVInterface {
 		authScheme: string | undefined,
 		threads: number | undefined,
 	}) {
+		// eslint-disable-next-line no-async-promise-executor
 		return new Promise<void>(async (resolve) => {
 			if (!proxyMode && (args.username === undefined || args.password === undefined)) {
 				this.app.errExit("Need to specify --w-user and --w-password")

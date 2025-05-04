@@ -35,7 +35,7 @@ export class Authentication {
 			this.app.errExit("delete saved credentials file", e)
 		}
 		if (await exists(this.authConfigFileName) || await exists(path.join(this.app.dataDir, this.authConfigFileName))) {
-			if (!this.app.quiet) this.app.out(`There is a .filen-cli-auth-config file`)
+			if (!this.app.quiet) this.app.out("There is a .filen-cli-auth-config file")
 		}
 	}
 
@@ -120,7 +120,7 @@ export class Authentication {
 					if (key === null) this.app.errExit("There's a saved credentials file, but no crypto key in the keychain. Try `filen logout` and login again.")
 					return key
 				} catch (e) {
-					this.app.errExit("get saved credentials crypto key from keychain")
+					this.app.errExit("get saved credentials crypto key from keychain", e)
 				}
 			})()
 			try {
@@ -226,7 +226,7 @@ export class Authentication {
 							await fs.promises.writeFile(this.keepMeLoggedInFile, encryptedAuthConfig)
 							this.app.out("You can delete these credentials using `filen logout`")
 						} catch (e) {
-							this.app.errExit("save credentials")
+							this.app.errExit("save credentials", e)
 						}
 					} catch (e) {
 						this.app.outErr("save credentials crypto key in keychain", e, process.platform === "linux" ? "You seem to be running Linux, is libsecret installed? Please see `filen help libsecret` for more information" : undefined)

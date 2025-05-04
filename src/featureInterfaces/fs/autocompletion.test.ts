@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest"
+import { expect, test } from "vitest"
 import { autocomplete, Item } from "./autocompletion"
 import { CloudPath } from "../../util/cloudPath"
 import { fsCommands } from "./commands"

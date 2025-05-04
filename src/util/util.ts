@@ -37,7 +37,7 @@ export async function exists(path: PathLike): Promise<boolean> {
 	try {
 		await fsModule.promises.stat(path)
 		return true
-	} catch (e) {
+	} catch {
 		return false
 	}
 }

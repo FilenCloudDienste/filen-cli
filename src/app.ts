@@ -106,7 +106,7 @@ export class App {
 		this.writeLogsToDisk = () => {
 			try {
 				if (fs.readFileSync(logsFile).length > 1) this.logs = "\n\n" + this.logs
-			} catch (e) {
+			} catch {
 				// do nothing
 			}
 			fs.appendFileSync(logsFile, this.logs)
@@ -160,7 +160,7 @@ export class App {
 	/**
 	 * Global output method for JSON
 	 */
-	public outJson(json: any) {
+	public outJson(json: unknown) {
 		this.adapter.outJson(json)
 		this.writeLog(JSON.stringify(json), "log")
 	}
@@ -505,9 +505,9 @@ export class App {
 
 export interface InterfaceAdapter {
 	out(message: string): void
-	outJson(json: any): void
+	outJson(json: unknown): void
 	errOut(message: string): void
-	err(error: any): void
+	err(error: unknown): void
 	prompt(message: string, obfuscate: boolean, history: string[] | undefined, allowExit: boolean, autocompletion: Autocompletion | null): Promise<string>
 	addInterruptListener(listener: () => void): void
 }

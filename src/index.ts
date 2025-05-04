@@ -44,7 +44,7 @@ class ConsoleInterfaceAdapter implements InterfaceAdapter {
 		console.log(message)
 	}
 
-	outJson(json: any) {
+	outJson(json: unknown) {
 		console.log(json)
 	}
 
@@ -52,8 +52,8 @@ class ConsoleInterfaceAdapter implements InterfaceAdapter {
 		console.error(wrapRedTerminalText(message))
 	}
 
-	err(error: any) {
-		console.error(wrapRedTerminalText(error instanceof Error ? error.stack : error))
+	err(error: unknown) {
+		console.error(wrapRedTerminalText((error instanceof Error ? error.stack : undefined) ?? String(error)))
 	}
 
 	prompt(message: string, obfuscate: boolean, history: string[] | undefined, allowExit: boolean, autocompletion: Autocompletion | null): Promise<string> {

@@ -53,7 +53,7 @@ export class ExportNotesInterface {
                 })()
 
                 // find unique file name
-                let file; let i = 0
+                let file
                 for (let i = 0; i === 0 || await exists(file!); i++) {
                     file = pathModule.join(exportRoot, `${sanitizeFileName(note.title)}${i === 0 ? "" : `-${i}`}.${fileEnding}`)
                 }
@@ -72,15 +72,15 @@ export class ExportNotesInterface {
 
         // read checklist
         const $ = cheerio.load(html);
-        $('ul').each((_, ul) => {
-            const isChecked = $(ul).attr('data-checked') === 'true';
-            $(ul).find('li').each((_, li) => {
+        $("ul").each((_, ul) => {
+            const isChecked = $(ul).attr("data-checked") === "true";
+            $(ul).find("li").each((_, li) => {
                 const text = $(li).text().trim();
                 checklist.push({ checked: isChecked, text });
             });
         });
 
         // convert to markdown
-        return checklist.map(item => `- ${item.checked ? '[x]' : '[ ]'} ${item.text}`).join('\n')
+        return checklist.map(item => `- ${item.checked ? "[x]" : "[ ]"} ${item.text}`).join("\n")
     }
 }

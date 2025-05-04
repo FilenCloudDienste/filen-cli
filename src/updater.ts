@@ -210,14 +210,14 @@ export class Updater {
 					try {
 						return (await fs.promises.readFile(this.updateCacheFile)).toString()
 					} catch (e) {
-						throw new Error("unable to read update cache file")
+						throw Error("unable to read update cache file", { cause: e })
 					}
 				})()
 				const updateCache = (() => {
 					try {
 						return JSON.parse(content)
 					} catch (e) {
-						throw new Error("unable to parse update cache file")
+						throw Error("unable to parse update cache file", { cause: e })
 					}
 				})()
 				if (typeof updateCache.lastCheckedUpdate !== "number") throw new Error("malformed update cache file")
@@ -226,7 +226,7 @@ export class Updater {
 					canary: updateCache.canary ?? false
 				}
 			} catch (e) {
-				this.app.outErr("read recent update checks", e, "invoke the CLI again to retry updating")
+				this.app.outErr("read recent update checks: " + (e as Error).message, (e as Error).cause, "invoke the CLI again to retry updating")
 				try {
 					await fs.promises.rm(this.updateCacheFile)
 				} catch (e) {

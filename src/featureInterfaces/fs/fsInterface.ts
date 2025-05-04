@@ -26,7 +26,6 @@ export class FSInterface {
 
 		if (args.commandStr.length === 0) {
 			let cloudWorkingPath: CloudPath = cloudRootPath
-			// eslint-disable-next-line no-constant-condition
 			while (true) {
 				const command = await this.app.prompt(`${cloudWorkingPath.toString()} > `, { allowExit: true, useHistory: true })
 				if (command === "") continue
