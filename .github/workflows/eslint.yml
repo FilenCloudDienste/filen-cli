@@ -28,8 +28,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
       - run: npm ci
-      - run: npm install -D @microsoft/eslint-formatter-sarif@2.1.7
-      - run: npx eslint --ext .js,.jsx,.ts,.tsx --format @microsoft/eslint-formatter-sarif --output-file eslint-report.sarif
+      - run: npm run lint-ci
       - name: Upload analysis results to GitHub
         uses: github/codeql-action/upload-sarif@v2
         with:
