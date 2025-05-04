@@ -10,37 +10,28 @@
 name: ESLint
 
 on:
-    push:
-    pull_request:
-        types: [opened, synchronize, reopened]
+  push:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
-    eslint:
-        name: Run ESLint
-        runs-on: ubuntu-latest
-        permissions:
-            contents: read
-            security-events: write
-            actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v3
-
-            - name: Install ESLint
-              run: |
-                  npm install eslint@8.10.0
-                  npm install @microsoft/eslint-formatter-sarif@2.1.7
-
-            - name: Run ESLint
-              run: npx eslint src/**/*
-                  --config .eslintrc
-                  --ext .js,.jsx,.ts,.tsx
-                  --format @microsoft/eslint-formatter-sarif
-                  --output-file eslint-results.sarif
-              continue-on-error: true
-
-            - name: Upload analysis results to GitHub
-              uses: github/codeql-action/upload-sarif@v2
-              with:
-                  sarif_file: eslint-results.sarif
-                  wait-for-processing: true
+  eslint:
+    name: Run ESLint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v4
+      - run: npm ci
+      - run: npm install -D @microsoft/eslint-formatter-sarif@2.1.7
+      - run: npx eslint --ext .js,.jsx,.ts,.tsx --format @microsoft/eslint-formatter-sarif --output-file eslint-report.sarif
+      - name: Upload analysis results to GitHub
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: eslint-report.sarif
+          wait-for-processing: true
