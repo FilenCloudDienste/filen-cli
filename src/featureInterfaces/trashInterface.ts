@@ -13,7 +13,7 @@ export class TrashInterface {
 	public async invoke(args: string[]) {
 		this.trashItems = await this.filen.cloud().listTrash()
 		if (this.trashItems.length === 0) {
-			out("Trash is empty.")
+			this.app.out("Trash is empty.")
 			process.exit()
 		}
 		if (args.length === 0 || args[0] === "view" || args[0] === "ls" || args[0] === "list") {
@@ -56,7 +56,6 @@ export class TrashInterface {
 	}
 
 	private async emptyTrash() {
-		const items = await this.filen.cloud().listTrash()
 		if (!await this.app.promptConfirm(`permanently delete all ${this.trashItems.length} trash items`)) return
 		if (!await this.app.promptConfirm(undefined)) return
 		await this.filen.cloud().emptyTrash()
