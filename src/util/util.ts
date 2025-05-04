@@ -2,10 +2,10 @@ import crypto from "crypto"
 import * as fsModule from "node:fs"
 import { PathLike } from "node:fs"
 import os from "os"
-import { isDevelopment } from "../index"
 import * as https from "node:https"
 import pathModule from "path"
 import FilenSDK, { CloudItem } from "@filen/sdk"
+import { App } from "../app"
 
 /**
  * A function that does nothing.
@@ -37,7 +37,7 @@ export async function exists(path: PathLike): Promise<boolean> {
 	try {
 		await fsModule.promises.stat(path)
 		return true
-	} catch (e) {
+	} catch {
 		return false
 	}
 }
@@ -62,7 +62,7 @@ export async function directorySize(path: PathLike) {
  * If it exists, `~/.filen-cli` is used instead.
  * If the `--data-dir` flag or `FILEN_CLI_DATA_DIR` environment variable is set, its value is used instead.
  */
-export function determineDataDir(dataDirFlag: string | undefined): string {
+export function determineDataDir(app: App, dataDirFlag: string | undefined): string {
 	// default config path, see https://github.com/jprichardson/ospath/blob/master/index.js
 	let configPath: string = (() => {
 		switch (process.platform) {
@@ -87,7 +87,7 @@ export function determineDataDir(dataDirFlag: string | undefined): string {
 		configPath = pathModule.join(configPath, "filen-cli")
 	}
 
-	if (isDevelopment) {
+	if (app.isDevelopment) {
 		configPath = pathModule.join(configPath, "dev")
 	}
 

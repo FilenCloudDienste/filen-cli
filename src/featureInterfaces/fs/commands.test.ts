@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import { splitCommandSegments } from "./commands"
 
 describe("splitCommandSegments()", () => {
@@ -10,7 +11,7 @@ describe("splitCommandSegments()", () => {
 		expect(splitCommandSegments("cd \"folder name\"")).toEqual(["cd", "\"folder name\""])
 	})
 
-	test("multiple segments with quites", () => {
+	test("multiple segments with quotes", () => {
 		expect(splitCommandSegments("cd \"folder name\" to \"other folder\"")).toEqual(["cd", "\"folder name\"", "to", "\"other folder\""])
 	})
 

@@ -109,13 +109,13 @@ export async function autocomplete(
 				const items = await (filesystem === "cloud" ? readCloudDirectory(inputPath) : readLocalDirectory(inputPath))
 				const acceptedItems = items.filter(item => item.type === "file" ? acceptFile : true)
 				autocompleteOptions = acceptedItems.map(item => argumentInput + ((argumentInput.endsWith("/") || argumentInput === "") ? "" : "/") + item.name)
-			} catch (e) { // path does not exist
+			} catch { // path does not exist
 				try {
 					const inputPathParent = inputPath.substring(0, inputPath.lastIndexOf("/"))
 					const items = await (filesystem === "cloud" ? readCloudDirectory(inputPathParent) : readLocalDirectory(inputPathParent))
 					const acceptedItems = items.filter(item => item.type === "file" ? acceptFile : true)
 					autocompleteOptions = acceptedItems.map(item => argumentInput.substring(0, argumentInput.lastIndexOf("/") + 1) + item.name)
-				} catch (e) {
+				} catch {
 					return [[], input]
 				}
 			}

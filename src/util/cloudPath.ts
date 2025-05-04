@@ -46,7 +46,7 @@ export class CloudPath {
 		else {
 			try {
 				appendFileName = (await filen.fs().stat({ path: cloudPath.toString() })).isDirectory()
-			} catch (e) {
+			} catch {
 				appendFileName = false
 			}
 		}

@@ -1,4 +1,4 @@
-name: Run Jest tests
+name: Run Vitest tests
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  jest:
+  vitest:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -14,4 +14,4 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
       - run: npm ci
-      - run: npm test
+      - run: npm run test

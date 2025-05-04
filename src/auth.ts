@@ -1,30 +1,24 @@
 import FilenSDK, { APIError, FilenSDKConfig } from "@filen/sdk"
-import { err, errExit, out, outVerbose, prompt, promptConfirm, promptYesNo, quiet } from "./interface/interface"
 import fs from "node:fs"
 import { exists } from "./util/util"
 import path from "path"
 import { wrapRedTerminalText } from "./interface/util"
 import { ANONYMOUS_SDK_CONFIG } from "./constants"
 import crypto from "node:crypto"
-import { isDevelopment } from "./index"
-import { dataDir } from "."
 import { isRunningAsContainer } from "./buildInfo"
+import { App } from "./app"
 
 /**
  * Handles authentication.
  */
 export class Authentication {
-	private readonly filen: FilenSDK
-
 	private readonly authConfigFileName = ".filen-cli-auth-config"
-	private readonly keepMeLoggedInFile = path.join(dataDir, ".filen-cli-keep-me-logged-in")
+	private readonly keepMeLoggedInFile = path.join(this.app.dataDir, ".filen-cli-keep-me-logged-in")
 
 	private readonly keychainServiceName = "filen-cli"
-	private readonly keychainAccountName = "auth-config-crypto-key" + (isDevelopment ? "-dev" : "")
+	private readonly keychainAccountName = "auth-config-crypto-key" + (this.app.isDevelopment ? "-dev" : "")
 
-	public constructor(filen: FilenSDK) {
-		this.filen = filen
-	}
+	constructor(private readonly app: App, private readonly filen: FilenSDK) {}
 
 	/**
 	 * Delete saved credentials (the `logout` command)
@@ -33,15 +27,15 @@ export class Authentication {
 		try {
 			if (await exists(this.keepMeLoggedInFile)) {
 				await fs.promises.unlink(this.keepMeLoggedInFile)
-				out("Credentials deleted")
+				this.app.out("Credentials deleted")
 			} else {
-				out("No saved credentials")
+				this.app.out("No saved credentials")
 			}
 		} catch (e) {
-			errExit("delete saved credentials file", e)
+			this.app.errExit("delete saved credentials file", e)
 		}
-		if (await exists(this.authConfigFileName) || await exists(path.join(dataDir, this.authConfigFileName))) {
-			if (!quiet) out(`There is a .filen-cli-auth-config file`)
+		if (await exists(this.authConfigFileName) || await exists(path.join(this.app.dataDir, this.authConfigFileName))) {
+			if (!this.app.quiet) this.app.out("There is a .filen-cli-auth-config file")
 		}
 	}
 
@@ -59,9 +53,9 @@ export class Authentication {
 		twoFactorCodeArg: string | undefined,
 		exportAuthConfig: boolean,
 		exportApiKey: boolean
-	) {
+	): Promise<{ exit: boolean }> {
 		// delete legacy saved credentials
-		for (const file of [path.join(dataDir, ".credentials"), path.join(dataDir, ".credentials.salt")]) {
+		for (const file of [path.join(this.app.dataDir, ".credentials"), path.join(this.app.dataDir, ".credentials.salt")]) {
 			if (await exists(file)) await fs.promises.unlink(file)
 		}
 
@@ -72,15 +66,15 @@ export class Authentication {
 
 		// get credentials from arguments
 		if (emailArg !== undefined) {
-			if (passwordArg === undefined) errExit("Need to also specify argument --password")
-			outVerbose(`Logging in as ${emailArg} (using arguments)`)
+			if (passwordArg === undefined) this.app.errExit("Need to also specify argument --password")
+				this.app.outVerbose(`Logging in as ${emailArg} (using arguments)`)
 			credentials = { email: emailArg, password: passwordArg, twoFactorCode: twoFactorCodeArg }
 		}
 
 		// otherwise: get credentials from environment variables
 		if (needCredentials() && process.env.FILEN_EMAIL !== undefined) {
-			if (process.env.FILEN_PASSWORD === undefined) errExit("Need to also specify environment variable FILEN_PASSWORD")
-			outVerbose(`Logging in as ${process.env.FILEN_EMAIL} (using environment variables)`)
+			if (process.env.FILEN_PASSWORD === undefined) this.app.errExit("Need to also specify environment variable FILEN_PASSWORD")
+				this.app.outVerbose(`Logging in as ${process.env.FILEN_EMAIL} (using environment variables)`)
 			credentials = {
 				email: process.env.FILEN_EMAIL,
 				password: process.env.FILEN_PASSWORD,
@@ -91,9 +85,9 @@ export class Authentication {
 		// otherwise: get credentials from .filen-cli-credentials
 		if (needCredentials() && await exists(".filen-cli-credentials")) {
 			const lines = (await fs.promises.readFile(".filen-cli-credentials")).toString().split("\n")
-			if (lines.length < 2) errExit("Invalid .filen-cli-credentials!")
+			if (lines.length < 2) this.app.errExit("Invalid .filen-cli-credentials!")
 			const twoFactorCode = lines.length > 2 ? lines[2] : undefined
-			outVerbose(`Logging in as ${lines[0]} (using .filen-cli-credentials)`)
+			this.app.outVerbose(`Logging in as ${lines[0]} (using .filen-cli-credentials)`)
 			credentials = { email: lines[0]!, password: lines[1]!, twoFactorCode }
 		}
 
@@ -101,18 +95,18 @@ export class Authentication {
 		if (needCredentials()) {
 			const authConfigFilePath = await (async () => {
 				if (await exists(this.authConfigFileName)) return this.authConfigFileName
-				if (await exists(path.join(dataDir, this.authConfigFileName))) return path.join(dataDir, this.authConfigFileName)
+				if (await exists(path.join(this.app.dataDir, this.authConfigFileName))) return path.join(this.app.dataDir, this.authConfigFileName)
 				return undefined
 			})()
 			if (authConfigFilePath !== undefined) {
 				try {
 					const encodedConfig = (await fs.promises.readFile(authConfigFilePath)).toString()
 					const sdkConfig = await this.decodeAuthConfig(encodedConfig)
-					outVerbose(`Logging in as ${sdkConfig.email} (using ${authConfigFilePath})`)
+					this.app.outVerbose(`Logging in as ${sdkConfig.email} (using ${authConfigFilePath})`)
 					this.filen.init(sdkConfig)
 					if (!(await this.filen.user().checkAPIKeyValidity())) throw new Error("invalid API key")
 				} catch (e) {
-					err(`login from ${authConfigFilePath}`, e, "try generating a new auth config")
+					this.app.outErr(`login from ${authConfigFilePath}`, e, "try generating a new auth config")
 					this.filen.logout()
 				}
 			}
@@ -123,20 +117,20 @@ export class Authentication {
 			const cryptoKey = await (async () => {
 				try {
 					const key = await this.getKeychainCryptoKey()
-					if (key === null) errExit("There's a saved credentials file, but no crypto key in the keychain. Try `filen logout` and login again.")
+					if (key === null) this.app.errExit("There's a saved credentials file, but no crypto key in the keychain. Try `filen logout` and login again.")
 					return key
 				} catch (e) {
-					errExit("get saved credentials crypto key from keychain")
+					this.app.errExit("get saved credentials crypto key from keychain", e)
 				}
 			})()
 			try {
 				const encryptedAuthConfig = (await fs.promises.readFile(this.keepMeLoggedInFile)).toString()
 				const sdkConfig = await this.decryptAuthConfig(encryptedAuthConfig, cryptoKey)
-				outVerbose(`Logging in as ${sdkConfig.email} (using saved credentials)`)
+				this.app.outVerbose(`Logging in as ${sdkConfig.email} (using saved credentials)`)
 				this.filen.init(sdkConfig)
 				if (!(await this.filen.user().checkAPIKeyValidity())) throw new Error("invalid API key")
 			} catch (e) {
-				err("login from saved credentials", e)
+				this.app.outErr("login from saved credentials", e)
 				this.filen.logout()
 			}
 		}
@@ -144,10 +138,10 @@ export class Authentication {
 		// otherwise: get credentials from prompt
 		const authenticateUsingPrompt = needCredentials()
 		if (authenticateUsingPrompt) {
-			out("Please enter your Filen credentials:")
-			const email = await prompt("Email: ", { allowExit: true })
-			const password = await prompt("Password: ", { allowExit: true, obfuscate: true })
-			if (!email || !password) errExit("Please provide your credentials!")
+			this.app.out("Please enter your Filen credentials:")
+			const email = await this.app.prompt("Email: ", { allowExit: true })
+			const password = await this.app.prompt("Password: ", { allowExit: true, obfuscate: true })
+			if (!email || !password) this.app.errExit("Please provide your credentials!")
 			credentials = { email, password }
 		}
 
@@ -165,14 +159,14 @@ export class Authentication {
 			} catch (e) {
 				if (e instanceof APIError) {
 					if (e.code === "enter_2fa" || e.code === "wrong_2fa") {
-						twoFactorCode = await prompt("Please enter your 2FA code or recovery key: ", { allowExit: true, obfuscate: true })
+						twoFactorCode = await this.app.prompt("Please enter your 2FA code or recovery key: ", { allowExit: true, obfuscate: true })
 					} else if (e.code === "email_or_password_wrong") {
-						errExit("Invalid credentials!")
+						this.app.errExit("Invalid credentials!")
 					} else {
-						errExit("login", e)
+						this.app.errExit("login", e)
 					}
 				} else {
-					errExit("login", e)
+					this.app.errExit("login", e)
 				}
 			}
 
@@ -189,14 +183,14 @@ export class Authentication {
 				} catch (e) {
 					if (e instanceof APIError) {
 						if (e.code === "enter_2fa" || e.code === "wrong_2fa") {
-							errExit("Invalid Two Factor Authentication code!")
+							this.app.errExit("Invalid Two Factor Authentication code!")
 						} else if (e.code === "email_or_password_wrong") {
-							errExit("Invalid credentials!")
+							this.app.errExit("Invalid credentials!")
 						} else {
-							errExit("login", e)
+							this.app.errExit("login", e)
 						}
 					} else {
-						errExit("login", e)
+						this.app.errExit("login", e)
 					}
 				}
 			}
@@ -205,45 +199,47 @@ export class Authentication {
 		// `filen export-auth-config`: export credentials to .filen-cli-auth-config
 		if (exportAuthConfig) {
 			await this.exportAuthConfig()
-			process.exit()
+			return { exit: true }
 		}
 
 		// `filen export-api-key`: print API key to the terminal (for Rclone integration)
 		if (exportApiKey) {
-			const input = await prompt("You are about to print your API Key, which gives full access to your account,\nto the screen. Proceed? (y/N) ")
-			if (input.toLowerCase() !== "y") errExit("Cancelled.")
-			out(`API Key for ${this.filen.config.email}: ${this.filen.config.apiKey}`)
-			process.exit()
+			const input = await this.app.prompt("You are about to print your API Key, which gives full access to your account,\nto the screen. Proceed? (y/N) ")
+			if (input.toLowerCase() !== "y") this.app.errExit("Cancelled.")
+			this.app.out(`API Key for ${this.filen.config.email}: ${this.filen.config.apiKey}`)
+			return { exit: true }
 		}
 
 		// save credentials from prompt
 		if (authenticateUsingPrompt) {
 			if (isRunningAsContainer) {
-				if (await promptYesNo("Keep me logged in using unencrypted local credential storage?", { defaultAnswer: false })) {
+				if (await this.app.promptYesNo("Keep me logged in using unencrypted local credential storage?", { defaultAnswer: false })) {
 					await this.exportAuthConfig(true)
 				}
 			} else {
-				if (await promptYesNo("Keep me logged in?", { defaultAnswer: false, allowExit: true })) {
+				if (await this.app.promptYesNo("Keep me logged in?", { defaultAnswer: false, allowExit: true })) {
 					try {
 						const cryptoKey = this.generateCryptoKey()
 						await this.setKeychainCryptoKey(cryptoKey)
 						try {
 							const encryptedAuthConfig = await this.encryptAuthConfig(this.filen.config, cryptoKey)
 							await fs.promises.writeFile(this.keepMeLoggedInFile, encryptedAuthConfig)
-							out("You can delete these credentials using `filen logout`")
+							this.app.out("You can delete these credentials using `filen logout`")
 						} catch (e) {
-							errExit("save credentials")
+							this.app.errExit("save credentials", e)
 						}
 					} catch (e) {
-						err("save credentials crypto key in keychain", e, process.platform === "linux" ? "You seem to be running Linux, is libsecret installed? Please see `filen help libsecret` for more information" : undefined)
-						if (await promptYesNo("Use less secure unencrypted local credential storage instead?", { defaultAnswer: false })) {
+						this.app.outErr("save credentials crypto key in keychain", e, process.platform === "linux" ? "You seem to be running Linux, is libsecret installed? Please see `filen help libsecret` for more information" : undefined)
+						if (await this.app.promptYesNo("Use less secure unencrypted local credential storage instead?", { defaultAnswer: false })) {
 							await this.exportAuthConfig(true)
 						}
 					}
 				}
 			}
-			out("")
+			this.app.out("")
 		}
+
+		return { exit: false }
 	}
 
 	/**
@@ -251,9 +247,9 @@ export class Authentication {
 	 */
 	private async exportAuthConfig(onlyExportToDataDir = false) {
 		if (await exists(this.authConfigFileName)) {
-			if (!(await promptConfirm(`overwrite ${this.authConfigFileName}`))) process.exit()
+			if (!(await this.app.promptConfirm(`overwrite ${this.authConfigFileName}`))) return
 		}
-		const input = await prompt(
+		const input = await this.app.prompt(
 			wrapRedTerminalText(
 				"You are about to export a Filen CLI auth config," +
 					"\nwhich is a file containing your unencrypted credentials." +
@@ -264,19 +260,19 @@ export class Authentication {
 			),
 			{ allowExit: true }
 		)
-		if (input.toLowerCase() !== "i am aware of the risks") errExit("Cancelled.")
-		const exportLocation = onlyExportToDataDir ? "1" : await prompt("Choose an export location: [1] data directory, [2] here:")
+		if (input.toLowerCase() !== "i am aware of the risks") this.app.errExit("Cancelled.")
+		const exportLocation = onlyExportToDataDir ? "1" : await this.app.prompt("Choose an export location: [1] data directory, [2] here:")
 		const exportPath = (() => {
-			if (exportLocation === "1") return path.join(dataDir, ".filen-cli-auth-config")
+			if (exportLocation === "1") return path.join(this.app.dataDir, ".filen-cli-auth-config")
 			if (exportLocation === "2") return path.join(process.cwd(), ".filen-cli-auth-config")
-			errExit("Invalid input, please choose \"1\" or \"2\"")
+				this.app.errExit("Invalid input, please choose \"1\" or \"2\"")
 		})()
 		try {
 			const encodedConfig = await this.encodeAuthConfig(this.filen.config)
 			await fs.promises.writeFile(exportPath, encodedConfig)
-			out(`Saved auth config to ${exportPath}`)
+			this.app.out(`Saved auth config to ${exportPath}`)
 		} catch (e) {
-			errExit("save auth config", e)
+			this.app.errExit("save auth config", e)
 		}
 	}
 

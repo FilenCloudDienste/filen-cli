@@ -2,14 +2,12 @@ import FilenSDK from "@filen/sdk"
 import SyncWorker, { SerializedError } from "@filen/sync"
 import pathModule from "path"
 import { SyncMessage, SyncMode, SyncPair } from "@filen/sync/dist/types"
-import { err, errExit, out, outVerbose, quiet } from "../interface/interface"
 import fsModule, { PathLike } from "node:fs"
 import { exists } from "../util/util"
 import getUuidByString from "uuid-by-string"
 import { displayTransferProgressBar } from "../interface/util"
-import { InterruptHandler } from "../interface/interrupt"
 import os from "os"
-import { dataDir } from ".."
+import { App } from "../app"
 
 export const syncOptions = {
 	"--continuous": Boolean,
@@ -50,110 +48,113 @@ const syncModeMappings = new Map<string, SyncMode>([
  * Provides the interface for syncing.
  */
 export class SyncInterface {
-	private readonly filen
+	private readonly defaultSyncPairsRegistry = pathModule.join(this.app.dataDir, "syncPairs.json")
 
-	private readonly defaultSyncPairsRegistry = pathModule.join(dataDir, "syncPairs.json")
+	constructor(private app: App, private filen: FilenSDK) {}
 
-	constructor(filen: FilenSDK) {
-		this.filen = filen
-	}
-
-	public async invoke(locationsStr: string[], continuous: boolean, disableLocalTrashFlag: boolean) {
-		const syncPairs = await this.resolveSyncPairs(locationsStr, disableLocalTrashFlag)
-		for (const syncPair of syncPairs) {
-			if (!quiet) out(`Syncing ${syncPair.local} to ${syncPair.remote} (${syncPair.syncMode})...`)
-		}
-
-		const fullSyncPairs: SyncPair[] = []
-		const ignorerContentsToSet: {uuid: string, content: string}[] = []
-		for (const syncPair of syncPairs) {
-			const remoteParentStat = await (async () => {
-				try {
-					return await this.filen.fs().stat({ path: syncPair.remote })
-				} catch (e) {
-					if (e instanceof Error && e.name === "FileNotFoundError") {
-						err(`No such cloud file or directory: ${syncPair.remote}`)
-						return undefined
-					}
-					else throw e
-				}
-			})()
-			if (remoteParentStat === undefined) continue
-			const uuid = getUuidByString(`${syncPair.local}:${syncPair.remote}`, getUuidByString("filen-cli"), 3)
-			fullSyncPairs.push({
-				name: `${syncPair.local}:${syncPair.remote}`,
-				uuid,
-				localPath: syncPair.local.startsWith("~") ? pathModule.join(os.homedir(), syncPair.local.slice(1)) : syncPair.local, // expand "~" to home directory
-				remotePath: syncPair.remote,
-				remoteParentUUID: remoteParentStat.uuid,
-				mode: syncPair.syncMode,
-				excludeDotFiles: syncPair.excludeDotFiles,
-				paused: false,
-				localTrashDisabled: syncPair.disableLocalTrash
-			})
-			ignorerContentsToSet.push({
-				uuid,
-				content: syncPair.ignoreContent,
-			})
-		}
-		const syncPairsExited = new Set<string>()
-		const progressBar = continuous ? null : displayTransferProgressBar("Transferring", "files", 0)
-		const worker = new SyncWorker({
-			syncPairs: fullSyncPairs,
-			dbPath: pathModule.join(dataDir, "sync"),
-			sdk: this.filen,
-			onMessage: msg => {
-				outVerbose(JSON.stringify(msg, null, 2))
-
-				// update progress
-				if (progressBar !== null && msg.type === "transfer") {
-					if (msg.data.type === "queued") {
-						progressBar.progressBar.setTotal(progressBar.progressBar.getTotal() + msg.data.size)
-					}
-					if (msg.data.type === "progress") {
-						progressBar.onProgress(msg.data.bytes)
-					}
+	public invoke(locationsStr: string[], continuous: boolean, disableLocalTrashFlag: boolean) {
+		// eslint-disable-next-line no-async-promise-executor
+		return new Promise<void>(async (resolve, reject) => {
+			try {
+				const syncPairs = await this.resolveSyncPairs(locationsStr, disableLocalTrashFlag)
+				for (const syncPair of syncPairs) {
+					this.app.outUnlessQuiet(`Syncing ${syncPair.local} to ${syncPair.remote} (${syncPair.syncMode})...`)
 				}
 
-				// print error
-				let isError = msg.type.toLowerCase().includes("error")
-				if (msg.type === "taskErrors" || msg.type === "localTreeErrors") isError = msg.data.errors.length > 0
-				if (isError) this.printErrorMessage(msg)
-
-				// success messages
-				if (continuous && msg.type === "cycleSuccess") {
-					if (!quiet) out(`Done syncing ${msg.syncPair.localPath} to ${msg.syncPair.remotePath} (${msg.syncPair.mode})`)
-				}
-				if (!continuous && msg.type === "cycleExited") {
-					syncPairsExited.add(msg.syncPair.uuid)
-					if (syncPairsExited.size >= syncPairs.length) {
-						if (progressBar !== null) progressBar.progressBar.stop()
-						if (!quiet) {
-							if (progressBar?.progressBar.getTotal() ?? 0 > 0) out("Done.")
-							else out("Done (no files to transfer).")
+				const fullSyncPairs: SyncPair[] = []
+				const ignorerContentsToSet: {uuid: string, content: string}[] = []
+				for (const syncPair of syncPairs) {
+					const remoteParentStat = await (async () => {
+						try {
+							return await this.filen.fs().stat({ path: syncPair.remote })
+						} catch (e) {
+							if (e instanceof Error && e.name === "FileNotFoundError") {
+								this.app.outErr(`No such cloud file or directory: ${syncPair.remote}`)
+								return undefined
+							}
+							else throw e
 						}
-						process.exit()
-					}
+					})()
+					if (remoteParentStat === undefined) continue
+					const uuid = getUuidByString(`${syncPair.local}:${syncPair.remote}`, getUuidByString("filen-cli"), 3)
+					fullSyncPairs.push({
+						name: `${syncPair.local}:${syncPair.remote}`,
+						uuid,
+						localPath: syncPair.local.startsWith("~") ? pathModule.join(os.homedir(), syncPair.local.slice(1)) : syncPair.local, // expand "~" to home directory
+						remotePath: syncPair.remote,
+						remoteParentUUID: remoteParentStat.uuid,
+						mode: syncPair.syncMode,
+						excludeDotFiles: syncPair.excludeDotFiles,
+						paused: false,
+						localTrashDisabled: syncPair.disableLocalTrash
+					})
+					ignorerContentsToSet.push({
+						uuid,
+						content: syncPair.ignoreContent,
+					})
 				}
-			},
-			runOnce: !continuous,
+				const syncPairsExited = new Set<string>()
+				const progressBar = continuous ? null : displayTransferProgressBar(this.app, "Transferring", "files", 0)
+				const worker = new SyncWorker({
+					syncPairs: fullSyncPairs,
+					dbPath: pathModule.join(this.app.dataDir, "sync"),
+					sdk: this.filen,
+					onMessage: msg => {
+						this.app.outVerbose(JSON.stringify(msg, null, 2))
+
+						// update progress
+						if (progressBar !== null && msg.type === "transfer") {
+							if (msg.data.type === "queued") {
+								progressBar.progressBar.setTotal(progressBar.progressBar.getTotal() + msg.data.size)
+							}
+							if (msg.data.type === "progress") {
+								progressBar.onProgress(msg.data.bytes)
+							}
+						}
+
+						// print error
+						let isError = msg.type.toLowerCase().includes("error")
+						if (msg.type === "taskErrors" || msg.type === "localTreeErrors") isError = msg.data.errors.length > 0
+						if (isError) this.printErrorMessage(msg)
+
+						// success messages
+						if (continuous && msg.type === "cycleSuccess") {
+							this.app.outUnlessQuiet(`Done syncing ${msg.syncPair.localPath} to ${msg.syncPair.remotePath} (${msg.syncPair.mode})`)
+						}
+						if (!continuous && msg.type === "cycleExited") {
+							syncPairsExited.add(msg.syncPair.uuid)
+							if (syncPairsExited.size >= syncPairs.length) {
+								if (progressBar !== null) progressBar.progressBar.stop()
+								if (!this.app.quiet) {
+									if (progressBar?.progressBar.getTotal() ?? 0 > 0) this.app.out("Done.")
+									else this.app.out("Done (no files to transfer).")
+								}
+								resolve()
+							}
+						}
+					},
+					runOnce: !continuous,
+				})
+				await worker.initialize()
+				for (const ignorerContent of ignorerContentsToSet) {
+					worker.updateIgnorerContent(ignorerContent.uuid, ignorerContent.content)
+				}
+				if (continuous) {
+					this.app.addInterruptListener(() => {
+						this.app.out("Stop syncing")
+						resolve()
+					})
+				}
+			} catch (e) {
+				reject(e)
+			}
 		})
-		await worker.initialize()
-		for (const ignorerContent of ignorerContentsToSet) {
-			worker.updateIgnorerContent(ignorerContent.uuid, ignorerContent.content)
-		}
-		if (continuous) {
-			InterruptHandler.instance.addListener(() => {
-				out("Stop syncing")
-				process.exit()
-			})
-		}
 	}
 
 	private async resolveSyncPairs(locationsStr: string[], disableLocalTrashFlag: boolean): Promise<RawSyncPair[]> {
 		if (locationsStr.length === 0) {
 			if (!await exists(this.defaultSyncPairsRegistry)) {
-				errExit(`Cannot find central sync pairs registry at ${this.defaultSyncPairsRegistry}.\nCreate it with JSON of type {local: string, remote: string, syncMode: string, alias?: string, excludeDotFiles?: boolean, disableLocalTrash?: boolean, ignore?: []}[]`)
+				this.app.errExit(`Cannot find central sync pairs registry at ${this.defaultSyncPairsRegistry}.\nCreate it with JSON of type {local: string, remote: string, syncMode: string, alias?: string, excludeDotFiles?: boolean, disableLocalTrash?: boolean, ignore?: []}[]`)
 			}
 			return (await this.getSyncPairsFromFile(this.defaultSyncPairsRegistry)).syncPairs
 		} else if (
@@ -176,10 +177,10 @@ export class SyncInterface {
 		const aliases = new Map<string, RawSyncPair>()
 
 		if (!await exists(path)) {
-			errExit(`You need to create ${path} or specify another sync pairs registry using \`filen sync <path>\`!`)
+			this.app.errExit(`You need to create ${path} or specify another sync pairs registry using \`filen sync <path>\`!`)
 		}
 		const file = JSON.parse((await fsModule.promises.readFile(path)).toString())
-		const exitTypeErr = () => errExit("Invalid sync pairs registry! Needs to be of type: {local: string, remote: string, syncMode: string, alias?: string, excludeDotFiles?: boolean, disableLocalTrash?: boolean, ignore?: string[]}[]")
+		const exitTypeErr = () => this.app.errExit("Invalid sync pairs registry! Needs to be of type: {local: string, remote: string, syncMode: string, alias?: string, excludeDotFiles?: boolean, disableLocalTrash?: boolean, ignore?: string[]}[]")
 		const syncPairsObj = Array.isArray(file) ? file : [file]
 		for (const obj of syncPairsObj) {
 			if (typeof obj.local !== "string") exitTypeErr()
@@ -230,7 +231,7 @@ export class SyncInterface {
 			this._aliases = (await this.getSyncPairsFromFile(this.defaultSyncPairsRegistry)).aliases
 		}
 		const syncPair = this._aliases.get(str)
-		if (syncPair === undefined) errExit("Unknown sync pair alias: " + str)
+		if (syncPair === undefined) this.app.errExit("Unknown sync pair alias: " + str)
 		return syncPair
 	}
 
@@ -307,11 +308,11 @@ export class SyncInterface {
 				if ((error.name + error.message).includes(errorName)) {
 					const errorType = this.errorTypes[errorName]!
 					const [title, message] = this.errorMessages[errorType]!
-					err(`Error: ${title} (${message})`)
+					this.app.outErr(`Error: ${title} (${message})`)
 					return
 				}
 			}
 		}
-		out(JSON.stringify(msg, null, 2))
+		this.app.out(JSON.stringify(msg, null, 2))
 	}
 }
