@@ -142,6 +142,11 @@ export const fsCommands: Command[] = [
 ]
 
 /**
+ * All available non-filesystem commands, for interactive mode unknown command handling.
+ */
+export const nonInteractiveCommands = ["version", "canary", "install", "logout", "export-auth-config", "export-api-key", "webdav", "webdav-proxy", "s3", "sync", "trash", "link", "links", "mount", "export-notes"]
+
+/**
  * Splits a command input into segments, while respecting quotes.
  * Example: `'cd "folder name"'` returns `['cd', '"folder name"']`.
  */

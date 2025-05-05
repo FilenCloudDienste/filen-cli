@@ -500,6 +500,7 @@ export class App {
 			})
 			if (exitWithError) throw exitCode1Error
 		}
+		// keep list of commands updated at commands.ts/nonInteractiveCommands
 	}
 }
 

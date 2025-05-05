@@ -4,7 +4,7 @@ import { directorySize, doNothing, getItemPaths, hashFile } from "../../util/uti
 import { CloudPath } from "../../util/cloudPath"
 import * as fsModule from "node:fs"
 import open from "open"
-import { fsCommands } from "./commands"
+import { fsCommands, nonInteractiveCommands } from "./commands"
 import { HelpPage } from "../../interface/helpPage"
 import { displayTransferProgressBar, formatBytes, formatTable, formatTimestamp } from "../../interface/util"
 import arg from "arg"
@@ -55,7 +55,11 @@ export class FS {
 		const command = fsCommands.find(command => [command.cmd, ...command.aliases].includes(cmd))
 
 		if (command === undefined) {
-			this.app.outErr(`Unknown command: ${cmd}`)
+			if (nonInteractiveCommands.includes(cmd)) {
+				this.app.outErr(`Unknown command: ${cmd}. (It is not available in interactive mode, use \`filen ${cmd}\` instead)`)
+			} else {
+				this.app.outErr(`Unknown command: ${cmd}`)
+			}
 			return {}
 		}
 
