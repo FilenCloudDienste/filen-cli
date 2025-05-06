@@ -5,3 +5,5 @@ bin-dev
 build
 dist
 node_modules
+.env
+testing

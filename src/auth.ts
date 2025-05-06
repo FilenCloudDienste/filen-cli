@@ -255,8 +255,7 @@ export class Authentication {
 					"\nwhich is a file containing your unencrypted credentials." +
 					"\nA person in possession of this file's content has full access to your Filen Drive," +
 					"\nincluding reading, writing and deleting all your files, as well as all account operations." +
-					// eslint-disable-next-line quotes
-					'\nType "I am aware of the risks" to proceed: '
+					"\nType \"I am aware of the risks\" to proceed: "
 			),
 			{ allowExit: true }
 		)
