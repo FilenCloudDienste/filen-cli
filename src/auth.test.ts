@@ -6,7 +6,7 @@ import fs from "fs/promises"
 import path from "path"
 import { exists } from "./util/util"
 
-describe.skip("ways to authenticate", () => {
+describe("ways to authenticate", () => {
 
     const { email, password } = getCredentials()
 
