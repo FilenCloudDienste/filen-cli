@@ -6,6 +6,8 @@ import { NoteType } from "@filen/sdk/dist/types/api/v3/notes"
 import dedent from "dedent"
 import { randomUUID } from "crypto"
 
+const LOCK_FILE = "CLI_AUTOMATED_TESTING_IN_PROGRESS"
+
 const availableSections: Record<string, (filen: FilenSDK, allowOverwrite?: boolean) => Promise<void>> = {
     "notes": prepareNotes,
 }
@@ -15,9 +17,57 @@ if (process.argv.join().includes("prepareCloud")) (async () => { // run only if 
     // print help
     if (process.argv.length === 2) {
         console.log(dedent`
-            Usage: npm run prepare-testing [overwrite] <sections...>
-            Available sections: ${Object.keys(availableSections).map(s => `'${s}'`).join(", ")} (or 'all')
+            Usage:
+
+            npm run prepare-testing [overwrite] <sections...>
+              Prepare the cloud drive for testing (only selected sections).
+              If 'overwrite' is provided, it will delete existing resources in the cloud drive.
+              Available sections: ${Object.keys(availableSections).map(s => `'${s}'`).join(", ")} (or 'all')
+
+            npm run prepare-testing lock
+              Creates a file '${LOCK_FILE}' in the cloud drive, which is used to prevent
+              multiple instances of the test suite from running at the same time.
+              Fails (exit code 1) if the file already exists.
+            
+            npm run prepare-testing unlock
+              Deletes the file '${LOCK_FILE}' in the cloud drive.\n
         `)
+        process.exit(0)
+    }
+
+    // setup Filen SDK
+    if (!process.env.FILEN_CLI_TESTING_EMAIL || !process.env.FILEN_CLI_TESTING_PASSWORD) {
+        console.error("Please set FILEN_CLI_TESTING_EMAIL and FILEN_CLI_TESTING_PASSWORD in your .env file.")
+        process.exit(1)
+    }
+    const filen = new FilenSDK()
+    await filen.login({
+        email: process.env.FILEN_CLI_TESTING_EMAIL,
+        password: process.env.FILEN_CLI_TESTING_PASSWORD,
+    })
+
+    // command: lock
+    if (process.argv.includes("lock")) {
+        const fileExists = await filen.cloud().fileExists({ parent: await filen.user().baseFolder(), name: LOCK_FILE })
+        if (fileExists.exists) {
+            console.error(`File '${LOCK_FILE}' exists, indicating that there are tests currently running.`)
+            process.exit(1)
+        } else {
+            await filen.fs().writeFile({ path: LOCK_FILE, content: Buffer.from("This file is used to prevent multiple instances of the test suite from running at the same time.") })
+            console.log(`File '${LOCK_FILE}' created.`)
+            process.exit(0)
+        }
+    }
+
+    // command: unlock
+    if (process.argv.includes("unlock")) {
+        const fileExists = await filen.cloud().fileExists({ parent: await filen.user().baseFolder(), name: LOCK_FILE })
+        if (!fileExists) {
+            console.error(`File '${LOCK_FILE}' does not exist.`)
+        } else {
+            await filen.fs().rm({ path: LOCK_FILE })
+            console.log(`File '${LOCK_FILE}' deleted.`)
+        }
         process.exit(0)
     }
 
@@ -28,23 +78,6 @@ if (process.argv.join().includes("prepareCloud")) (async () => { // run only if 
         sections.push(...Object.keys(availableSections))
     }
     console.log(`Preparing cloud drive for testing. Sections: [${sections.join(", ")}]`)
-
-    // check environment
-    if (!process.env.FILEN_CLI_TESTING_EMAIL || !process.env.FILEN_CLI_TESTING_PASSWORD) {
-        console.error("Please set FILEN_CLI_TESTING_EMAIL and FILEN_CLI_TESTING_PASSWORD in your .env file.")
-        process.exit(1)
-    }
-    
-    // setup FilenSDK
-    const filen = new FilenSDK()
-    await filen.login({
-        email: process.env.FILEN_CLI_TESTING_EMAIL,
-        password: process.env.FILEN_CLI_TESTING_PASSWORD,
-    })
-    if (filen.config.email === "anonymous") {
-        console.error("Could not login using credentials provided with FILEN_CLI_TESTING_EMAIL and FILEN_CLI_TESTING_PASSWORD.")
-        process.exit(1)
-    }
 
     // execute sections
     console.log()
