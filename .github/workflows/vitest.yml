@@ -8,10 +8,14 @@ on:
 jobs:
   vitest:
     runs-on: ubuntu-latest
+    env:
+      FILEN_CLI_TESTING_EMAIL: ${{ secrets.V3_TEST_ACC_EMAIL }}
+      FILEN_CLI_TESTING_PASSWORD: ${{ secrets.V3_TEST_ACC_PASS }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup Node
         uses: actions/setup-node@v4
       - run: npm ci
+      - run: npm run prepare-testing overwrite all
       - run: npm run test

@@ -109,10 +109,16 @@ export async function authenticatedFilenSDK() {
         return _authenticatedFilenSDK
     }
     const filen = unauthenticatedFilenSDK()
-    await filen.login({ email: filenEmail, password: filenPassword })
+    await filen.login(getCredentials())
     _authenticatedFilenSDK = filen
     return filen
 }
 
-export const filenEmail = process.env.FILEN_CLI_TESTING_EMAIL!
-export const filenPassword = process.env.FILEN_CLI_TESTING_PASSWORD!
+export function getCredentials() {
+    const email = process.env.FILEN_CLI_TESTING_EMAIL
+    const password = process.env.FILEN_CLI_TESTING_PASSWORD
+    if (!email || !password) {
+        throw Error("Please set FILEN_CLI_TESTING_EMAIL and FILEN_CLI_TESTING_PASSWORD in your .env file.")
+    }
+    return { email, password }
+}

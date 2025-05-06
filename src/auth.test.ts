@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "vitest"
-import { authenticatedFilenSDK, clearTestDir, filenEmail, filenPassword, MockApp, testDataDir, unauthenticatedFilenSDK } from "./test/tests"
+import { authenticatedFilenSDK, clearTestDir, getCredentials, MockApp, testDataDir, unauthenticatedFilenSDK } from "./test/tests"
 import { Authentication } from "./auth"
 import FilenSDK from "@filen/sdk"
 import fs from "fs/promises"
@@ -7,6 +7,8 @@ import path from "path"
 import { exists } from "./util/util"
 
 describe.skip("ways to authenticate", () => {
+
+    const { email, password } = getCredentials()
 
     let app: MockApp
     let filen: FilenSDK
@@ -24,19 +26,19 @@ describe.skip("ways to authenticate", () => {
     })
 
     test("get credentials from arguments", async () => {
-        await authentication.authenticate(filenEmail, filenPassword, undefined, false, false)
+        await authentication.authenticate(email, password, undefined, false, false)
         expect(isAuthenticated()).toBe(true)
     })
 
     test("get credentials from environment variables", async () => {
-        process.env.FILEN_EMAIL = filenEmail
-        process.env.FILEN_PASSWORD = filenPassword
+        process.env.FILEN_EMAIL = email
+        process.env.FILEN_PASSWORD = password
         await authentication.authenticate(undefined, undefined, undefined, false, false)
         expect(isAuthenticated()).toBe(true)
     })
 
     test("get credentials from .filen-cli-credentials", async () => {
-        const file = `${filenEmail}\n${filenPassword}\n`
+        const file = `${email}\n${password}\n`
         await fs.writeFile(path.join(testDataDir, ".filen-cli-credentials"), file)
         await authentication.authenticate(undefined, undefined, undefined, false, false)
         expect(isAuthenticated()).toBe(true)
@@ -59,7 +61,7 @@ describe.skip("ways to authenticate", () => {
     test.todo("login from .filen-cli-keep-me-logged-in")
 
     test("get credentials from prompt", async () => {
-        app.input([filenEmail, filenPassword, "N"])
+        app.input([email, password, "N"])
         await authentication.authenticate(undefined, undefined, undefined, false, false)
         expect(isAuthenticated()).toBe(true)
         expect(app.isInputEmpty()).toBe(true)
@@ -67,7 +69,7 @@ describe.skip("ways to authenticate", () => {
 
     test("export api key", async () => {
         app.input("y")  
-        await authentication.authenticate(filenEmail, filenPassword, undefined, false, true)
+        await authentication.authenticate(email, password, undefined, false, true)
         expect(app.output()).toContain("API Key for")
     })
 
