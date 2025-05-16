@@ -1,5 +1,5 @@
 import { CompleterResult } from "node:readline"
-import { Command, fsCommands, splitCommandSegments } from "./commands"
+import { Command, fsCommands, splitCommandSegments, argumentTypeIsCloud, argumentTypeIsFileSystem, argumentTypeAcceptsFile } from "./commands"
 import FilenSDK from "@filen/sdk"
 import { CloudPath } from "../../util/cloudPath"
 import * as fs from "node:fs"
@@ -99,9 +99,9 @@ export async function autocomplete(
 		const argument = command.arguments[argumentIndex]
 		if (argument === undefined) return [[], input]
 		const argumentInput = segments[segments.length - 1]!
-		if (argument.type === "cloud_directory" || argument.type === "cloud_file" || argument.type === "cloud_path" || argument.type === "local_file" || argument.type === "local_path") {
-			const filesystem = argument.type.startsWith("cloud") ? "cloud" : "local"
-			const acceptFile = argument.type.endsWith("file") || argument.type.endsWith("path")
+		if (argumentTypeIsFileSystem(argument.type)) {
+			const filesystem = argumentTypeIsCloud(argument.type) ? "cloud" : "local"
+			const acceptFile = argumentTypeAcceptsFile(argument.type)
 
 			const inputPath = filesystem === "cloud" ? cloudWorkingPath.navigate(argumentInput).toString() : argumentInput
 			let autocompleteOptions: string[]

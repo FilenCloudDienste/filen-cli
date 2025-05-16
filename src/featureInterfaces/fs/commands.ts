@@ -1,13 +1,34 @@
 export type Command = {
 	cmd: string
 	aliases: string[]
-	arguments: CommandArgument[]
+	arguments: Argument[]
 }
 
-export type CommandArgument = {
+export type Argument = {
 	name: string
-	type: "cloud_directory" | "cloud_file" | "cloud_path" | "local_file" | "local_path" | "text"
+	type: ArgumentType
 	optional?: boolean
+}
+
+export enum ArgumentType {
+	cloudDirectory,
+	cloudFile,
+	cloudPath,
+	localFile,
+	localPath,
+	any,
+}
+
+export function argumentTypeIsFileSystem(argumentType: ArgumentType): boolean {
+	return argumentType !== ArgumentType.any
+}
+
+export function argumentTypeIsCloud(argumentType: ArgumentType): boolean {
+	return argumentType === ArgumentType.cloudDirectory || argumentType === ArgumentType.cloudFile || argumentType === ArgumentType.cloudPath
+}
+
+export function argumentTypeAcceptsFile(argumentType: ArgumentType): boolean {
+	return argumentType === ArgumentType.localFile || argumentType === ArgumentType.localPath || argumentType === ArgumentType.cloudFile || argumentType === ArgumentType.cloudPath
 }
 
 /**
@@ -17,58 +38,58 @@ export const fsCommands: Command[] = [
 	{
 		cmd: "cd",
 		aliases: ["navigate"],
-		arguments: [{ name: "directory", type: "cloud_directory" }]
+		arguments: [{ name: "directory", type: ArgumentType.cloudDirectory }]
 	},
 	{
 		cmd: "ls",
 		aliases: ["list"],
-		arguments: [{ name: "directory", type: "cloud_directory", optional: true }]
+		arguments: [{ name: "directory", type: ArgumentType.cloudDirectory, optional: true }]
 	},
 	{
 		cmd: "cat",
 		aliases: ["more", "read"],
-		arguments: [{ name: "file", type: "cloud_file" }]
+		arguments: [{ name: "file", type: ArgumentType.cloudFile }]
 	},
 	{
 		cmd: "head",
 		aliases: [],
-		arguments: [{ name: "file", type: "cloud_file" }]
+		arguments: [{ name: "file", type: ArgumentType.cloudFile }]
 	},
 	{
 		cmd: "tail",
 		aliases: [],
-		arguments: [{ name: "file", type: "cloud_file" }]
+		arguments: [{ name: "file", type: ArgumentType.cloudFile }]
 	},
 	{
 		cmd: "mkdir",
 		aliases: [],
-		arguments: [{ name: "directory name", type: "cloud_directory" }]
+		arguments: [{ name: "directory name", type: ArgumentType.cloudDirectory }]
 	},
 	{
 		cmd: "rm",
 		aliases: ["rmdir", "remove", "del", "delete"],
-		arguments: [{ name: "file or directory", type: "cloud_path" }]
+		arguments: [{ name: "file or directory", type: ArgumentType.cloudPath }]
 	},
 	{
 		cmd: "upload",
 		aliases: [],
 		arguments: [
-			{ name: "local file or directory", type: "local_path" },
-			{ name: "cloud path", type: "cloud_path" }
+			{ name: "local file or directory", type: ArgumentType.localPath },
+			{ name: "cloud path", type: ArgumentType.cloudPath }
 		]
 	},
 	{
 		cmd: "download",
 		aliases: [],
 		arguments: [
-			{ name: "cloud file", type: "cloud_file" },
-			{ name: "local file or directory", type: "local_path", optional: true }
+			{ name: "cloud file", type: ArgumentType.cloudFile },
+			{ name: "local file or directory", type: ArgumentType.localPath, optional: true }
 		]
 	},
 	{
 		cmd: "stat",
 		aliases: ["stats"],
-		arguments: [{ name: "file or directory", type: "cloud_path" }]
+		arguments: [{ name: "file or directory", type: ArgumentType.cloudPath }]
 	},
 	{
 		cmd: "statfs",
@@ -84,40 +105,40 @@ export const fsCommands: Command[] = [
 		cmd: "mv",
 		aliases: ["move", "rename"],
 		arguments: [
-			{ name: "file or directory", type: "cloud_path" },
-			{ name: "destination file or directory", type: "cloud_path" }
+			{ name: "file or directory", type: ArgumentType.cloudPath },
+			{ name: "destination file or directory", type: ArgumentType.cloudPath }
 		]
 	},
 	{
 		cmd: "cp",
 		aliases: ["copy"],
 		arguments: [
-			{ name: "file or directory", type: "cloud_path" },
-			{ name: "destination file or directory", type: "cloud_path" }
+			{ name: "file or directory", type: ArgumentType.cloudPath },
+			{ name: "destination file or directory", type: ArgumentType.cloudPath }
 		]
 	},
 	{
 		cmd: "write",
 		aliases: ["touch"],
 		arguments: [
-			{ name: "file", type: "cloud_file" },
-			{ name: "content", type: "text" }
+			{ name: "file", type: ArgumentType.cloudFile },
+			{ name: "content", type: ArgumentType.any }
 		]
 	},
 	{
 		cmd: "open",
 		aliases: [],
-		arguments: [{ name: "file", type: "cloud_file" }]
+		arguments: [{ name: "file", type: ArgumentType.cloudFile }]
 	},
 	{
 		cmd: "edit",
 		aliases: [],
-		arguments: [{ name: "file", type: "cloud_file" }]
+		arguments: [{ name: "file", type: ArgumentType.cloudFile }]
 	},
 	{
 		cmd: "view",
 		aliases: ["reveal", "drive"],
-		arguments: [{ name: "path", type: "cloud_path", optional: true }]
+		arguments: [{ name: "path", type: ArgumentType.cloudPath, optional: true }]
 	},
 	{
 		cmd: "favorites",
@@ -127,12 +148,12 @@ export const fsCommands: Command[] = [
 	{
 		cmd: "favorite",
 		aliases: [],
-		arguments: [{ name: "path", type: "cloud_path", optional: true }]
+		arguments: [{ name: "path", type: ArgumentType.cloudPath, optional: true }]
 	},
 	{
 		cmd: "unfavorite",
 		aliases: [],
-		arguments: [{ name: "path", type: "cloud_path", optional: true }]
+		arguments: [{ name: "path", type: ArgumentType.cloudPath, optional: true }]
 	},
 	{
 		cmd: "recents",
