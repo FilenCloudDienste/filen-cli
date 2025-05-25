@@ -6,9 +6,11 @@ import FilenSDK from "@filen/sdk"
  */
 export class CloudPath {
 	readonly cloudPath: string[]
+	readonly navigationStringEndedInSlash: boolean | undefined = undefined
 
-	public constructor(cloudPath: string[]) {
+	public constructor(cloudPath: string[], navigationStringEndedInSlash?: boolean) {
 		this.cloudPath = cloudPath
+		this.navigationStringEndedInSlash = navigationStringEndedInSlash
 	}
 
 	/**
@@ -29,29 +31,26 @@ export class CloudPath {
 				if (segment === "..") newPath = newPath.slice(0, newPath.length - 1)
 				else newPath = [...newPath, segment]
 			}
-			return new CloudPath(newPath)
+			return new CloudPath(newPath, path.endsWith("/"))
 		}
 	}
 
 	/**
-	 * Navigates and appends a filename to the path if it would otherwise point to a directory.
-	 * @see navigate
-	 * @param path The navigation string
+	 * Appends a filename to the path if it would otherwise point to a directory.
 	 * @param fileName The filename to append if necessary
 	 */
-	public async navigateAndAppendFileNameIfNecessary(filen: FilenSDK, path: string, fileName: string): Promise<CloudPath> {
+	public async appendFileNameIfNecessary(filen: FilenSDK, fileName: string): Promise<CloudPath> {
 		let appendFileName: boolean
-		const cloudPath = this.navigate(path)
-		if (path.endsWith("/")) appendFileName = true
+		if (this.navigationStringEndedInSlash) appendFileName = true
 		else {
 			try {
-				appendFileName = (await filen.fs().stat({ path: cloudPath.toString() })).isDirectory()
+				appendFileName = (await filen.fs().stat({ path: this.toString() })).isDirectory()
 			} catch {
 				appendFileName = false
 			}
 		}
-		if (appendFileName) return cloudPath.navigate(fileName)
-		else return cloudPath
+		if (appendFileName) return this.navigate(fileName)
+		else return this
 	}
 
 	public getLastSegment(): string {

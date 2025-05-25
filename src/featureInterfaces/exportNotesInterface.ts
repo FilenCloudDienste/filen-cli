@@ -1,24 +1,28 @@
-import FilenSDK from "@filen/sdk"
 import * as pathModule  from "path"
 import fs from "fs/promises"
 import { exists, sanitizeFileName } from "../util/util"
 import dateFormat from "dateformat"
 import * as cheerio from "cheerio"
-import { App } from "../app"
+import { ArgumentType, feature } from "../features"
+import dedent from "dedent"
 
-/**
- * Provides the interface for exporting notes.
- */
-export class ExportNotesInterface {
-    constructor(private app: App, private filen: FilenSDK) {}
-
-    public async invoke(args: string[]) {
+export const exportNotesCommand = feature({
+    cmd: ["export-notes"],
+    description: "Exports all Notes to the specified path.",
+    longDescription: dedent`
+        If the specified directory doesn't exist, it will be created.
+        If it is not empty, a subdirectory will be created with the name "filen-notes-export-<timestamp>".
+        Richtext notes are exported as HTML. Checklist notes are converted to markdown.
+    `,
+    args: {
+        path: { type: ArgumentType.localPath }
+    },
+    invoke: async ({ app, filen, args }) => {
         // determine export path
-        if (args.length !== 1) this.app.errExit("Invalid usage! See filen -h fs for more info.");
         const exportRoot = await (async () => {
             try {
-                const path = pathModule.resolve(args[0]!)
-                
+                const path = pathModule.resolve(args.path)
+
                 // if path doesn't exist, create it
                 if ((await exists(path)) === false) {
                     await fs.mkdir(path, { recursive: true })
@@ -34,18 +38,18 @@ export class ExportNotesInterface {
                     return exportRoot
                 }
             } catch (e) {
-                this.app.errExit("determine export path", e)
+                return app.errExit("determine export path", e)
             }
         })()
 
         // fetch notes and write to disk
-        const notes = await this.filen.notes().all()
+        const notes = await filen.notes().all()
         await Promise.all(notes.map(note => (async () => {
             try {
-                let { content } = await this.filen.notes().content({ uuid: note.uuid })
+                let { content } = await filen.notes().content({ uuid: note.uuid })
 
                 // convert to readable format, choose file ending
-                if (note.type === "checklist") content = this.convertChecklistHTMLToMarkdown(content)
+                if (note.type === "checklist") content = convertChecklistHTMLToMarkdown(content)
                 const fileEnding = (() => {
                     if (note.type === "rich") return "html"
                     if (note.type === "md" || note.type === "checklist") return "md"
@@ -60,27 +64,27 @@ export class ExportNotesInterface {
 
                 await fs.writeFile(file!, content)
             } catch (e) {
-                this.app.errExit(`export note "${note.title}" (${note.uuid})`, e)
+                app.errExit(`export note "${note.title}" (${note.uuid})`, e)
             }
         })()))
 
-        this.app.outUnlessQuiet(`Exported notes to ${exportRoot}`)
+        app.outUnlessQuiet(`Exported notes to ${exportRoot}`)
     }
+})
 
-    private convertChecklistHTMLToMarkdown(html: string) {
-        const checklist: {checked: boolean, text: string}[] = []
+function convertChecklistHTMLToMarkdown(html: string) {
+    const checklist: {checked: boolean, text: string}[] = []
 
-        // read checklist
-        const $ = cheerio.load(html);
-        $("ul").each((_, ul) => {
-            const isChecked = $(ul).attr("data-checked") === "true";
-            $(ul).find("li").each((_, li) => {
-                const text = $(li).text().trim();
-                checklist.push({ checked: isChecked, text });
-            });
+    // read checklist
+    const $ = cheerio.load(html);
+    $("ul").each((_, ul) => {
+        const isChecked = $(ul).attr("data-checked") === "true";
+        $(ul).find("li").each((_, li) => {
+            const text = $(li).text().trim();
+            checklist.push({ checked: isChecked, text });
         });
+    });
 
-        // convert to markdown
-        return checklist.map(item => `- ${item.checked ? "[x]" : "[ ]"} ${item.text}`).join("\n")
-    }
+    // convert to markdown
+    return checklist.map(item => `- ${item.checked ? "[x]" : "[ ]"} ${item.text}`).join("\n")
 }

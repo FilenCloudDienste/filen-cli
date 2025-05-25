@@ -3,32 +3,64 @@ import FilenSDK from "@filen/sdk"
 import path from "path"
 import os from "os"
 import * as fs from "node:fs"
-import { Authentication } from "./auth"
+import { Authentication, authHelpText } from "./auth"
 import { isRunningAsContainer, isRunningAsNPMPackage, version } from "./buildInfo"
-import { Updater } from "./updater"
-import { HelpPage } from "./interface/helpPage"
-import { FSInterface, fsOptions } from "./featureInterfaces/fs/fsInterface"
-import { WebDAVInterface, webdavOptions } from "./featureInterfaces/webdavInterface"
-import { S3Interface, s3Options } from "./featureInterfaces/s3Interface"
-import { SyncInterface, syncOptions } from "./featureInterfaces/syncInterface"
-import { TrashInterface } from "./featureInterfaces/trashInterface"
-import { PublicLinksInterface } from "./featureInterfaces/publicLinksInterface"
-import { DriveMountingInterface } from "./featureInterfaces/driveMountingInterface"
+import { updateHelpText, Updater } from "./updater"
+import { generalHelpText, helpCommand, helpText, versionCommand } from "./interface/helpPage"
+import { fsCommands } from "./featureInterfaces/fs/fs"
 import { ANONYMOUS_SDK_CONFIG } from "./constants"
 import { determineDataDir } from "./util/util"
-import { ExportNotesInterface } from "./featureInterfaces/exportNotesInterface"
 import { Mutex } from "async-mutex"
 import * as buffer from "buffer"
 import { randomUUID } from "node:crypto"
 import { formatTimestamp } from "./interface/util"
 import { Autocompletion } from "./featureInterfaces/fs/autocompletion"
+import { CloudPath } from "./util/cloudPath"
+import { Feature, FeatureContext, FeatureRegistry, splitCommandSegments } from "./features"
+import { driveMountingCommand } from "./featureInterfaces/driveMountingInterface"
+import { webdavCommandGroup } from "./featureInterfaces/webdavInterface"
+import { s3Command } from "./featureInterfaces/s3Interface"
+import { syncCommand } from "./featureInterfaces/syncInterface"
+
+export const cliArgsSpec = {
+	"--dev": Boolean,
+
+	"--help": Boolean,
+	"-h": "--help",
+	"--version": Boolean,
+
+	"--verbose": Boolean,
+	"-v": "--verbose",
+
+	"--quiet": Boolean,
+	"-q": "--quiet",
+
+	"--email": String,
+	"-e": "--email",
+
+	"--password": String,
+	"-p": "--password",
+
+	"--two-factor-code": String,
+	"-c": "--two-factor-code",
+
+	"--log-file": String,
+	"--data-dir": String,
+
+	"--skip-update": Boolean,
+	"--force-update": Boolean,
+	"--auto-update": Boolean,
+
+	"--root": String,
+	"-r": "--root",
+	"--json": Boolean,
+	"--no-autocomplete": Boolean,
+}
 
 /**
  * App manages application-wide configuration and console I/O. 
  */
 export class App {
-	private readonly args
-
 	/**
 	 * Whether the application is run in a development environment (set via the `--dev` flag).
 	 */
@@ -39,62 +71,60 @@ export class App {
 	 */
 	public readonly dataDir
 
-	/**
-	 * the --quiet flag
-	 */
-	public readonly quiet
+	public readonly features = new FeatureRegistry({ features: [
+		{ features: [versionCommand, helpCommand], visibility: "hide" },
+		helpText({ name: "general", text: generalHelpText }),
+		...authHelpText,
+		{ ...updateHelpText, visibility: "collapse" },
+		helpText({ name: undefined, text: "List of commands:" }),
+		{ ...fsCommands, visibility: "collapse" },
+		{ title: "Syncing", features: [syncCommand], visibility: "collapse" },
+		{ title: "Network drive mounting", features: [driveMountingCommand], visibility: "collapse" },
+		{ ...webdavCommandGroup, visibility: "collapse" },
+		{ title: "S3 server", features: [s3Command], visibility: "collapse" },
+	]})
 
-	/**
-	 * the --verbose flag
-	 */
-	public readonly verbose
+	private readonly ctx: FeatureContext
 
 	constructor(argv: string[], private adapter: InterfaceAdapter) {
 		// parse arguments
-		this.args = arg(
-			{
-				"--dev": Boolean,
-		
-				"--help": Boolean,
-				"-h": "--help",
-				"--version": Boolean,
-		
-				"--verbose": Boolean,
-				"-v": "--verbose",
-		
-				"--quiet": Boolean,
-				"-q": "--quiet",
-		
-				"--email": String,
-				"-e": "--email",
-		
-				"--password": String,
-				"-p": "--password",
-		
-				"--two-factor-code": String,
-				"-c": "--two-factor-code",
-		
-				"--log-file": String,
-				"--data-dir": String,
-		
-				"--skip-update": Boolean,
-				"--force-update": Boolean,
-				"--auto-update": Boolean,
-		
-				...fsOptions,
-				...webdavOptions,
-				...s3Options,
-				...syncOptions
-			},
-			{ permissive: true, argv }
-		)
+		const args = arg(cliArgsSpec, { permissive: true, argv })
 
 		// set flags
-		this.isDevelopment = this.args["--dev"] ?? false
-		this.dataDir = determineDataDir(this, this.args["--data-dir"])
-		this.quiet = this.args["--quiet"] ?? false
-		this.verbose = this.args["--verbose"] ?? false
-		this.setupLogs(this.args["--log-file"])
+		this.isDevelopment = args["--dev"] ?? false
+		this.dataDir = determineDataDir(this, args["--data-dir"])
+		this.setupLogs(args["--log-file"])
+
+		const filen = new FilenSDK({
+			...ANONYMOUS_SDK_CONFIG,
+			connectToSocket: true, // Needed to keep internal SDK FS tree up to date with remote changes
+			metadataCache: true,
+			tmpPath: path.join(os.tmpdir(), "filen-cli")
+		})
+
+		// parse cmd and argv (handle --help, --version)
+		let cmd: string | undefined = undefined
+		let parsedArgv = args["_"]
+		if (args["--help"]) {
+			cmd = "help"
+		} else if (args["--version"]) {
+			cmd = "version"
+		} else if (parsedArgv.length > 0) {
+			cmd = parsedArgv[0]!
+			parsedArgv = parsedArgv.slice(1)
+		}
+
+		this.ctx = {
+			app: this,
+			filen,
+			cloudWorkingPath: args["--root"] !== undefined ? new CloudPath([]).navigate(args["--root"]) : new CloudPath([]),
+			cmd,
+			argv: parsedArgv,
+			cliArgs: args,
+			verbose: args["--verbose"] ?? false,
+			quiet: args["--quiet"] ?? false,
+			formatJson: args["--json"] ?? false,
+		}
 	}
 
 	// logs
@@ -137,7 +167,10 @@ export class App {
 	 * Global output method
 	 * @param message
 	 */
-	public out(message: string) {
+	public out(message: string, options?: { indentation?: number }) {
+		if (options?.indentation) {
+			message = message.split("\n").map(line => "    ".repeat(options.indentation!) + line).join("\n")
+		}
 		this.adapter.out(message)
 		this.writeLog(message, "log")
 	}
@@ -145,16 +178,19 @@ export class App {
 	/**
 	 * Shorthand for `if (!app.quiet) app.out(message)`
 	 */
-	public outUnlessQuiet(message: string) {
-		if (!this.quiet) this.out(message)
+	public outUnlessQuiet(message: string, options?: Parameters<typeof this.out>[1]) {
+		if (!this.ctx.quiet) this.out(message, options)
 	}
 
 	/**
 	 * Global output method, only prints if `--verbose` flag is set
 	 */
-	public outVerbose(message: string) {
-		if (this.verbose) this.adapter.out(message)
-		this.writeLog(message, "log")
+	public outVerbose(message: string, options?: Parameters<typeof this.out>[1]) {
+		if (this.ctx.verbose) {
+			this.out(message, options)
+		} else {
+			this.writeLog(message, "log")
+		}
 	}
 
 	/**
@@ -318,189 +354,13 @@ export class App {
 	public async main() {
 		let status = true
 		try {
-			await this._main()
+			await main(this.ctx)
 		} catch (e) {
 			if (e !== exitCode1Error) this.handleExitError(e)
 			status = false
 		}
 		this.writeLogsToDisk()
 		return status
-	}
-	private async _main() {
-
-		// --version: print version and exit
-		if ((this.args["--version"] ?? false) || this.args["_"][0] === "version") {
-			this.out(version)
-			return
-		}
-	
-		// print version
-		if (this.args["--help"]) this.out(`Filen CLI ${version}`)
-		else this.outVerbose(`Filen CLI ${version}`)
-	
-		// print info about environment
-		let environment = "Environment: "
-		environment += `data-dir=${this.dataDir}`
-		if (isRunningAsContainer) environment += ", in container"
-		if (isRunningAsNPMPackage) environment += ", as NPM package"
-		if (this.isDevelopment) environment += ", development"
-		this.outVerbose(environment)
-	
-		// --help: print help and exit
-		if ((this.args["--help"] ?? false) || this.args["_"][0] === "help") {
-			const topic = (this.args["_"][0] === "help" ? this.args["_"][1] : this.args["_"][0])?.toLowerCase() ?? "general"
-			const helpPage = new HelpPage().getHelpPage(topic)
-			if (helpPage !== undefined) {
-				this.out("\n" + helpPage)
-			} else {
-				this.errExit(`Unknown help page ${topic}`)
-			}
-			return
-		}
-	
-		// check for updates
-		if (this.args["--skip-update"] !== true) {
-			const updater = new Updater(this)
-			if (this.args["_"][0] === "canary") {
-				try {
-					await updater.showCanaryPrompt()
-					return
-				} catch (e) {
-					this.errExit("change canary preferences", e)
-				}
-			}
-			if (this.args["_"][0] === "install") {
-				try {
-					const version = this.args["_"][1]
-					if (version === undefined) this.errExit("Need to specify version")
-					await updater.fetchAndInstallVersion(version!)
-					return
-				} catch (e) {
-					this.errExit("install version", e)
-				}
-			}
-			try {
-				await updater.checkForUpdates(this.args["--force-update"] ?? false, this.args["--auto-update"] ?? false)
-			} catch (e) {
-				this.errExit("check for updates", e)
-			}
-		} else {
-			this.outVerbose("Update check skipped")
-		}
-	
-		const filen = new FilenSDK({
-			...ANONYMOUS_SDK_CONFIG,
-			connectToSocket: true, // Needed to keep internal SDK FS tree up to date with remote changes
-			metadataCache: true,
-			tmpPath: path.join(os.tmpdir(), "filen-cli")
-		})
-	
-		// authentication
-		if (this.args["_"][0] !== "webdav-proxy") {
-			// skip authentication for webdav proxy mode
-			const authentication = new Authentication(this, filen)
-			try {
-				if (this.args["_"][0] === "logout") {
-					await authentication.deleteSavedCredentials()
-					return
-				}
-			} catch (e) {
-				this.outErr("delete credentials", e)
-			}
-			try {
-				const { exit } = await authentication.authenticate(
-					this.args["--email"],
-					this.args["--password"],
-					this.args["--two-factor-code"],
-					this.args["_"][0] === "export-auth-config",
-					this.args["_"][0] === "export-api-key",
-				)
-				if (exit) return
-			} catch (e) {
-				this.errExit("authenticate", e)
-			}
-		}
-	
-		if (this.args["_"][0] === "webdav" || this.args["_"][0] === "webdav-proxy") {
-			// webdav
-			const webdavInterface = new WebDAVInterface(this, filen)
-			const proxyMode = this.args["_"][0] === "webdav-proxy"
-			try {
-				await webdavInterface.invoke(proxyMode, {
-					username: this.args["--w-user"],
-					password: this.args["--w-password"],
-					https: this.args["--w-https"] ?? false,
-					hostname: this.args["--w-hostname"],
-					port: this.args["--w-port"],
-					authScheme: this.args["--w-auth-scheme"],
-					threads: this.args["--w-threads"]
-				})
-			} catch (e) {
-				this.errExit("start WebDAV server", e)
-			}
-		} else if (this.args["_"][0] === "s3") {
-			// s3
-			const s3Interface = new S3Interface(this, filen)
-			try {
-				await s3Interface.invoke({
-					hostname: this.args["--s3-hostname"],
-					port: this.args["--s3-port"],
-					https: this.args["--s3-https"] ?? false,
-					accessKeyId: this.args["--s3-access-key-id"],
-					secretAccessKey: this.args["--s3-secret-access-key"],
-					threads: this.args["--s3-threads"]
-				})
-			} catch (e) {
-				this.errExit("start S3 server", e)
-			}
-		} else if (this.args["_"][0] === "sync") {
-			// sync
-			const syncInterface = new SyncInterface(this, filen)
-			try {
-				await syncInterface.invoke(this.args["_"].slice(1), this.args["--continuous"] ?? false, this.args["--disable-local-trash"] ?? false)
-			} catch (e) {
-				this.errExit("invoke sync", e)
-			}
-		} else if (this.args["_"][0] === "trash") {
-			// trash
-			const trashInterface = new TrashInterface(this, filen)
-			try {
-				await trashInterface.invoke(this.args["_"].slice(1))
-			} catch (e) {
-				this.errExit("execute trash command", e)
-			}
-		} else if (this.args["_"][0] === "links" || this.args["_"][0] === "link") {
-			// links
-			const publicLinksInterface = new PublicLinksInterface(this, filen)
-			await publicLinksInterface.invoke(this.args["_"].slice(1))
-		} else if (this.args["_"][0] === "mount") {
-			// mount
-			const driveMountingInterface = new DriveMountingInterface(this, filen)
-			try {
-				await driveMountingInterface.invoke(this.args["_"][1])
-			} catch (e) {
-				this.errExit("execute mount command", e)
-			}
-		} else if (this.args["_"][0] === "export-notes") {
-			// export notes
-			const exportNotesInterface = new ExportNotesInterface(this, filen)
-			try {
-				await exportNotesInterface.invoke(this.args["_"].slice(1))
-			} catch (e) {
-				this.errExit("export notes", e)
-			}
-		} else {
-			// fs commands
-			const fsInterface = new FSInterface(this, filen)
-			const { exitWithError } = await fsInterface.invoke({
-				formatJson: this.args["--json"]!,
-				root: this.args["--root"],
-				noAutocomplete: this.args["--no-autocomplete"] ?? false,
-				commandStr: this.args["_"]
-			})
-			if (exitWithError) throw exitCode1Error
-		}
-		// keep list of commands updated at commands.ts/nonInteractiveCommands
 	}
 }
 
@@ -517,3 +377,136 @@ export class ExitError extends Error {}
 
 // throw this when no addition error should be printed, but exit code 1 should be returned
 const exitCode1Error = new ExitError("Exit code 1")
+
+async function main(ctx: FeatureContext) {
+	const { app, filen, cliArgs, cmd, argv } = ctx
+
+	app.outVerbose(`Filen CLI ${version}`)
+
+	// print info about environment
+	let environment = "Environment: "
+	environment += `data-dir=${app.dataDir}`
+	if (isRunningAsContainer) environment += ", in container"
+	if (isRunningAsNPMPackage) environment += ", as NPM package"
+	if (app.isDevelopment) environment += ", development"
+	app.outVerbose(environment)
+
+	// check for updates
+	if (cliArgs["--skip-update"] !== true) {
+		const updater = new Updater(app)
+		if (cmd === "canary") {
+			try {
+				await updater.showCanaryPrompt()
+				return
+			} catch (e) {
+				app.errExit("change canary preferences", e)
+			}
+		}
+		if (cmd === "install") {
+			try {
+				const version = argv[0]
+				if (version === undefined) app.errExit("Need to specify version")
+				await updater.fetchAndInstallVersion(version!)
+				return
+			} catch (e) {
+				app.errExit("install version", e)
+			}
+		}
+		try {
+			await updater.checkForUpdates(cliArgs["--force-update"] ?? false, cliArgs["--auto-update"] ?? false)
+		} catch (e) {
+			app.errExit("check for updates", e)
+		}
+		// todo: make `canary` and `install` features
+	} else {
+		app.outVerbose("Update check skipped")
+	}
+
+	const feature = (() => {
+		if (cmd === undefined) return undefined
+		const feature = app.features.getFeature(cmd.toLowerCase())
+		if (feature === undefined) app.errExit(`Unknown command: ${cmd}`)
+		return feature
+	})()
+
+	// authentication
+	if (!feature?.skipAuthentication) {
+		const authentication = new Authentication(app, filen)
+		try {
+			if (argv[0] === "logout") {
+				await authentication.deleteSavedCredentials()
+				// todo: make `logout` a feature
+				return
+			}
+		} catch (e) {
+			app.outErr("delete credentials", e)
+		}
+		try {
+			const { exit } = await authentication.authenticate(
+				cliArgs["--email"],
+				cliArgs["--password"],
+				cliArgs["--two-factor-code"],
+				argv[0] === "export-auth-config", // todo: make `export-auth-config` a feature
+				argv[0] === "export-api-key", // todo: make `export-api-key` a feature
+			)
+			if (exit) return
+		} catch (e) {
+			app.errExit("authenticate", e)
+		}
+	}
+
+	const executeCommand = async (feature: Feature, ctx: FeatureContext) => {
+		// check arguments
+		const minArgumentsCount = feature.arguments.filter(arg => arg.optional !== true).length
+		if (ctx.argv.length < minArgumentsCount) {
+			app.outErr(`Need to specify all arguments: ${feature.arguments.map(arg => arg.name + (arg.optional ? " (optional)" : "")).join(", ")}`)
+			return {}
+		}
+		// todo: make more arguments explicit
+		try {
+			return await feature.invoke({ ...ctx, feature }) ?? {}
+		} catch (e) {
+			return app.errExit(`execute command ${feature.cmd[0]}`, e)
+		}
+	}
+
+	if (feature !== undefined) {
+		// execute single command
+		app.resetThereHasBeenErrorOutput()
+		const result = await executeCommand(feature, ctx)
+		if (result.cloudWorkingPath !== undefined) {
+			app.outErr("To navigate in a stateful environment, please invoke the CLI without any arguments.")
+		}
+		if (app.thereHasBeenErrorOutput) throw exitCode1Error
+	} else {
+		// interactive mode
+		let cloudWorkingPath = ctx.cloudWorkingPath
+		if (!cliArgs["--no-autocomplete"]) Autocompletion.instance = new Autocompletion(app, ctx.filen, cloudWorkingPath)
+		while (true) {
+			const input = await app.prompt(`${cloudWorkingPath.toString()} > `, { allowExit: true, useHistory: true })
+			const interactiveCliArgs = arg(cliArgsSpec, { permissive: true, argv: [...argv, ...splitCommandSegments(input)] }) // combine process.argv and input
+			// todo: do this?: params.args = args.map(arg => (arg.startsWith("\"") && arg.endsWith("\"")) ? arg.substring(1, arg.length - 1) : arg)
+			if (interactiveCliArgs["_"].length === 0) continue
+			const feature = app.features.getFeature(interactiveCliArgs["_"][0]!.toLowerCase())
+			if (feature === undefined) {
+				app.outErr(`Unknown command: ${interactiveCliArgs["_"][0]!.toLowerCase()}`)
+				continue
+			}
+			const result = await executeCommand(feature, {
+				...ctx,
+				cloudWorkingPath,
+				cmd: interactiveCliArgs["_"][0]!,
+				argv: interactiveCliArgs["_"].slice(1),
+				cliArgs: interactiveCliArgs,
+				verbose: ctx.verbose || (interactiveCliArgs["--verbose"] ?? false),
+				quiet: ctx.quiet || (interactiveCliArgs["--quiet"] ?? false),
+				formatJson: ctx.formatJson || (interactiveCliArgs["--json"] ?? false),
+			})
+			if (result.exit) break
+			if (result.cloudWorkingPath !== undefined) {
+				cloudWorkingPath = result.cloudWorkingPath
+				if (Autocompletion.instance) Autocompletion.instance.cloudWorkingPath = result.cloudWorkingPath
+			}
+		}
+	}
+}

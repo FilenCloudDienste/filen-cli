@@ -7,6 +7,42 @@ import { ANONYMOUS_SDK_CONFIG } from "./constants"
 import crypto from "node:crypto"
 import { isRunningAsContainer } from "./buildInfo"
 import { App } from "./app"
+import dedent from "dedent"
+import { FeatureGroup } from "./features"
+import { helpText } from "./interface/helpPage"
+
+export const authHelpText: FeatureGroup[] = [
+	helpText({
+		title: "Authentication",
+		name: "auth",
+		text: dedent`
+			Ways to authenticate:
+			1) Invoke the CLI and specify your Filen email and password when prompted. Optionally, save your credentials.
+			2) Pass the \`--email <email>\` and \`--password <password>\` (optionally \`--two-factor-code <code>\`) arguments.
+			3) Put your credentials in the FILE_EMAIL and FILEN_PASSWORD (optionally FILEN_2FA_CODE) environment variables.
+			4) Store your Filen email and password in a file named .filen-cli-credentials with email and password (optionally 2FA code) in separate plaintext lines.
+			5) Export an "auth config" using \`filen export-auth-config\` and place it where you invoke the CLI. (See the full documentation for more details.)
+		`,
+		visibility: "collapse"
+	}),
+	helpText({
+		name: "libsecret",
+		text: dedent`
+			On Linux, the Filen CLI uses libsecret to store the credentials crypto key in the system Secret Service.
+			
+			If you experience issues with saving credentials, you can try installing libsecret via:
+				Debain/Ubuntu:  sudo apt-get install libsecret-1-dev
+				Red Hat based:  sudo yum install libsecret-devel
+				Arch:           sudo pacman -S libsecret
+
+			A collection of issues and possible solutions can be found at: https://github.com/FilenCloudDienste/filen-cli/issues/288
+			
+			Alternatively, you can export an auth config containing your credentials using \`filen export-auth-config\`.
+			Exporting this file to the data directory will make it visible to the CLI.
+		`,
+		visibility: "hide"
+	}),
+]
 
 /**
  * Handles authentication.
@@ -35,7 +71,7 @@ export class Authentication {
 			this.app.errExit("delete saved credentials file", e)
 		}
 		if (await exists(this.authConfigFileName) || await exists(path.join(this.app.dataDir, this.authConfigFileName))) {
-			if (!this.app.quiet) this.app.out("There is a .filen-cli-auth-config file")
+			this.app.out("There is a .filen-cli-auth-config file")
 		}
 	}
 

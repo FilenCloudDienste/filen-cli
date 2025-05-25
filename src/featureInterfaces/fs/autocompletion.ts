@@ -1,9 +1,10 @@
 import { CompleterResult } from "node:readline"
-import { Command, fsCommands, splitCommandSegments, argumentTypeIsCloud, argumentTypeIsFileSystem, argumentTypeAcceptsFile } from "./commands"
 import FilenSDK from "@filen/sdk"
 import { CloudPath } from "../../util/cloudPath"
 import * as fs from "node:fs"
 import pathModule from "path"
+import { argumentTypeAcceptsFile, argumentTypeIsCloud, argumentTypeIsFileSystem, Feature, splitCommandSegments } from "../../features"
+import { App } from "../../app"
 
 /**
  * Provides autocompletion for fs commands, cloud paths and local paths.
@@ -13,11 +14,11 @@ export class Autocompletion {
 	 * The instance. Is `null` when autocompletion is disabled.
 	 */
 	public static instance: Autocompletion | null
+	//todo: make Autocompletion a member of App
 
-	private readonly filen: FilenSDK
 	public cloudWorkingPath: CloudPath
 
-	public constructor(filen: FilenSDK, cloudWorkingPath: CloudPath) {
+	public constructor(private app: App, private filen: FilenSDK, cloudWorkingPath: CloudPath) {
 		this.filen = filen
 		this.cloudWorkingPath = cloudWorkingPath
 	}
@@ -30,7 +31,7 @@ export class Autocompletion {
 
 	public async autocomplete(input: string): Promise<CompleterResult> {
 		if (!this.autocompleteResults.has(input)) {
-			const result = await autocomplete(input, this.cloudWorkingPath, fsCommands, (path) => this.readCloudDirectory(path), (path) => this.readLocalDirectory(path))
+			const result = await autocomplete(input, this.cloudWorkingPath, this.app.features.features, (path) => this.readCloudDirectory(path), (path) => this.readLocalDirectory(path))
 			this.autocompleteResults.set(input, result)
 		}
 		return this.autocompleteResults.get(input)!
@@ -76,27 +77,28 @@ export type Item = {
  * Generate autocompletion results for a given input.
  * @param input The user input.
  * @param cloudWorkingPath The current cloud working path.
- * @param availableCommands The commands available to the user.
+ * @param availableFeatures The features available to the user.
  * @param readCloudDirectory Callback function that should return the items inside a cloud location, or throw an error if it doesn't exist.
  * @param readLocalDirectory Callback function that should return the items inside a local location, or throw an error if it doesn't exist.
  */
 export async function autocomplete(
 	input: string,
 	cloudWorkingPath: CloudPath,
-	availableCommands: Command[],
+	availableFeatures: Feature[],
 	readCloudDirectory: (path: string) => Promise<Item[]>,
 	readLocalDirectory: (path: string) => Promise<Item[]>
 ): Promise<CompleterResult> {
 	const segments = splitCommandSegments(input)
 	if (segments.length < 2) { // typing command
-		const commands = availableCommands.flatMap(cmd => [cmd.cmd, ...cmd.aliases].map(alias => alias + (cmd.arguments.length > 0 ? " " : "")))
-		const hits = commands.filter(cmd => cmd.startsWith(input))
+		const feature = availableFeatures.flatMap(feature => feature.cmd.map(alias => alias + (feature.arguments.length > 0 ? " " : "")))
+		const hits = feature.filter(cmd => cmd.startsWith(input))
 		return [hits, input]
+		// todo: only autocomplete primary cmd, not aliases
 	} else { // typing arguments
 		const argumentIndex = segments.length - 2
-		const command = availableCommands.find(cmd => [cmd.cmd, ...cmd.aliases].includes(segments[0]!))
-		if (command === undefined) return [[], input]
-		const argument = command.arguments[argumentIndex]
+		const feature = availableFeatures.find(feature => feature.cmd.includes(segments[0]!))
+		if (feature === undefined) return [[], input]
+		const argument = feature.arguments[argumentIndex]
 		if (argument === undefined) return [[], input]
 		const argumentInput = segments[segments.length - 1]!
 		if (argumentTypeIsFileSystem(argument.type)) {

@@ -5,14 +5,42 @@ import { SyncMessage, SyncMode, SyncPair } from "@filen/sync/dist/types"
 import fsModule, { PathLike } from "node:fs"
 import { exists } from "../util/util"
 import getUuidByString from "uuid-by-string"
-import { displayTransferProgressBar } from "../interface/util"
+import { displayTransferProgressBar, formatTable } from "../interface/util"
 import os from "os"
 import { App } from "../app"
+import { ArgumentType, feature, FlagType } from "../features"
+import dedent from "dedent"
 
-export const syncOptions = {
-	"--continuous": Boolean,
-	"--disable-local-trash": Boolean,
-}
+export const syncCommand = feature({
+	cmd: ["sync"],
+	description: "Sync files and directories to/from your Filen drive.",
+	longDescription: dedent`
+		This is the same functionality you get with the Desktop app.
+
+		Examples:
+		${formatTable([
+			["filen sync", "read sync pairs from {dataDir}/syncPairs.json of type {local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean, ignore?: string[], excludeDotFiles?: boolean}[]"],
+			["filen sync <file>", "read sync pairs from custom JSON file"],
+			["filen sync mypair myotherpair", "use aliases as defined in syncPairs.json"],
+			["filen sync /local/path:/cloud/path", "sync a local path with a cloud path in two-way sync"],
+			["filen sync /local1:twoWay:/cloud1", "other way to specify two-way sync"],
+			["filen sync /local1:localToCloud:/cloud1 /local2:ltc:/cloud2", "local-to-cloud sync (other sync modes: `cloudBackup`, `cloudToLocal`, `cloudBackup`, all with similar abbreviations)"],
+			["filen sync /local:/cloud --disable-local-trash", "disable local trash"]
+		])}
+
+		You can set the \`--continuous\` flag to keep syncing (instead of only syncing once).
+	`,
+	flags: {
+		continuous: { name: "--continuous", type: FlagType.boolean },
+		disableLocalTrash: { name: "--disable-local-trash", type: FlagType.boolean },
+	},
+	args: {
+		locations: { type: ArgumentType.catchAll },
+	},
+	invoke: async ({ app, filen, flags, args, quiet }) => {
+		new SyncInterface(app, filen, quiet).invoke(args.locations, flags.continuous, flags.disableLocalTrash)
+	},
+})
 
 export type RawSyncPair = {
 	local: string
@@ -44,13 +72,10 @@ const syncModeMappings = new Map<string, SyncMode>([
 	[":", "twoWay"],
 ])
 
-/**
- * Provides the interface for syncing.
- */
-export class SyncInterface {
+class SyncInterface {
 	private readonly defaultSyncPairsRegistry = pathModule.join(this.app.dataDir, "syncPairs.json")
 
-	constructor(private app: App, private filen: FilenSDK) {}
+	constructor(private app: App, private filen: FilenSDK, private quiet: boolean) {}
 
 	public invoke(locationsStr: string[], continuous: boolean, disableLocalTrashFlag: boolean) {
 		// eslint-disable-next-line no-async-promise-executor
@@ -125,7 +150,7 @@ export class SyncInterface {
 							syncPairsExited.add(msg.syncPair.uuid)
 							if (syncPairsExited.size >= syncPairs.length) {
 								if (progressBar !== null) progressBar.progressBar.stop()
-								if (!this.app.quiet) {
+								if (!this.quiet) {
 									if (progressBar?.progressBar.getTotal() ?? 0 > 0) this.app.out("Done.")
 									else this.app.out("Done (no files to transfer).")
 								}

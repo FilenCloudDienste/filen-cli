@@ -5,6 +5,27 @@ import { downloadFile, exists } from "./util/util"
 import * as fs from "node:fs"
 import semver from "semver"
 import { App } from "./app"
+import dedent from "dedent"
+import { helpText } from "./interface/helpPage"
+
+export const updateHelpText = helpText({
+	title: "Updates",
+	name: "updates",
+	text: dedent`
+		The automatic updater checks for new releases every time the CLI is invoked.
+		
+		After checking for updates, it will not check again for the next 10 minutes. Use the flags:
+			--force-update  to check for updates even if it was recently checked.
+			--skip-update   to skip checking for updates.
+			--auto-update   to skip the confirmation prompt and update automatically (will still abort after updating).
+		
+		You can always install any version using \`filen install <version>\`, \`filen install latest\` or \`filen install canary\`.
+		
+		If you want to be among the first to try out new features and fixes, you can enable canary releases,
+		which are early releases meant for a subset of users to test before they are declared as stable.
+		To enable or disable canary releases, invoke the CLI with the command \`filen canary\`.
+	`
+})
 
 type UpdateCache = {
 	lastCheckedUpdate: number
