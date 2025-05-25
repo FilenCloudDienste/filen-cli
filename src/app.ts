@@ -3,9 +3,8 @@ import FilenSDK from "@filen/sdk"
 import path from "path"
 import os from "os"
 import * as fs from "node:fs"
-import { Authentication, authHelpText } from "./auth"
 import { isRunningAsContainer, isRunningAsNPMPackage, version } from "./buildInfo"
-import { updateHelpText, Updater } from "./updater"
+import { canaryCommand, installCommand, runUpdater, updateHelpText } from "./updater"
 import { generalHelpText, helpCommand, helpText, versionCommand } from "./interface/helpPage"
 import { fsCommands } from "./featureInterfaces/fs/fs"
 import { ANONYMOUS_SDK_CONFIG } from "./constants"
@@ -21,6 +20,7 @@ import { driveMountingCommand } from "./featureInterfaces/driveMountingInterface
 import { webdavCommandGroup } from "./featureInterfaces/webdavInterface"
 import { s3Command } from "./featureInterfaces/s3Interface"
 import { syncCommand } from "./featureInterfaces/syncInterface"
+import { authenticate, authenticationCommandGroup } from "./auth"
 
 export const cliArgsSpec = {
 	"--dev": Boolean,
@@ -72,9 +72,9 @@ export class App {
 	public readonly dataDir
 
 	public readonly features = new FeatureRegistry({ features: [
-		{ features: [versionCommand, helpCommand], visibility: "hide" },
+		{ features: [versionCommand, helpCommand, canaryCommand, installCommand], visibility: "hide" },
 		helpText({ name: "general", text: generalHelpText }),
-		...authHelpText,
+		{ ...authenticationCommandGroup, visibility: "collapse" },
 		{ ...updateHelpText, visibility: "collapse" },
 		helpText({ name: undefined, text: "List of commands:" }),
 		{ ...fsCommands, visibility: "collapse" },
@@ -268,7 +268,6 @@ export class App {
 	/**
 	 * Global input prompting method
 	 * @param message The message to print before the prompt
-	 * @param options Options:
 	 * @param options.allowExit Whether to allow to exit the application here via `^C`
 	 * @param options.obfuscate Whether to obfuscate the input (for password input)
 	 * @param options.useHistory Whether to read from and append to the history
@@ -379,7 +378,7 @@ export class ExitError extends Error {}
 const exitCode1Error = new ExitError("Exit code 1")
 
 async function main(ctx: FeatureContext) {
-	const { app, filen, cliArgs, cmd, argv } = ctx
+	const { app, cliArgs, cmd, argv } = ctx
 
 	app.outVerbose(`Filen CLI ${version}`)
 
@@ -392,35 +391,7 @@ async function main(ctx: FeatureContext) {
 	app.outVerbose(environment)
 
 	// check for updates
-	if (cliArgs["--skip-update"] !== true) {
-		const updater = new Updater(app)
-		if (cmd === "canary") {
-			try {
-				await updater.showCanaryPrompt()
-				return
-			} catch (e) {
-				app.errExit("change canary preferences", e)
-			}
-		}
-		if (cmd === "install") {
-			try {
-				const version = argv[0]
-				if (version === undefined) app.errExit("Need to specify version")
-				await updater.fetchAndInstallVersion(version!)
-				return
-			} catch (e) {
-				app.errExit("install version", e)
-			}
-		}
-		try {
-			await updater.checkForUpdates(cliArgs["--force-update"] ?? false, cliArgs["--auto-update"] ?? false)
-		} catch (e) {
-			app.errExit("check for updates", e)
-		}
-		// todo: make `canary` and `install` features
-	} else {
-		app.outVerbose("Update check skipped")
-	}
+	runUpdater(ctx)
 
 	const feature = (() => {
 		if (cmd === undefined) return undefined
@@ -430,29 +401,8 @@ async function main(ctx: FeatureContext) {
 	})()
 
 	// authentication
-	if (!feature?.skipAuthentication) {
-		const authentication = new Authentication(app, filen)
-		try {
-			if (argv[0] === "logout") {
-				await authentication.deleteSavedCredentials()
-				// todo: make `logout` a feature
-				return
-			}
-		} catch (e) {
-			app.outErr("delete credentials", e)
-		}
-		try {
-			const { exit } = await authentication.authenticate(
-				cliArgs["--email"],
-				cliArgs["--password"],
-				cliArgs["--two-factor-code"],
-				argv[0] === "export-auth-config", // todo: make `export-auth-config` a feature
-				argv[0] === "export-api-key", // todo: make `export-api-key` a feature
-			)
-			if (exit) return
-		} catch (e) {
-			app.errExit("authenticate", e)
-		}
+	if (!(feature?.skipAuthentication ?? false)) {
+		await authenticate(ctx)
 	}
 
 	const executeCommand = async (feature: Feature, ctx: FeatureContext) => {

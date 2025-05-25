@@ -7,6 +7,7 @@ import semver from "semver"
 import { App } from "./app"
 import dedent from "dedent"
 import { helpText } from "./interface/helpPage"
+import { ArgumentType, feature, FeatureContext } from "./features"
 
 export const updateHelpText = helpText({
 	title: "Updates",
@@ -27,6 +28,33 @@ export const updateHelpText = helpText({
 	`
 })
 
+export const canaryCommand = feature({
+	cmd: ["canary"],
+	description: "Change canary preference.",
+	invoke: async ({ app }) => new Updater(app).showCanaryPrompt()
+})
+
+export const installCommand = feature({
+	cmd: ["install"],
+	args: {
+		version: { type: ArgumentType.any }
+	},
+	description: "Install a specific version of the Filen CLI.",
+	invoke: async ({ app, args }) => new Updater(app).fetchAndInstallVersion(args.version)
+})
+
+export async function runUpdater({ app, cliArgs }: FeatureContext) {
+	if (cliArgs["--skip-update"]) {
+		app.outVerbose("Update check skipped")
+		return
+	}
+	try {
+		await new Updater(app).checkForUpdates(cliArgs["--force-update"] ?? false, cliArgs["--auto-update"] ?? false)
+	} catch (e) {
+		app.errExit("check for updates", e)
+	}
+}
+
 type UpdateCache = {
 	lastCheckedUpdate: number
 	canary: boolean
@@ -46,7 +74,7 @@ type ReleaseInfo = {
 /**
  * Manages updates.
  */
-export class Updater {
+class Updater {
 	private readonly updateCacheDirectory = this.app.dataDir
 	private readonly updateCacheFile = path.join(this.updateCacheDirectory, "updateCache.json")
 	private readonly updateCheckExpiration = 10 * 60 * 1000 // check again after 10min
