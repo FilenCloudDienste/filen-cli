@@ -173,7 +173,7 @@ export const testFeature = feature({
 
 type FeatureContextWithFeature = Omit<FeatureContext, "feature"> & Required<Pick<FeatureContext, "feature">>
 type FlagsSpec = Record<string, FlagSpec>
-export type ParsedFlags<T extends FlagsSpec> = { [K in keyof T]: T[K]["type"] extends FlagType.boolean ? boolean : FlagTypeResult<T[K]["type"]> | undefined }
+export type ParsedFlags<T extends FlagsSpec> = { [K in keyof T]: T[K]["type"] extends FlagType.boolean ? boolean : T[K]["required"] extends true ? FlagTypeResult<T[K]["type"]> : FlagTypeResult<T[K]["type"]> | undefined }
 type ArgsSpec = Record<string, ArgumentSpec>
 export type ParsedArgs<T extends ArgsSpec> = { [K in keyof T]: T[K]["optional"] extends true ? ArgumentTypeResult<T[K]["type"]> | undefined : ArgumentTypeResult<T[K]["type"]> }
 export function feature<flags extends FlagsSpec, args extends ArgsSpec>(feature: Omit<Feature, "invoke" | "arguments" | "flags"> & {
@@ -246,6 +246,12 @@ export function feature<flags extends FlagsSpec, args extends ArgsSpec>(feature:
                 ...(flag.alias ? [[flag.alias, flag.name]] : []),
             ])).flat())
             const parsedFlagsRaw = arg(spec, { permissive: true, argv: ctx.argv })
+            const missingFlags = Object.values(feature.flags ?? {})
+                .filter(flag => flag.required && parsedFlagsRaw[flag.name] === undefined)
+                .map(flag => flag.name)
+            if (missingFlags.length > 0) {
+                ctx.app.errExit(`Need to specify required flags: ${missingFlags.join(", ")}`)
+            }
             const argv = parsedFlagsRaw["_"]
             const parsedFlags = Object.fromEntries(Object.entries(feature.flags ?? {}).map(([name, spec]) => {
                 const value = parsedFlagsRaw[spec.name]

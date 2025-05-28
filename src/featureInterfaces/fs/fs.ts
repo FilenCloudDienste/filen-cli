@@ -100,7 +100,6 @@ const unixStyleCommands: FeatureGroup = {
 			return (["head", "tail"] as const).map(cmd => feature({
 				cmd: [cmd],
 				description: `Print the ${cmd === "head" ? "first" : "last"} lines of a file.`,
-				// todo: document -n flag
 				flags: {
 					lines: { name: "-n", type: FlagType.string, description: "number of lines to print" },
 				},
@@ -475,7 +474,7 @@ export const fsCommands: FeatureGroup = {
 			["--root <path>, -r <path>", "execute commands from a different working directory"],
 			["--json", "format output as JSON"],
 			["--no-autocomplete", "disable autocompletion (for performance or bandwidth reasons)"],
-		])}`, // todo: are all these options really specific to fs commands?
+		])}`,
 	features: [
 		unixStyleCommands,
 		filenSpecificCommands,

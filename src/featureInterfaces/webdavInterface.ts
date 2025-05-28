@@ -69,10 +69,6 @@ function runWebDAV(app: App, filen: FilenSDK, proxyMode: boolean, flags: ParsedF
 	// eslint-disable-next-line no-async-promise-executor
 	return new Promise<void>(async (resolve, reject) => {
 		try {
-			if (!proxyMode && (args.username === undefined || args.password === undefined)) {
-				app.errExit("Need to specify --w-user and --w-password")
-			}
-
 			const https = args.https
 			const hostname = args.hostname ?? "0.0.0.0"
 			const port = args.port ?? (args.https ? 443 : 80)

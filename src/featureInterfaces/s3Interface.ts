@@ -21,10 +21,6 @@ export const s3Command = feature({
 		// eslint-disable-next-line no-async-promise-executor
 		return new Promise<void>(async (resolve, reject) => {
 			try {
-				if (flags.accessKeyId === undefined || flags.secretAccessKey === undefined) {
-					app.errExit("Need to specify --s3-access-key-id and --s3-secret-access-key")
-				} // todo: is this necessary?
-
 				const https = flags.https
 				const hostname = flags.hostname ?? "0.0.0.0"
 				const port = parseInt(flags.port!) ?? (flags.https ? 443 : 80) // todo: check if port is valid number
@@ -34,8 +30,8 @@ export const s3Command = feature({
 					port,
 					https,
 					user: {
-						accessKeyId: flags.accessKeyId!,
-						secretKeyId: flags.secretAccessKey!,
+						accessKeyId: flags.accessKeyId,
+						secretKeyId: flags.secretAccessKey,
 						sdk: filen
 					}
 				}
