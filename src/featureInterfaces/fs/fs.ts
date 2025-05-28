@@ -21,10 +21,10 @@ const unixStyleCommands: FeatureGroup = {
 			cmd: ["ls", "list"],
 			description: "List files and directories.",
 			flags: {
-				long: { name: "-l", type: FlagType.boolean },
+				long: { name: "--long", alias: "-l", type: FlagType.boolean, description: "use a long listing format" },
 			},
 			args: {
-				directory: { type: ArgumentType.cloudDirectory, optional: true },
+				directory: { type: ArgumentType.cloudDirectory, optional: true, description: "directory to list (default: the current directory)" },
 			},
 			invoke: async ({ app, filen, flags, args, cloudWorkingPath, formatJson }) => {
 				const directory = args.directory ?? cloudWorkingPath
@@ -69,7 +69,7 @@ const unixStyleCommands: FeatureGroup = {
 			cmd: ["cat"],
 			description: "Print the contents of a file.",
 			args: {
-				file: { type: ArgumentType.cloudFile },
+				file: { type: ArgumentType.cloudFile, description: "file to read" },
 			},
 			invoke: async ({ app, filen, args, formatJson }) => {
 				try {
@@ -105,10 +105,10 @@ const unixStyleCommands: FeatureGroup = {
 				description: `Print the ${cmd === "head" ? "first" : "last"} lines of a file.`,
 				// todo: document -n flag
 				flags: {
-					lines: { name: "-n", type: FlagType.string },
+					lines: { name: "-n", type: FlagType.string, description: "number of lines to print" },
 				},
 				args: {
-					file: { type: ArgumentType.cloudFile },
+					file: { type: ArgumentType.cloudFile, description: "file to read" },
 				},
 				invoke: async ({ app, filen, flags, args, cloudWorkingPath, formatJson }) => {
 					const nLines = parseInt(flags.lines ?? "10")
@@ -120,7 +120,7 @@ const unixStyleCommands: FeatureGroup = {
 			cmd: ["mkdir"],
 			description: "Create a directory.",
 			args: {
-				directory: { type: ArgumentType.cloudDirectory },
+				directory: { type: ArgumentType.cloudDirectory, description: "directory to create" },
 			},
 			invoke: async ({ app, filen, args }) => {
 				await filen.fs().mkdir({ path: args.directory.toString() })
@@ -131,18 +131,18 @@ const unixStyleCommands: FeatureGroup = {
 			cmd: ["rm", "delete"],
 			description: "Delete a file or directory.",
 			flags: {
-				noTrash: { name: "--no-trash", type: FlagType.boolean },
+				noTrash: { name: "--no-trash", type: FlagType.boolean, description: "permanently delete the file or directory" },
 			},
 			args: {
-				file: { type: ArgumentType.cloudFile },
+				path: { type: ArgumentType.cloudPath, description: "file or directory to delete" },
 			},
 			invoke: async ({ app, filen, flags, args }) => {
-				if (!await app.promptConfirm(`${flags.noTrash ? "permanently delete" : "delete"} ${args.file.toString()}`)) return
+				if (!await app.promptConfirm(`${flags.noTrash ? "permanently delete" : "delete"} ${args.path.toString()}`)) return
 				if (flags.noTrash) if (!await app.promptConfirm(undefined)) return
 				try {
-					await filen.fs().rm({ path: args.file.toString(), permanent: flags.noTrash })
+					await filen.fs().rm({ path: args.path.toString(), permanent: flags.noTrash })
 				} catch (e) {
-					if (e instanceof Error && e.name === "FileNotFoundError") app.outErr(`No such file or directory: ${args.file.toString()}`)
+					if (e instanceof Error && e.name === "FileNotFoundError") app.outErr(`No such file or directory: ${args.path.toString()}`)
 					else throw e
 				}
 			}
@@ -151,7 +151,7 @@ const unixStyleCommands: FeatureGroup = {
 			cmd: ["stat", "stats"],
 			description: "Display information about a file or directory.",
 			args: {
-				item: { type: ArgumentType.cloudPath },
+				item: { type: ArgumentType.cloudPath, description: "file or directory to display information about" },
 			},
 			invoke: async ({ app, filen, args, formatJson }) => {
 				try {
@@ -211,8 +211,8 @@ const unixStyleCommands: FeatureGroup = {
 			cmd: ["mv", "move", "rename"],
 			description: "Move or rename a file or directory.",
 			args: {
-				from: { type: ArgumentType.cloudPath },
-				to: { type: ArgumentType.cloudPath },
+				from: { type: ArgumentType.cloudPath, description: "source file or directory" },
+				to: { type: ArgumentType.cloudPath, description: "destination path or parent directory" },
 			},
 			invoke: async ({ app, filen, args }) => {
 				const from = args.from
@@ -230,8 +230,8 @@ const unixStyleCommands: FeatureGroup = {
 			cmd: ["cp", "copy"],
 			description: "Copy a file or directory.",
 			args: {
-				from: { type: ArgumentType.cloudPath },
-				to: { type: ArgumentType.cloudPath },
+				from: { type: ArgumentType.cloudPath, description: "source file or directory" },
+				to: { type: ArgumentType.cloudPath, description: "destination path or parent directory" },
 			},
 			invoke: async ({ app, filen, args, quiet }) => {
 				const from = args.from
@@ -270,8 +270,8 @@ const filenSpecificCommands: FeatureGroup = {
 			cmd: ["upload"],
 			description: "Upload a local file into the cloud at a specified path.",
 			args: {
-				source: { type: ArgumentType.localFile },
-				cloudPath: { type: ArgumentType.cloudPath },
+				source: { type: ArgumentType.localFile, description: "local file to upload" },
+				cloudPath: { type: ArgumentType.cloudPath, description: "destination path or parent directory" },
 			},
 			invoke: async ({ app, filen, args, quiet }) => {
 				const stat = fsModule.statSync(args.source, { throwIfNoEntry: false })
@@ -301,8 +301,8 @@ const filenSpecificCommands: FeatureGroup = {
 			cmd: ["download"],
 			description: "Download a file or directory from the cloud into a local destination.",
 			args: {
-				source: { type: ArgumentType.cloudFile },
-				destination: { type: ArgumentType.localPath, optional: true },
+				source: { type: ArgumentType.cloudFile, description: "cloud file or directory" },
+				destination: { type: ArgumentType.localPath, optional: true, description: "local destination path (default: current working directory)" },
 			},
 			invoke: async ({ app, filen, args, quiet }) => {
 				try {
@@ -334,8 +334,8 @@ const filenSpecificCommands: FeatureGroup = {
 			cmd: ["write", "touch"],
 			description: "Write plain text to a file.",
 			args: {
-				file: { type: ArgumentType.cloudFile },
-				content: { type: ArgumentType.catchAll },
+				file: { type: ArgumentType.cloudFile, description: "file to write to (will be created if it doesn't exist)" },
+				content: { type: ArgumentType.catchAll, description: "any string content" },
 			},
 			invoke: async ({ app, filen, args }) => {
 				const content = args.content.join(" ")
@@ -364,7 +364,7 @@ const filenSpecificCommands: FeatureGroup = {
 				cmd: [cmd],
 				description: `Opens a file locally in the associated application${cmd === "edit" ? " (save and close to re-upload)" : ""}.`,
 				args: {
-					file: { type: ArgumentType.cloudFile },
+					file: { type: ArgumentType.cloudFile, description: `file to ${cmd}` },
 				},
 				invoke: async ({ app, filen, args }) => {
 					await openOrEdit(app, filen, args.file, cmd)
@@ -375,7 +375,7 @@ const filenSpecificCommands: FeatureGroup = {
 			cmd: ["view", "reveal", "drive"],
 			description: "View a directory in the Web Drive (you can also invoke filen drive to quickly open the Web Drive).",
 			args: {
-				path: { type: ArgumentType.cloudDirectory, optional: true },
+				path: { type: ArgumentType.cloudDirectory, optional: true, description: "file or directory to view" },
 			},
 			invoke: async ({ app, filen, args, cloudWorkingPath, quiet, formatJson }) => {
 				args.path = args.path ?? cloudWorkingPath
@@ -423,7 +423,7 @@ const filenSpecificCommands: FeatureGroup = {
 				: ["unfavorite", "unfavourite"],
 			description: `${cmd === "favorite" ? "Favorite" : "Unfavorite"} a file or directory.`,
 			args: {
-				item: { type: ArgumentType.cloudPath },
+				item: { type: ArgumentType.cloudPath, description: `file or directory to ${cmd}` },
 			},
 			invoke: async ({ app, filen, args }) => {
 				try {
@@ -450,7 +450,7 @@ const interactiveModeCommands: FeatureGroup = {
 			cmd: ["cd", "navigate"],
 			description: "Navigate to a different path.",
 			args: {
-				directory: { type: ArgumentType.cloudDirectory },
+				directory: { type: ArgumentType.cloudDirectory, description: "path to navigate" },
 			},
 			invoke: async ({ app, filen, args }) => {
 				try {

@@ -22,18 +22,29 @@ export const generalHelpText = dedent`
 	Usage: filen [options...] [cmd]
 
 	Invoke the Filen CLI with no command specified to enter interactive mode. 
-	
+	There you can specify paths as absolute (starting with "/") or
+	relative to the current working directory (supports "." and "..").
+
+	Data directory:
+	The data directory is where configuration files, credentials, cache etc. are
+	stored and read from. By default, it is \`%APPDATA%/filen-cli\` (Windows),
+	\`~/Library/Application Support/filen-cli\` (macOS) or \`$XDG_CONFIG_HOME/filen-cli\`
+	or \`~/.config/filen-cli\` (Unix). If there is a directory named \`.filen-cli\` at
+	the home directory \`~\`, it is used instead (for instance, the install script
+	installs to this location). You can overwrite the location using the
+	\`--data-dir <dir>\` flag or the \`FILEN_CLI_DATA_DIR\` environment variable.
+
 	Options:
 	${formatTable([
 		["--verbose, -v", "display additional information"],
 		["--quiet, -q", "hide things like progress bars and additional logs"],
-		["--log-file <file>", "write logs to a file"],
+		["--log-file <file>", "write logs to a file"]
 	])}
 	`
 
 export const helpCommand: Feature = {
 	cmd: ["help", "h", "?"],
-	arguments: [{ name: "section or command", type: ArgumentType.any, optional: true }],
+	arguments: [{ name: "section or command", type: ArgumentType.any, optional: true, description: null }],
 	description: "Display usage information.",
 	skipAuthentication: true,
 	invoke: async ({ app, argv }) => {
@@ -99,25 +110,31 @@ export const helpCommand: Feature = {
 						printFeatures()
 					}
 				}
-				builder.appendNewline()
 				return
 			}
 
 			// print Feature command signature and description
 			feature = feature as Feature
 			builder.appendText("> " + [feature.cmd[0],...feature.arguments.map(arg => `${arg.optional ? "[" : "<"}${arg.name}${arg.optional ? "]" : ">"}`)].join(" "))
-			if (feature.description) {
-				builder.withIncreasedIndentation(() => {
+			builder.withIncreasedIndentation(() => {
+				if (feature.description) {
 					builder.appendText(feature.description!)
-				})
-			}
-			if (feature.longDescription) {
-				builder.withIncreasedIndentation(() => {
+				}
+				if (feature.longDescription) {
 					builder.appendNewline()
 					builder.appendText(feature.longDescription!)
 					builder.appendNewline()
-				})
-			}
+				}
+				const formatArguments = [
+					...(feature.arguments.filter(arg => arg.description !== undefined).map(arg => ({ name: arg.name, description: arg.description, optional: arg.optional ?? false }))),
+					...((feature.flagsDoc ?? []).map(flag => ({ ...flag, optional: !(flag.required ?? false) }))),
+				]
+				if (formatArguments.length > 0) {
+					builder.appendText(formatTable(formatArguments.map(arg => [`${arg.optional ? "[" : "<"}${arg.name}${arg.optional ? "]" : ">"}`, arg.description ?? ""])))
+				}
+			})
+			
+			builder.appendNewline()
 		}
 		builder.appendText("Filen CLI " + version) // todo: don't display this line if in interactive mode
 		printFeatureHelp(selectedFeature)

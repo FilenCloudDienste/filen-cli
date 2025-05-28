@@ -6,13 +6,12 @@ export const driveMountingCommand = feature({
 	cmd: ["mount"],
 	description: "Mount a network drive that mirrors your Filen drive.",
 	longDescription: dedent`
-		The default mount point is \`X:\` (Windows) or \`/tmp/filen\` (UNIX).
 		On Windows, WinFSP (https://winfsp.dev/rel) needs to be installed.
 		On Linux, FUSE3 (https://github.com/libfuse/libfuse) needs to be installed.
 		On macOS, FUSE-T (https://www.fuse-t.org) or macFUSE (https://osxfuse.github.io) needs to be installed.
 	`,
 	args: {
-		mountPoint: { type: ArgumentType.any }
+		mountPoint: { type: ArgumentType.any, description: "drive letter (Windows; default: `X:`) or path (UNIX; default: `/tmp/filen`) to mount at" }
 	},
 	invoke: ({ app, filen, args }) => {
 		// eslint-disable-next-line no-async-promise-executor

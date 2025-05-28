@@ -66,7 +66,7 @@ export const publicLinksCommandGroup: FeatureGroup = {
 			cmd: ["links", "link"],
 			description: "Create, view, edit or delete a public link.",
 			args: {
-				path: { type: ArgumentType.cloudPath }
+				path: { type: ArgumentType.cloudPath, description: "cloud file or directory this link is for" }
 				// todo: have to explicitly specify when optional args are allowed, so that this command is resolved correclty (maybe the command signature is compiled into a regex?)
 			},
 			invoke: async ({ app, filen, args }) => {

@@ -15,7 +15,7 @@ export const exportNotesCommand = feature({
         Richtext notes are exported as HTML. Checklist notes are converted to markdown.
     `,
     args: {
-        path: { type: ArgumentType.localPath }
+        path: { type: ArgumentType.localPath, description: "local path to export notes to (default: current working directory)" } // TODO: is it?
     },
     invoke: async ({ app, filen, args }) => {
         // determine export path

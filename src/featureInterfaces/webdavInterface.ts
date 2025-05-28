@@ -4,16 +4,12 @@ import cluster from "node:cluster"
 import { App } from "../app"
 import { feature, FeatureGroup, FlagSpec, FlagType, ParsedFlags } from "../features"
 import dedent from "dedent"
-import { formatTable } from "../interface/util"
 
-const webdavFlags = {
-	hostname: { name: "--w-hostname", type: FlagType.string },
-	port: { name: "--w-port", type: FlagType.string },
-	https: { name: "--w-https", type: FlagType.boolean },
-	authScheme: { name: "--w-auth-scheme", type: FlagType.string },
-	username: { name: "--w-user", type: FlagType.string },
-	password: { name: "--w-password", type: FlagType.string },
-	threads: { name: "--w-threads", type: FlagType.string },
+const commonWebdavFlags = {
+	hostname: { name: "--w-hostname", type: FlagType.string, description: "which hostname the server should be started on (default is 0.0.0.0)" },
+	port: { name: "--w-port", type: FlagType.string, description: "which port the server should be started on (default is 80 or 443)" },
+	https: { name: "--w-https", type: FlagType.boolean, description: "use HTTPS instead of HTTP (using a self-signed certificate)" },
+	threads: { name: "--w-threads", type: FlagType.string, description: "enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count). If you experience rate-limiting using this, an auth config might help (`filen help export-auth-config`)`" },
 } as const satisfies Record<string, FlagSpec>
 // todo: document flags
 
@@ -21,15 +17,6 @@ export const webdavCommandGroup: FeatureGroup = {
 	title: "WebDAV server",
 	name: "webdav",
 	description: "Run a WebDAV server that mirrors your Filen drive.",
-	longDescription: dedent`
-		Options:
-		${formatTable([
-			["--w-https", "use HTTPS instead of HTTP (using a self-signed certificate)"],
-			["--w-hostname", "which hostname the server should be started on (default is 0.0.0.0)"],
-			["--w-port", "which port the server should be started on (default is 80 or 443)"],
-			["--w-auth-scheme", "the authentication scheme the server should use, \"basic\" or \"digest\" (default is basic)"],
-			["--w-threads", "enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count)"],
-		])}`, // todo: fix this flags documentation
 	features: [
 		feature({
 			cmd: ["webdav"],
@@ -40,7 +27,12 @@ export const webdavCommandGroup: FeatureGroup = {
 				to the server using the \`--w-user\` and \`--w-password\` options (these
 				credentials should be different from your Filen account credentials).
 			`,
-			flags: webdavFlags,
+			flags: {
+				username: { name: "--w-user", type: FlagType.string, required: true, description: "username for authentication" },
+				password: { name: "--w-password", type: FlagType.string, required: true, description: "password for authentication" },
+				...commonWebdavFlags,
+				authScheme: { name: "--w-auth-scheme", type: FlagType.string, description: "the authentication scheme the server should use, \"basic\" or \"digest\" (default is basic)" },
+			},
 			invoke: ({ app, filen, flags }) => runWebDAV(app, filen, false, flags)
 		}),
 		feature({
@@ -56,14 +48,14 @@ export const webdavCommandGroup: FeatureGroup = {
 				\`password=yoursecretpassword&twoFactorAuthentication=<RECOVERY_CODE_OR_6_DIGIT_OTP_CODE>\`
 				(you can also leave out the \`&twoFactorAuthentication=...\` part if 2FA is disabled for your account).
 				`,
-			flags: webdavFlags,
+			flags: commonWebdavFlags,
 			skipAuthentication: true,
 			invoke: ({ app, filen, flags }) => runWebDAV(app, filen, true, flags)
 		})
 	],
 }
 
-function runWebDAV(app: App, filen: FilenSDK, proxyMode: boolean, flags: ParsedFlags<typeof webdavFlags>) {
+function runWebDAV(app: App, filen: FilenSDK, proxyMode: boolean, flags: ParsedFlags<typeof commonWebdavFlags> & { username?: string, password?: string, authScheme?: string }) {
 	const args = {
 		username: flags.username,
 		password: flags.password,

@@ -37,7 +37,7 @@ export const canaryCommand = feature({
 export const installCommand = feature({
 	cmd: ["install"],
 	args: {
-		version: { type: ArgumentType.any }
+		version: { type: ArgumentType.any, description: "\"latest\", \"canary\", or a specific version to install \"vX.X.X\"" }
 	},
 	description: "Install a specific version of the Filen CLI.",
 	invoke: async ({ app, args }) => new Updater(app).fetchAndInstallVersion(args.version)

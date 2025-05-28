@@ -5,7 +5,7 @@ import { SyncMessage, SyncMode, SyncPair } from "@filen/sync/dist/types"
 import fsModule, { PathLike } from "node:fs"
 import { exists } from "../util/util"
 import getUuidByString from "uuid-by-string"
-import { displayTransferProgressBar, formatTable } from "../interface/util"
+import { displayTransferProgressBar } from "../interface/util"
 import os from "os"
 import { App } from "../app"
 import { ArgumentType, feature, FlagType } from "../features"
@@ -18,24 +18,28 @@ export const syncCommand = feature({
 		This is the same functionality you get with the Desktop app.
 
 		Examples:
-		${formatTable([
-			["filen sync", "read sync pairs from {dataDir}/syncPairs.json of type {local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean, ignore?: string[], excludeDotFiles?: boolean}[]"],
-			["filen sync <file>", "read sync pairs from custom JSON file"],
-			["filen sync mypair myotherpair", "use aliases as defined in syncPairs.json"],
-			["filen sync /local/path:/cloud/path", "sync a local path with a cloud path in two-way sync"],
-			["filen sync /local1:twoWay:/cloud1", "other way to specify two-way sync"],
-			["filen sync /local1:localToCloud:/cloud1 /local2:ltc:/cloud2", "local-to-cloud sync (other sync modes: `cloudBackup`, `cloudToLocal`, `cloudBackup`, all with similar abbreviations)"],
-			["filen sync /local:/cloud --disable-local-trash", "disable local trash"]
-		])}
-
-		You can set the \`--continuous\` flag to keep syncing (instead of only syncing once).
+		\`filen sync\`
+			read sync pairs from {dataDir}/syncPairs.json ({dataDir} is described in \`filen help data-dir\`)
+			syncPairs.json is of the type:
+				{local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean, ignore?: string[], excludeDotFiles?: boolean}[]
+				(written as a TypeScript type definition, where \`?\` denotes an optional property)
+			\`syncMode\` can be \`twoWay\`, \`localToCloud\`, \`localBackup\`, \`cloudToLocal\`, or \`cloudBackup\` (see https://docs.filen.io/docs/desktop/setup#sync-modes)
+		\`filen sync <file>\`
+			read sync pairs from custom JSON file
+		\`filen sync mypair myotherpair\`
+			use aliases as defined in syncPairs.json
+		\`filen sync /local/path:/cloud/path\`
+		    sync the local path \`/local/path\` with the cloud path \`/cloud/path\` in two-way sync
+		\`filen sync /local1:twoWay:/cloud1 /local2:tw:/cloud2\`
+			sync the local path \`/local1\` (and \`/local2\`) with the cloud path \`/cloud1\` (and \`/cloud2\`) in two-way sync
+			other abbreviations are: \`tw\` = \`twoWay\`, \`ltc\` = \`localToCloud\`, \`lb\` = \`localBackup\`, \`ctl\` = \`cloudToLocal\`, \`cb\` = \`cloudBackup\`
 	`,
 	flags: {
-		continuous: { name: "--continuous", type: FlagType.boolean },
-		disableLocalTrash: { name: "--disable-local-trash", type: FlagType.boolean },
+		continuous: { name: "--continuous", type: FlagType.boolean, description: "keep syncing (instead of only syncing once)" },
+		disableLocalTrash: { name: "--disable-local-trash", type: FlagType.boolean, description: "disable local trash" },
 	},
 	args: {
-		locations: { type: ArgumentType.catchAll },
+		locations: { type: ArgumentType.catchAll, description: "one or many sync pairs (see the examples)" },
 	},
 	invoke: async ({ app, filen, flags, args, quiet }) => {
 		new SyncInterface(app, filen, quiet).invoke(args.locations, flags.continuous, flags.disableLocalTrash)

@@ -72,6 +72,7 @@ export type Feature = {
 	description?: string
     longDescription?: string
 	arguments: Argument[]
+    flagsDoc?: { name: string, description: string, required?: boolean }[]
     skipAuthentication?: boolean
 	invoke: (ctx: Omit<FeatureContext, "feature"> & Required<Pick<FeatureContext, "feature">>) => Promise<void | FeatureResult | undefined>
 }
@@ -88,7 +89,10 @@ export type FeatureGroup = {
 export type FlagSpec = {
     name: string
     type: FlagType
+    valueName?: string
+    description: string | null
     alias?: string
+    required?: boolean
 }
 
 export enum FlagType {
@@ -105,6 +109,7 @@ export type Argument = {
 
 export type ArgumentSpec = {
     type: ArgumentType
+    description: string | null
     optional?: boolean
 }
 
@@ -140,14 +145,14 @@ export const testFeature = feature({
 	cmd: ["test"],
 	description: "A test feature.",
 	flags: {
-		someFlagA: { name: "--flag-a", type: FlagType.boolean },
-		optionalB: { name: "--flag-b", type: FlagType.boolean, alias: "-b" },
-		stringC: { name: "--flag-c", type: FlagType.string },
+		someFlagA: { name: "--flag-a", type: FlagType.boolean, description: null },
+		optionalB: { name: "--flag-b", type: FlagType.boolean, alias: "-b", description: null },
+		stringC: { name: "--flag-c", type: FlagType.string, description: null },
 	},
 	args: {
-		localFile: { type: ArgumentType.localFile },
-		cloudFile: { type: ArgumentType.cloudFile, /* optional: true */ },
-		rest: { type: ArgumentType.catchAll },
+		localFile: { type: ArgumentType.localFile, description: null },
+		cloudFile: { type: ArgumentType.cloudFile, /* optional: true, */ description: null },
+		rest: { type: ArgumentType.catchAll, description: null },
 	},
 	invoke: async ({ app, flags, args }) => {
 		if (flags.someFlagA) app.out("flag a")
@@ -171,7 +176,7 @@ type FlagsSpec = Record<string, FlagSpec>
 export type ParsedFlags<T extends FlagsSpec> = { [K in keyof T]: T[K]["type"] extends FlagType.boolean ? boolean : FlagTypeResult<T[K]["type"]> | undefined }
 type ArgsSpec = Record<string, ArgumentSpec>
 export type ParsedArgs<T extends ArgsSpec> = { [K in keyof T]: T[K]["optional"] extends true ? ArgumentTypeResult<T[K]["type"]> | undefined : ArgumentTypeResult<T[K]["type"]> }
-export function feature<flags extends FlagsSpec, args extends ArgsSpec>(feature: Omit<Feature, "invoke" | "arguments"> & {
+export function feature<flags extends FlagsSpec, args extends ArgsSpec>(feature: Omit<Feature, "invoke" | "arguments" | "flags"> & {
     flags?: flags,
     args?: args,
     invoke: (ctx: FeatureContextWithFeature & { flags: ParsedFlags<flags> } & { args: ParsedArgs<args> }) => Promise<void | FeatureResult | undefined>,
@@ -230,6 +235,10 @@ export function feature<flags extends FlagsSpec, args extends ArgsSpec>(feature:
     return {
         ...feature,
         arguments: Object.entries(feature.args ?? {}).map(([name, spec]) => ({ name, ...spec })),
+        flagsDoc: Object.values(feature.flags ?? {}).map(flag => {
+            const argumentNameStr = flag.type === FlagType.string ? ` <${flag.valueName ?? ".."}>` : ""
+            return { name: flag.name + argumentNameStr + (flag.alias ? `, ${flag.alias}` + argumentNameStr : ""), description: flag.description ?? "", required: flag.required }
+        }),
         invoke: async (ctx) => {
             // parse flags
             const spec = Object.fromEntries(Object.values(feature.flags ?? {}).map(flag => ([

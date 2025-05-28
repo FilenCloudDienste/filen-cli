@@ -26,48 +26,50 @@ export const authenticationCommandGroup: FeatureGroup = {
 		2) Pass the \`--email <email>\` and \`--password <password>\` (optionally \`--two-factor-code <code>\`) arguments.
 		3) Put your credentials in the FILE_EMAIL and FILEN_PASSWORD (optionally FILEN_2FA_CODE) environment variables.
 		4) Store your Filen email and password in a file named .filen-cli-credentials with email and password (optionally 2FA code) in separate plaintext lines.
-		5) Export an "auth config" using \`filen export-auth-config\` and place it where you invoke the CLI. (See the full documentation for more details.)
+		5) Export an "auth config" using \`filen export-auth-config\` and place it where you invoke the CLI. 
 	`,
 	features: [
-		{
-			features: [
-				feature({
-					cmd: ["logout"],
-					description: "Delete saved credentials",
-					invoke: async ({ app }) => {
-						try {
-							if (await exists(keepMeLoggedInFile(app))) {
-								await fs.promises.unlink(keepMeLoggedInFile(app))
-								app.out("Credentials deleted")
-							} else {
-								app.out("No saved credentials")
-							}
-							if (await exists(authConfigFileName) || await exists(path.join(app.dataDir, authConfigFileName))) {
-								app.out("There is a .filen-cli-auth-config file")
-							}
-						} catch (e) {
-							app.errExit("delete saved credentials", e)
-						}
-					},
-					skipAuthentication: true,
-				}),
-				feature({
-					cmd: ["export-auth-config"],
-					invoke: async (ctx) => {
-						await exportAuthConfig(ctx, false)
+		feature({
+			cmd: ["logout"],
+			description: "Delete saved credentials.",
+			invoke: async ({ app }) => {
+				try {
+					if (await exists(keepMeLoggedInFile(app))) {
+						await fs.promises.unlink(keepMeLoggedInFile(app))
+						app.out("Credentials deleted")
+					} else {
+						app.out("No saved credentials")
 					}
-				}),
-				feature({
-					cmd: ["export-api-key"],
-					invoke: async ({ app, filen }) => {
-						const input = await app.prompt("You are about to print your API Key, which gives full access to your account,\nto the screen. Proceed? (y/N) ")
-						if (input.toLowerCase() !== "y") app.errExit("Cancelled.")
-						app.out(`API Key for ${filen.config.email}: ${filen.config.apiKey}`)
-					},
-				}),
-			],
-			visibility: "hide",
-		},
+					if (await exists(authConfigFileName) || await exists(path.join(app.dataDir, authConfigFileName))) {
+						app.out("There is a .filen-cli-auth-config file")
+					}
+				} catch (e) {
+					app.errExit("delete saved credentials", e)
+				}
+			},
+			skipAuthentication: true,
+		}),
+		feature({
+			cmd: ["export-auth-config"],
+			description: "Export your Filen credentials to a file.",
+			longDescription: dedent`
+				They are in unencrypted form! The file can be used
+				to authenticate without an internal login request, making it suitable for if
+				you're experience rate-limiting, e.g. in clustered WebDAV or S3 servers.
+			`,
+			invoke: async (ctx) => {
+				await exportAuthConfig(ctx, false)
+			}
+		}),
+		feature({
+			cmd: ["export-api-key"],
+			description: "Export your Filen API key (for use with Filen Rclone).",
+			invoke: async ({ app, filen }) => {
+				const input = await app.prompt("You are about to print your API Key, which gives full access to your account,\nto the screen. Proceed? (y/N) ")
+				if (input.toLowerCase() !== "y") app.errExit("Cancelled.")
+				app.out(`API Key for ${filen.config.email}: ${filen.config.apiKey}`)
+			},
+		}),
 		helpText({
 			name: "libsecret",
 			text: dedent`
