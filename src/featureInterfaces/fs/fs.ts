@@ -12,8 +12,6 @@ import { exportNotesCommand } from "../exportNotesInterface"
 import { trashCommandsGroup } from "../trashInterface"
 import { publicLinksCommandGroup } from "../publicLinksInterface"
 
-// todo: change all app.outErr into app.errExit (?)
-
 const unixStyleCommands: FeatureGroup = {
 	title: "Unix-style commands",
 	features: [
@@ -32,8 +30,7 @@ const unixStyleCommands: FeatureGroup = {
 					if (flags.long) {
 						const uuid = (await filen.fs().pathToItemUUID({ path: directory.toString() }))
 						if (uuid === null) {
-							app.outErr(`No such directory: ${directory.toString()}`)
-							return
+							return app.errExit(`No such directory: ${directory.toString()}`)
 						}
 						const items = await filen.cloud().listDirectory({ uuid })
 						if (formatJson) {
@@ -60,7 +57,7 @@ const unixStyleCommands: FeatureGroup = {
 						else app.out(output.join("  "))
 					}
 				} catch (e) {
-					if (e instanceof Error && e.name === "FileNotFoundError") app.outErr(`No such directory: ${directory.toString()}`)
+					if (e instanceof Error && e.name === "FileNotFoundError") app.errExit(`No such directory: ${directory.toString()}`)
 					else throw e
 				}
 			}
@@ -82,7 +79,7 @@ const unixStyleCommands: FeatureGroup = {
 					if (formatJson) app.outJson({ text: content })
 					else app.out(content)
 				} catch (e) {
-					if (e instanceof Error && e.name === "FileNotFoundError") app.outErr(`No such file: ${args.file.toString()}`)
+					if (e instanceof Error && e.name === "FileNotFoundError") app.errExit(`No such file: ${args.file.toString()}`)
 					else throw e
 				}
 			}
@@ -95,7 +92,7 @@ const unixStyleCommands: FeatureGroup = {
 					if (formatJson) app.outJson({ text: output })
 					else app.out(output)
 				} catch (e) {
-					if (e instanceof Error && e.name === "FileNotFoundError") app.outErr("No such file")
+					if (e instanceof Error && e.name === "FileNotFoundError") app.errExit("No such file")
 					else throw e
 				}
 			}
@@ -142,7 +139,7 @@ const unixStyleCommands: FeatureGroup = {
 				try {
 					await filen.fs().rm({ path: args.path.toString(), permanent: flags.noTrash })
 				} catch (e) {
-					if (e instanceof Error && e.name === "FileNotFoundError") app.outErr(`No such file or directory: ${args.path.toString()}`)
+					if (e instanceof Error && e.name === "FileNotFoundError") app.errExit(`No such file or directory: ${args.path.toString()}`)
 					else throw e
 				}
 			}
@@ -174,7 +171,7 @@ const unixStyleCommands: FeatureGroup = {
 						app.out(` Birth: ${formatTimestamp(stat.birthtimeMs)}`)
 					}
 				} catch (e) {
-					if (e instanceof Error && e.name === "FileNotFoundError") app.outErr(`No such file or directory: ${args.item.toString()}`)
+					if (e instanceof Error && e.name === "FileNotFoundError") app.errExit(`No such file or directory: ${args.item.toString()}`)
 					else throw e
 				}
 			}
@@ -221,7 +218,7 @@ const unixStyleCommands: FeatureGroup = {
 					await filen.fs().rename({ from: from.toString(), to: to.toString() })
 					app.outUnlessQuiet(`Moved ${from.toString()} to ${to.toString()}`)
 				} catch (e) {
-					if (e instanceof Error && e.name === "FileNotFoundError") app.outErr(`No such file or directory: ${args.from.toString()}`)
+					if (e instanceof Error && e.name === "FileNotFoundError") app.errExit(`No such file or directory: ${args.from.toString()}`)
 					else throw e
 				}
 			}
@@ -255,7 +252,7 @@ const unixStyleCommands: FeatureGroup = {
 					app.outUnlessQuiet(`Copied ${from.toString()} to ${to.toString()}`)
 				} catch (e) {
 					if (progressBar) progressBar.progressBar.stop()
-					if (e instanceof Error && e.message.toLowerCase() === "aborted") app.outErr("Aborted")
+					if (e instanceof Error && e.message.toLowerCase() === "aborted") app.errExit("Aborted")
 					else throw e
 				}
 			}
@@ -275,10 +272,7 @@ const filenSpecificCommands: FeatureGroup = {
 			},
 			invoke: async ({ app, filen, args, quiet }) => {
 				const stat = fsModule.statSync(args.source, { throwIfNoEntry: false })
-				if (stat === undefined) {
-					app.outErr("No such source directory")
-					return
-				}
+				if (stat === undefined) return app.errExit("No such source directory")
 				const size = stat.isDirectory() ? (await directorySize(args.source)) : stat.size
 				args.cloudPath = await args.cloudPath.appendFileNameIfNecessary(filen, args.source.split(/[/\\]/)[args.source.split(/[/\\]/).length - 1]!)
 				const progressBar = quiet ? null : displayTransferProgressBar(app, "Uploading", args.cloudPath.getLastSegment(), size)
@@ -292,7 +286,7 @@ const filenSpecificCommands: FeatureGroup = {
 					})
 				} catch (e) {
 					if (progressBar) progressBar.progressBar.stop()
-					if (e instanceof Error && e.message.toLowerCase() === "aborted") app.outErr("Aborted")
+					if (e instanceof Error && e.message.toLowerCase() === "aborted") app.errExit("Aborted")
 					else throw e
 				}
 			}
@@ -321,11 +315,11 @@ const filenSpecificCommands: FeatureGroup = {
 						})
 					} catch (e) {
 						if (progressBar) progressBar.progressBar.stop()
-						if (e instanceof Error && e.message.toLowerCase() === "aborted") app.outErr("Aborted")
+						if (e instanceof Error && e.message.toLowerCase() === "aborted") app.errExit("Aborted")
 						else throw e
 					}
 				} catch (e) {
-					if (e instanceof Error && e.name === "FileNotFoundError") app.outErr(`No such file or directory: ${args.source.toString()}`)
+					if (e instanceof Error && e.name === "FileNotFoundError") app.errExit(`No such file or directory: ${args.source.toString()}`)
 					else throw e
 				}
 			}
@@ -355,7 +349,7 @@ const filenSpecificCommands: FeatureGroup = {
 					}
 					setTimeout(() => fsModule.unlinkSync(downloadPath), 500)
 				} catch (e) {
-					if (e instanceof Error && e.name === "FileNotFoundError") app.outErr(`No such file: ${file.toString()}`)
+					if (e instanceof Error && e.name === "FileNotFoundError") app.errExit(`No such file: ${file.toString()}`)
 					else throw e
 				}
 			}
@@ -396,7 +390,7 @@ const filenSpecificCommands: FeatureGroup = {
 					}
 					await open(url, { wait: true })
 				} catch (e) {
-					if (e instanceof Error && e.name === "FileNotFoundError") app.outErr(`No such file or directory: ${args.path.toString()}`)
+					if (e instanceof Error && e.name === "FileNotFoundError") app.errExit(`No such file or directory: ${args.path.toString()}`)
 					else throw e
 				}
 			}
@@ -435,7 +429,7 @@ const filenSpecificCommands: FeatureGroup = {
 					}
 					app.outUnlessQuiet(`${cmd === "favorite" ? "Favorited" : "Unfavorited"} ${args.item.toString()}`)
 				} catch (e) {
-					if (e instanceof Error && e.name === "FileNotFoundError") app.outErr(`No such file or directory: ${args.item.toString()}`)
+					if (e instanceof Error && e.name === "FileNotFoundError") app.errExit(`No such file or directory: ${args.item.toString()}`)
 					else throw e
 				}
 			}
@@ -455,10 +449,10 @@ const interactiveModeCommands: FeatureGroup = {
 			invoke: async ({ app, filen, args }) => {
 				try {
 					const directory = await filen.fs().stat({ path: args.directory.toString() })
-					if (!directory.isDirectory()) app.outErr("Not a directory")
-					else return { cloudWorkingPath: args.directory }
+					if (!directory.isDirectory()) return app.errExit("Not a directory")
+					return { cloudWorkingPath: args.directory }
 				} catch (e) {
-					if (e instanceof Error && e.name === "FileNotFoundError") app.outErr(`No such directory: ${args.directory.toString()}`)
+					if (e instanceof Error && e.name === "FileNotFoundError") app.errExit(`No such directory: ${args.directory.toString()}`)
 					else throw e
 				}
 			}

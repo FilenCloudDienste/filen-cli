@@ -201,17 +201,11 @@ export class App {
 		this.writeLog(JSON.stringify(json), "log")
 	}
 
-	public thereHasBeenErrorOutput = false
-	public resetThereHasBeenErrorOutput() {
-		this.thereHasBeenErrorOutput = false
-	}
-
 	/**
 	 * Global error output method. Outputs an error without throwing it.
 	 * @see errExit
 	 */
 	public outErr(messageOrAction: string, underlyingError?: unknown, additionalMessage?: string) {
-		this.thereHasBeenErrorOutput = true
 		try {
 			this.errExit(messageOrAction, underlyingError, additionalMessage)
 		} catch (e) {
@@ -243,7 +237,11 @@ export class App {
 		throw new ExitError(message, { cause: underlyingError })
 	}
 
-	private handleExitError(e: unknown) {
+	/**
+	 * Outputs a user-facing error without exiting.
+	 * @parame the ExitError, or another Error that will be printed as "unexpected"
+	 */
+	public handleExitError(e: unknown) {
 		if (e instanceof ExitError) {
 			this.adapter.errOut(e.message)
 			if (e.cause) this.adapter.err(e.cause)
@@ -374,7 +372,7 @@ export interface InterfaceAdapter {
 
 export class ExitError extends Error {}
 
-// throw this when no addition error should be printed, but exit code 1 should be returned
+// throw this when no additional error should be printed, but exit code 1 should be returned
 const exitCode1Error = new ExitError("Exit code 1")
 
 async function main(ctx: FeatureContext) {
@@ -413,21 +411,15 @@ async function main(ctx: FeatureContext) {
 			return {}
 		}
 		// todo: make more arguments explicit
-		try {
-			return await feature.invoke({ ...ctx, feature }) ?? {}
-		} catch (e) {
-			return app.errExit(`execute command ${feature.cmd[0]}`, e)
-		}
+		return await feature.invoke({ ...ctx, feature }) ?? {}
 	}
 
 	if (feature !== undefined) {
 		// execute single command
-		app.resetThereHasBeenErrorOutput()
 		const result = await executeCommand(feature, ctx)
-		if (result.cloudWorkingPath !== undefined) {
+		if (result?.cloudWorkingPath !== undefined) {
 			app.outErr("To navigate in a stateful environment, please invoke the CLI without any arguments.")
 		}
-		if (app.thereHasBeenErrorOutput) throw exitCode1Error
 	} else {
 		// interactive mode
 		let cloudWorkingPath = ctx.cloudWorkingPath
@@ -442,20 +434,24 @@ async function main(ctx: FeatureContext) {
 				app.outErr(`Unknown command: ${interactiveCliArgs["_"][0]!.toLowerCase()}`)
 				continue
 			}
-			const result = await executeCommand(feature, {
-				...ctx,
-				cloudWorkingPath,
-				cmd: interactiveCliArgs["_"][0]!,
-				argv: interactiveCliArgs["_"].slice(1),
-				cliArgs: interactiveCliArgs,
-				verbose: ctx.verbose || (interactiveCliArgs["--verbose"] ?? false),
-				quiet: ctx.quiet || (interactiveCliArgs["--quiet"] ?? false),
-				formatJson: ctx.formatJson || (interactiveCliArgs["--json"] ?? false),
-			})
-			if (result.exit) break
-			if (result.cloudWorkingPath !== undefined) {
-				cloudWorkingPath = result.cloudWorkingPath
-				if (Autocompletion.instance) Autocompletion.instance.cloudWorkingPath = result.cloudWorkingPath
+			try {
+				const result = await executeCommand(feature, {
+					...ctx,
+					cloudWorkingPath,
+					cmd: interactiveCliArgs["_"][0]!,
+					argv: interactiveCliArgs["_"].slice(1),
+					cliArgs: interactiveCliArgs,
+					verbose: ctx.verbose || (interactiveCliArgs["--verbose"] ?? false),
+					quiet: ctx.quiet || (interactiveCliArgs["--quiet"] ?? false),
+					formatJson: ctx.formatJson || (interactiveCliArgs["--json"] ?? false),
+				})
+				if (result?.exit) break
+				if (result?.cloudWorkingPath !== undefined) {
+					cloudWorkingPath = result.cloudWorkingPath
+					if (Autocompletion.instance) Autocompletion.instance.cloudWorkingPath = result.cloudWorkingPath
+				}
+			} catch (e) {
+				app.handleExitError(e)
 			}
 		}
 	}
