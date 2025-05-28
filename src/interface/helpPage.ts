@@ -47,7 +47,7 @@ export const helpCommand: Feature = {
 	arguments: [{ name: "section or command", type: ArgumentType.any, optional: true, description: null }],
 	description: "Display usage information.",
 	skipAuthentication: true,
-	invoke: async ({ app, argv }) => {
+	invoke: async ({ app, argv, isInteractiveMode: isInteractive }) => {
 		const selectedName = argv.map(arg => arg.toLowerCase()).join(" ")
 		const selectedFeature = (() => {
 			if (selectedName.length === 0) return app.features.featureGroup
@@ -136,7 +136,9 @@ export const helpCommand: Feature = {
 			
 			builder.appendNewline()
 		}
-		builder.appendText("Filen CLI " + version) // todo: don't display this line if in interactive mode
+		if (!isInteractive) {
+			builder.appendText("Filen CLI " + version)
+		}
 		printFeatureHelp(selectedFeature)
 		builder.print(app)
 	}

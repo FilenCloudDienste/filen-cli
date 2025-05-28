@@ -238,11 +238,20 @@ export class App {
 	}
 
 	/**
+	 * Exit (without throwing an exception).
+	 */
+	public exit(): never {
+		throw justExitError
+	}
+
+	/**
 	 * Outputs a user-facing error without exiting.
 	 * @parame the ExitError, or another Error that will be printed as "unexpected"
 	 */
 	public handleExitError(e: unknown) {
-		if (e instanceof ExitError) {
+		if (e === justExitError) {
+			throw e
+		} else if (e instanceof ExitError) {
 			this.adapter.errOut(e.message)
 			if (e.cause) this.adapter.err(e.cause)
 			this.writeLog(e.message, "error")
@@ -353,8 +362,8 @@ export class App {
 		try {
 			await main(this.ctx)
 		} catch (e) {
-			if (e !== exitCode1Error) this.handleExitError(e)
-			status = false
+			if (e !== exitCode1Error && e !== justExitError) this.handleExitError(e)
+			if (e !== justExitError) status = false
 		}
 		this.writeLogsToDisk()
 		return status
@@ -374,6 +383,9 @@ export class ExitError extends Error {}
 
 // throw this when no additional error should be printed, but exit code 1 should be returned
 const exitCode1Error = new ExitError("Exit code 1")
+
+// throw this when you just want to exit without an error
+const justExitError = new ExitError("{just exit}")
 
 async function main(ctx: FeatureContext) {
 	const { app, cliArgs, cmd, argv } = ctx
@@ -437,6 +449,7 @@ async function main(ctx: FeatureContext) {
 			try {
 				const result = await executeCommand(feature, {
 					...ctx,
+					isInteractiveMode: true,
 					cloudWorkingPath,
 					cmd: interactiveCliArgs["_"][0]!,
 					argv: interactiveCliArgs["_"].slice(1),

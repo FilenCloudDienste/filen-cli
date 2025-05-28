@@ -364,7 +364,7 @@ class Updater {
 			]
 			// for " escaping, see https://stackoverflow.com/a/15262019/13164753
 			spawn("cmd.exe", ["/c", "\"" + commands.join(" & ").replace(/"/g, "\"\"\"") + "\""], { shell: true, detached: true })
-			process.exit() //TODO: remove process.exit(), and also writeLogsToDisk() before exiting
+			this.app.exit()
 		}
 		if (process.platform === "linux" || process.platform === "darwin") {
 			const newFileName = selfApplicationFile.replace(currentVersionName, publishedVersionName)
@@ -378,7 +378,7 @@ class Updater {
 				"read -p \"Press enter to continue...\""
 			]
 			spawn("sh", ["-c", `${commands.join(" & ")}`], { detached: true })
-			process.exit() //TODO: remove process.exit(), and also writeLogsToDisk() before exiting
+			this.app.exit()
 		}
 		this.app.errExit(`Could not install for platform ${process.platform}`)
 	}

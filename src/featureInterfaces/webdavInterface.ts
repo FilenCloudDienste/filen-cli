@@ -11,7 +11,6 @@ const commonWebdavFlags = {
 	https: { name: "--w-https", type: FlagType.boolean, description: "use HTTPS instead of HTTP (using a self-signed certificate)" },
 	threads: { name: "--w-threads", type: FlagType.string, description: "enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count). If you experience rate-limiting using this, an auth config might help (`filen help export-auth-config`)`" },
 } as const satisfies Record<string, FlagSpec>
-// todo: document flags
 
 export const webdavCommandGroup: FeatureGroup = {
 	title: "WebDAV server",

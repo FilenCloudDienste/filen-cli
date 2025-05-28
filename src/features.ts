@@ -60,6 +60,7 @@ export type FeatureContext = {
 	verbose: boolean
 	quiet: boolean
 	formatJson: boolean
+    isInteractiveMode?: boolean
 }
 
 export type FeatureResult = {
@@ -165,10 +166,8 @@ export const testFeature = feature({
 })
 
 // todo: value field for a flag with FlagType.string
-// todo: generate documentation for flags
 // todo: add default value for flags, for args
 // todo: add FlagType.number, ArgumentType.number with checking and parsing
-// todo: automatically parse ArgumentType.cloudPath to CloudPath (based on cloudWorkingPath)
 // todo: show catch-all arguments in help
 
 type FeatureContextWithFeature = Omit<FeatureContext, "feature"> & Required<Pick<FeatureContext, "feature">>
@@ -200,14 +199,6 @@ export function feature<flags extends FlagsSpec, args extends ArgsSpec>(feature:
             if (flag.alias && flag.alias.length > 2) {
                 throw Error(`Flag alias "${flag.alias}" must be a single character (e.g. "-a")`)
             }
-            /* if (flag.type !== FlagType.boolean) {
-                if (flag.alias) {
-                    throw Error(`Short flag alias "${flag.alias}" is invalid for a non-boolean flag`)
-                }
-                if (!flag.name.startsWith("--")) {
-                    throw Error(`Short flag name "${flag.name}" is invalid for a non-boolean flag`)
-                }
-            } */ // todo: this is probably not necessary
         }
 
         // check the format of positional arguments
