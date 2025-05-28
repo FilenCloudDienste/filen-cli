@@ -115,7 +115,7 @@ export const helpCommand: Feature = {
 
 			// print Feature command signature and description
 			feature = feature as Feature
-			builder.appendText("> " + [feature.cmd[0],...feature.arguments.map(arg => `${arg.optional ? "[" : "<"}${arg.name}${arg.optional ? "]" : ">"}`)].join(" "))
+			builder.appendText("> " + [feature.cmd[0],...feature.arguments.map(arg => `${arg.optional ? "[" : "<"}${arg.name}${arg.type === ArgumentType.catchAll ? "..." : ""}${arg.optional ? "]" : ">"}`)].join(" "))
 			builder.withIncreasedIndentation(() => {
 				if (feature.description) {
 					builder.appendText(feature.description!)
@@ -126,7 +126,7 @@ export const helpCommand: Feature = {
 					builder.appendNewline()
 				}
 				const formatArguments = [
-					...(feature.arguments.filter(arg => arg.description !== undefined).map(arg => ({ name: arg.name, description: arg.description, optional: arg.optional ?? false }))),
+					...(feature.arguments.filter(arg => arg.description !== undefined).map(arg => ({ name: `${arg.name}${arg.type === ArgumentType.catchAll ? "..." : ""}`, description: arg.description, optional: arg.optional ?? false }))),
 					...((feature.flagsDoc ?? []).map(flag => ({ ...flag, optional: !(flag.required ?? false) }))),
 				]
 				if (formatArguments.length > 0) {

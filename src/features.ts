@@ -168,7 +168,6 @@ export const testFeature = feature({
 // todo: value field for a flag with FlagType.string
 // todo: add default value for flags, for args
 // todo: add FlagType.number, ArgumentType.number with checking and parsing
-// todo: show catch-all arguments in help
 
 type FeatureContextWithFeature = Omit<FeatureContext, "feature"> & Required<Pick<FeatureContext, "feature">>
 type FlagsSpec = Record<string, FlagSpec>
