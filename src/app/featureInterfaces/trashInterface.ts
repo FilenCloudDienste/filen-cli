@@ -1,8 +1,8 @@
 import FilenSDK, { CloudItem } from "@filen/sdk"
-import { formatBytes, formatTable, formatTimestamp } from "../interface/util"
-import { FeatureGroup } from "../framework/features"
+import { formatBytes, formatTable, formatTimestamp } from "../../framework/util"
+import { FeatureGroup } from "../../framework/features"
 import { f, X } from "../app"
-import { App } from "../framework/app"
+import { App } from "../../framework/app"
 
 async function getTrashItems(app: App<X>, filen: FilenSDK) {
 	const items = await filen.cloud().listTrash()

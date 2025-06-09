@@ -3,13 +3,12 @@ import SyncWorker, { SerializedError } from "@filen/sync"
 import pathModule from "path"
 import { SyncMessage, SyncMode, SyncPair } from "@filen/sync/dist/types"
 import fsModule, { PathLike } from "node:fs"
-import { exists } from "../util/util"
+import { displayTransferProgressBar, exists } from "../util/util"
 import getUuidByString from "uuid-by-string"
-import { displayTransferProgressBar } from "../interface/util"
 import os from "os"
 import { f, X } from "../app"
 import dedent from "dedent"
-import { App } from "../framework/app"
+import { App } from "../../framework/app"
 
 export const syncCommand = f.feature({
 	cmd: ["sync"],

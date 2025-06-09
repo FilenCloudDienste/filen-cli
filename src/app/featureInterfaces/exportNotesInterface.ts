@@ -1,10 +1,10 @@
 import * as pathModule  from "path"
 import fs from "fs/promises"
-import { exists, sanitizeFileName } from "../util/util"
 import dateFormat from "dateformat"
 import * as cheerio from "cheerio"
 import dedent from "dedent"
 import { f } from "../app"
+import { exists, sanitizeFileName } from "../util/util"
 
 export const exportNotesCommand = f.feature({
     cmd: ["export-notes"],

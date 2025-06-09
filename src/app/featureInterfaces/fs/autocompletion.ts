@@ -2,9 +2,9 @@
 import { CloudPath } from "../../util/cloudPath"
 import * as fs from "node:fs"
 import pathModule from "path"
-import { X } from "../../app"
-import { Extra, Feature, FeatureContext } from "../../framework/features"
-import { App } from "../../framework/app"
+import { X } from "../../../app"
+import { Extra, Feature, FeatureContext } from "../../../framework/features"
+import { App } from "../../../framework/app"
 import { splitCommandSegments } from "../../features" */
 
 // todo: IMPLEMENT AUTOCOMPLETION

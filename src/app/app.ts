@@ -1,16 +1,13 @@
-import { App, InterfaceAdapter } from "./framework/app"
-import { buildF, BuiltArgument } from "./framework/features"
+import { InterfaceAdapter } from "../framework/app"
+import { buildF, BuiltArgument, Feature } from "../framework/features"
 
 export type X = {
 	FeatureContext: {
 		filen: FilenSDK,
 		cloudWorkingPath: CloudPath,
 	},
-	FeatureResult: {
-		cloudWorkingPath?: CloudPath,
-	},
 	Feature: {
-		skipAuthentication?: boolean,
+		skipAuthentication: boolean,
 	},
 }
 const _f = buildF<X>()
@@ -43,22 +40,49 @@ export const f = { ..._f, cloudPath }
 import FilenSDK from "@filen/sdk"
 import path from "path"
 import os from "os"
-import { isRunningAsContainer, isRunningAsNPMPackage, version } from "./buildInfo"
+import { isRunningAsContainer, isRunningAsNPMPackage, version } from "../buildInfo"
 import { canaryCommand, installCommand, runUpdater, updateHelpText } from "./updater"
-import { generalHelpText, helpCommand, versionCommand } from "./interface/helpPage"
-import { fsCommands } from "./featureInterfaces/fs/fs"
 import { ANONYMOUS_SDK_CONFIG } from "./constants"
 import { CloudPath } from "./util/cloudPath"
+import { authenticate, authenticationCommandGroup } from "./auth"
+import { formatTable } from "../framework/util"
+import dedent from "dedent"
+import { fsCommands } from "./featureInterfaces/fs/fs"
+import { syncCommand } from "./featureInterfaces/syncInterface"
 import { driveMountingCommand } from "./featureInterfaces/driveMountingInterface"
 import { webdavCommandGroup } from "./featureInterfaces/webdavInterface"
 import { s3Command } from "./featureInterfaces/s3Interface"
-import { syncCommand } from "./featureInterfaces/syncInterface"
-import { authenticate, authenticationCommandGroup } from "./auth"
 
-export const app = (argv: string[], adapter: InterfaceAdapter) => new App<X>({
+export const app = (argv: string[], adapter: InterfaceAdapter) => f.app({
+	info: {
+		name: "Filen CLI",
+		version
+	},
 	features: [
-		{ features: [versionCommand, helpCommand, canaryCommand, installCommand], visibility: "hide" },
-		f.helpText({ name: "general", text: generalHelpText }),
+		{ features: [versionCommand, canaryCommand, installCommand], visibility: "hide" },
+		f.helpText({ name: "general", text: dedent`
+			Usage: filen [options...] [cmd]
+
+			Invoke the Filen CLI with no command specified to enter interactive mode. 
+			There you can specify paths as absolute (starting with "/") or
+			relative to the current working directory (supports "." and "..").
+
+			Data directory:
+			The data directory is where configuration files, credentials, cache etc. are
+			stored and read from. By default, it is \`%APPDATA%/filen-cli\` (Windows),
+			\`~/Library/Application Support/filen-cli\` (macOS) or \`$XDG_CONFIG_HOME/filen-cli\`
+			or \`~/.config/filen-cli\` (Unix). If there is a directory named \`.filen-cli\` at
+			the home directory \`~\`, it is used instead (for instance, the install script
+			installs to this location). You can overwrite the location using the
+			\`--data-dir <dir>\` flag or the \`FILEN_CLI_DATA_DIR\` environment variable.
+
+			Options:
+			${formatTable([
+				["--verbose, -v", "display additional information"],
+				["--quiet, -q", "hide things like progress bars and additional logs"],
+				["--log-file <file>", "write logs to a file"]
+			])}
+		` }),
 		{ ...authenticationCommandGroup, visibility: "collapse" },
 		{ ...updateHelpText, visibility: "collapse" },
 		f.helpText({ name: undefined, text: "List of commands:" }),
@@ -115,3 +139,13 @@ export const app = (argv: string[], adapter: InterfaceAdapter) => new App<X>({
 	}),
 	interactiveModePrompt: (ctx) => ctx.x.cloudWorkingPath.toString(),
 })
+
+const versionCommand: Feature<X> = {
+	cmd: ["version", "v"],
+	arguments: [],
+	description: "Display the version of the Filen CLI.",
+	skipAuthentication: true,
+	invoke: async ({ app }) => {
+		app.out(version)
+	},
+}

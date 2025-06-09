@@ -2,9 +2,9 @@ import WebDAVServer, { WebDAVServerCluster } from "@filen/webdav"
 import FilenSDK from "@filen/sdk"
 import cluster from "node:cluster"
 import dedent from "dedent"
-import { BuiltArgument, FeatureGroup, ParsedArgs } from "../framework/features"
+import { BuiltArgument, FeatureGroup, ParsedArgs } from "../../framework/features"
 import { f, X } from "../app"
-import { App } from "../framework/app"
+import { App } from "../../framework/app"
 
 const commonWebdavArgs = {
 	hostname: f.option({ name: "--w-hostname", description: "which hostname the server should be started on (default is 0.0.0.0" }),

@@ -1,13 +1,13 @@
-import { isRunningAsContainer, isRunningAsNPMPackage, version } from "./buildInfo"
+import { isRunningAsContainer, isRunningAsNPMPackage, version } from "../buildInfo"
 import path from "path"
 import { spawn } from "node:child_process"
 import { downloadFile, exists } from "./util/util"
 import * as fs from "node:fs"
 import semver from "semver"
 import dedent from "dedent"
-import { FeatureContext } from "./framework/features"
+import { FeatureContext } from "../framework/features"
 import { f, X } from "./app"
-import { App } from "./framework/app"
+import { App } from "../framework/app"
 
 export const updateHelpText = f.helpText({
 	title: "Updates",

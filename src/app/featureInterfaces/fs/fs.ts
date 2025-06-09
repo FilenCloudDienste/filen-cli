@@ -1,15 +1,15 @@
 import pathModule from "path"
-import { directorySize, doNothing, getItemPaths, hashFile } from "../../util/util"
+import { directorySize, displayTransferProgressBar, getItemPaths, hashFile } from "../../util/util"
 import { CloudPath } from "../../util/cloudPath"
 import * as fsModule from "node:fs"
 import open from "open"
-import { displayTransferProgressBar, formatBytes, formatTable, formatTimestamp } from "../../interface/util"
+import { formatBytes, formatTable, formatTimestamp } from "../../../framework/util"
 import dedent from "dedent"
 import { exportNotesCommand } from "../exportNotesInterface"
 import { trashCommandsGroup } from "../trashInterface"
 import { publicLinksCommandGroup } from "../publicLinksInterface"
 import { f, X } from "../../app"
-import { FeatureGroup } from "../../framework/features"
+import { FeatureGroup } from "../../../framework/features"
 
 const unixStyleCommands: FeatureGroup<X> = {
 	title: "Unix-style commands",
@@ -200,7 +200,7 @@ const unixStyleCommands: FeatureGroup<X> = {
 				let progressBar = quiet ? null : displayTransferProgressBar(app, "Downloading", from.getLastSegment(), fromSize, true)
 				let stillDownloading = true
 				const onProgress = quiet
-					? doNothing
+					? () => {}
 					: (transferred: number) => {
 						progressBar!.onProgress(transferred)
 						if (progressBar!.progressBar.getProgress() >= 1 && stillDownloading) {
@@ -243,7 +243,7 @@ const filenSpecificCommands: FeatureGroup<X> = {
 					await filen.fs().upload({
 						path: args.destination.toString(),
 						source: args.source,
-						onProgress: quiet ? doNothing : progressBar!.onProgress,
+						onProgress: quiet ? () => {} : progressBar!.onProgress,
 						abortSignal
 					})
 				} catch (e) {
@@ -271,7 +271,7 @@ const filenSpecificCommands: FeatureGroup<X> = {
 					await filen.fs().download({
 						path: args.source.toString(),
 						destination: path,
-						onProgress: progressBar?.onProgress ?? doNothing,
+						onProgress: progressBar?.onProgress ?? (() => {}),
 						abortSignal
 					})
 				} catch (e) {

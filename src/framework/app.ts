@@ -1,13 +1,14 @@
 import arg from "arg"
-import { Extra, Feature, FeatureContext, FeatureGroup, FeatureRegistry, FeatureResult, parseArgs } from "./features"
+import { buildF, EmptyX, Extra, Feature, FeatureContext, FeatureGroup, FeatureRegistry, FeatureResult, parseArgs } from "./features"
 import * as fs from "node:fs"
 import * as pathModule from "node:path"
 import os from "os"
 import { Mutex } from "async-mutex"
 import * as buffer from "buffer"
 import { randomUUID } from "node:crypto"
-import { formatTimestamp } from "../interface/util"
+import { formatTimestamp } from "./util"
 import { CompleterResult } from "node:readline"
+import { printHelp } from "./helpPage"
 
 const cliArgSpec = {
     "--dev": Boolean,
@@ -29,6 +30,11 @@ const cliArgSpec = {
     "--no-autocomplete": Boolean,
 }
 
+export type AppInfo = {
+	name: string,
+	version: string,
+}
+
 /**
  * App manages application-wide configuration and console I/O. 
  */
@@ -43,13 +49,15 @@ export class App<X extends Extra> {
 	 */
 	public readonly dataDir
 
+	public readonly info: AppInfo
     public readonly adapter: InterfaceAdapter
     public readonly features: FeatureRegistry<X>
 	private readonly ctx: FeatureContext<X>
     private readonly mainFeature: Feature<X>
     private readonly interactiveModePrompt?: (ctx: FeatureContext<X>) => string
 
-	constructor({ argv, adapter, features, defaultCtx, mainFeature, interactiveModePrompt }: {
+	constructor({ info, argv, adapter, features, defaultCtx, mainFeature, interactiveModePrompt }: {
+        info: AppInfo,
         argv: string[],
         adapter: InterfaceAdapter,
         features: (Feature<X> | FeatureGroup<X>)[],
@@ -57,10 +65,27 @@ export class App<X extends Extra> {
         mainFeature: Feature<X>,
         interactiveModePrompt?: (ctx: FeatureContext<X>) => string,
     }) {
+		this.info = info
         this.adapter = adapter
-        this.features = new FeatureRegistry({ features })
         this.mainFeature = mainFeature
         this.interactiveModePrompt = interactiveModePrompt
+        
+		const f = buildF<EmptyX>()
+		const helpCommand = f.feature({
+			cmd: ["help", "h", "?"],
+			args: {
+				section: f.catchAll({ name: "section or command", description: "the section or command to display help for" }),
+			},
+			description: "Display usage information.",
+			invoke: async ({ app, args, isInteractiveMode }) => {
+				const selectedName = args.section.join(" ").toLowerCase()
+				printHelp(app, selectedName, isInteractiveMode)
+			}
+		})
+		this.features = new FeatureRegistry({ features: [
+			{ features: [helpCommand], visibility: "hide" },
+			...features
+		] })
 
 		// parse arguments
 		const args = arg(cliArgSpec, { permissive: true, argv })

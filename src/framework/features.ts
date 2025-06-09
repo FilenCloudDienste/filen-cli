@@ -5,6 +5,10 @@ export type Extra = {
     FeatureContext: object
     Feature: object
 }
+export type EmptyX = {
+    FeatureContext: object
+    Feature: object
+}
 
 export type FeatureContext<X extends Extra> = {
     app: App<X>
@@ -30,7 +34,7 @@ export type Feature<X extends Extra> = {
     longDescription?: string
     arguments: (PositionalArgument | OptionArgument)[]
 	invoke: (ctx: FeatureContextWithFeature<X>) => Promise<void | FeatureResult<X> | undefined>
-} & X["Feature"]
+} & Partial<X["Feature"]>
 
 export type PositionalArgument = {
     kind: "positional" | "catch-all"
@@ -205,6 +209,7 @@ const helpText = <X extends Extra>() => ({ title, name, text, visibility }: { ti
 // export "f"
 
 export const buildF = <X extends Extra>() => ({
+    app: (...args: ConstructorParameters<typeof App<X>>) => new App(...args),
     feature: feature<X>(),
     arg: arg<X>(),
     catchAll: catchAll<X>(),

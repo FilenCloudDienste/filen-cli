@@ -1,7 +1,4 @@
-import cliProgress from "cli-progress"
 import dateFormat from "dateformat"
-import { X } from "../app"
-import { App } from "../framework/app"
 
 /**
  * Formats a timestamp like 2024-04-22 15:50:28.00
@@ -22,64 +19,6 @@ export function formatBytes(bytes: number, decimals: number = 2): string {
 	const sizes = ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"]
 	const i = Math.floor(Math.log(bytes) / Math.log(base))
 	return `${parseFloat((bytes / Math.pow(base, i)).toFixed(decimals))} ${sizes[i]}`
-}
-
-/**
- * Display a progress bar for a file transfer.
- * @param action The action (like "Downloading", "Uploading")
- * @param file The file's name
- * @param total Total size of the file (in bytes)
- * @param isApproximate Whether to display an approximate symbol "~" before the current total
- */
-export function displayTransferProgressBar(
-	app: App<X>,
-	action: string,
-	file: string,
-	total: number,
-	isApproximate: boolean = false
-): {
-	progressBar: cliProgress.SingleBar
-	onProgress: (transferred: number) => void
-} {
-	try {
-		const progressBar = new cliProgress.SingleBar(
-			{
-				format: `${action} ${file} [{bar}] {percentage}% | {speed} | ETA: {eta_formatted} | ${isApproximate ? "~ " : ""}{value} / {total}`,
-				// if a number is <= 100, it is likely a percentage; otherwise format as byte (library used here doesn't provide other options)
-				formatValue: n => (n <= 100 ? n.toString() : formatBytes(n))
-			},
-			cliProgress.Presets.legacy
-		)
-		progressBar.start(total, 0, { speed: "N/A" })
-
-		const startTime = Date.now()
-		let speedLastUpdated = startTime
-		let accumulatedTransferred = 0
-		let currentSpeed = 0
-
-		const onProgress = (transferred: number) => {
-			const now = Date.now()
-			accumulatedTransferred += transferred
-			const elapsedSinceLastUpdate = now - speedLastUpdated
-			if (elapsedSinceLastUpdate >= 1000) {
-				// update speed if at least 1 second has passed
-				currentSpeed = Math.round(accumulatedTransferred / (elapsedSinceLastUpdate / 1000))
-				speedLastUpdated = Date.now()
-				accumulatedTransferred = 0
-			}
-			progressBar.increment(transferred, {
-				speed: `${formatBytes(currentSpeed)}/s`
-			})
-
-			if (progressBar.getProgress() >= 1.0) {
-				progressBar.update({ speed: `Avg: ${formatBytes(total / (now - startTime) / 1000)}/s | ${((now - startTime) / 1000).toFixed(1)}s` })
-				progressBar.stop()
-			}
-		}
-		return { progressBar, onProgress }
-	} catch (e) {
-		app.errExit("display a progress bar", e)
-	}
 }
 
 /**
