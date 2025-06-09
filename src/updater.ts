@@ -4,12 +4,12 @@ import { spawn } from "node:child_process"
 import { downloadFile, exists } from "./util/util"
 import * as fs from "node:fs"
 import semver from "semver"
-import { App } from "./app"
 import dedent from "dedent"
-import { helpText } from "./interface/helpPage"
-import { ArgumentType, feature, FeatureContext } from "./features"
+import { FeatureContext } from "./framework/features"
+import { f, X } from "./app"
+import { App } from "./framework/app"
 
-export const updateHelpText = helpText({
+export const updateHelpText = f.helpText({
 	title: "Updates",
 	name: "updates",
 	text: dedent`
@@ -28,28 +28,28 @@ export const updateHelpText = helpText({
 	`
 })
 
-export const canaryCommand = feature({
+export const canaryCommand = f.feature({
 	cmd: ["canary"],
 	description: "Change canary preference.",
 	invoke: async ({ app }) => new Updater(app).showCanaryPrompt()
 })
 
-export const installCommand = feature({
+export const installCommand = f.feature({
 	cmd: ["install"],
 	args: {
-		version: { type: ArgumentType.any, description: "\"latest\", \"canary\", or a specific version to install \"vX.X.X\"" }
+		version: f.arg({ name: "version", description: "\"latest\", \"canary\", or a specific version to install \"vX.X.X\"" }),
 	},
 	description: "Install a specific version of the Filen CLI.",
 	invoke: async ({ app, args }) => new Updater(app).fetchAndInstallVersion(args.version)
 })
 
-export async function runUpdater({ app, cliArgs }: FeatureContext) {
-	if (cliArgs["--skip-update"]) {
+export async function runUpdater({ app }: FeatureContext<X>, args: { skipUpdate: boolean, forceUpdate: boolean, autoUpdate: boolean }) {
+	if (args.skipUpdate) {
 		app.outVerbose("Update check skipped")
 		return
 	}
 	try {
-		await new Updater(app).checkForUpdates(cliArgs["--force-update"] ?? false, cliArgs["--auto-update"] ?? false)
+		await new Updater(app).checkForUpdates(args.forceUpdate, args.autoUpdate)
 	} catch (e) {
 		app.errExit("check for updates", e)
 	}
@@ -79,7 +79,7 @@ class Updater {
 	private readonly updateCacheFile = path.join(this.updateCacheDirectory, "updateCache.json")
 	private readonly updateCheckExpiration = 10 * 60 * 1000 // check again after 10min
 	
-	constructor(private app: App) {}
+	constructor(private app: App<X>) {}
 
 	/**
 	 * Check for updates and prompt the user on whether to update.

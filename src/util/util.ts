@@ -1,11 +1,11 @@
 import crypto from "crypto"
 import * as fsModule from "node:fs"
 import { PathLike } from "node:fs"
-import os from "os"
 import * as https from "node:https"
 import pathModule from "path"
 import FilenSDK, { CloudItem } from "@filen/sdk"
-import { App } from "../app"
+
+// todo: sort util functions into "framework" and Filen-specific util functions
 
 /**
  * A function that does nothing.
@@ -53,58 +53,6 @@ export async function directorySize(path: PathLike) {
 	})
 	const stats = files.map(file => fsModule.promises.stat(pathModule.join(path.toString(), file)))
 	return (await Promise.all(stats)).reduce((accumulator, { size }) => accumulator + size, 0)
-}
-
-/**
- * Determines the platform-specific directory for storing data files.
- * Creates the directory if it doesn't exist.
- * Default locations are: `%APPDATA%\filen-cli` (Windows), `~/Library/Application Support/filen-cli` (macOS), `$XDG_CONFIG_HOME/filen-cli` or `~/.config/filen-cli` (Unix). 
- * If it exists, `~/.filen-cli` is used instead.
- * If the `--data-dir` flag or `FILEN_CLI_DATA_DIR` environment variable is set, its value is used instead.
- */
-export function determineDataDir(app: App, dataDirFlag: string | undefined): string {
-	// default config path, see https://github.com/jprichardson/ospath/blob/master/index.js
-	let configPath: string = (() => {
-		switch (process.platform) {
-			case "win32": return pathModule.resolve(process.env.APPDATA!)
-			case "darwin": return pathModule.resolve(pathModule.join(os.homedir(), "Library/Application Support/"))
-			default: return process.env.XDG_CONFIG_HOME
-				? pathModule.resolve(process.env.XDG_CONFIG_HOME)
-				: pathModule.resolve(pathModule.join(os.homedir(), ".config/"))
-		}
-	})()
-
-	// use install location of install.sh, if it exists
-	if (fsModule.existsSync(pathModule.join(os.homedir(), ".filen-cli"))) {
-		configPath = pathModule.resolve(pathModule.join(os.homedir(), ".filen-cli"))
-	}
-
-	if (!configPath || configPath.length === 0) {
-		throw new Error("Could not find homedir path.")
-	}
-
-	if (!(configPath.includes("filen-cli"))) {
-		configPath = pathModule.join(configPath, "filen-cli")
-	}
-
-	if (app.isDevelopment) {
-		configPath = pathModule.join(configPath, "dev")
-	}
-
-	if (dataDirFlag !== undefined) {
-		configPath = dataDirFlag
-	}
-	if (process.env.FILEN_CLI_DATA_DIR !== undefined) {
-		configPath = process.env.FILEN_CLI_DATA_DIR
-	}
-
-	if (!fsModule.existsSync(configPath)) {
-		fsModule.mkdirSync(configPath, {
-			recursive: true
-		})
-	}
-
-	return configPath
 }
 
 /**

@@ -3,10 +3,10 @@ import fs from "fs/promises"
 import { exists, sanitizeFileName } from "../util/util"
 import dateFormat from "dateformat"
 import * as cheerio from "cheerio"
-import { ArgumentType, feature } from "../features"
 import dedent from "dedent"
+import { f } from "../app"
 
-export const exportNotesCommand = feature({
+export const exportNotesCommand = f.feature({
     cmd: ["export-notes"],
     description: "Exports all Notes to the specified path.",
     longDescription: dedent`
@@ -15,13 +15,13 @@ export const exportNotesCommand = feature({
         Richtext notes are exported as HTML. Checklist notes are converted to markdown.
     `,
     args: {
-        path: { type: ArgumentType.localPath, description: "local path to export notes to (default: current working directory)" } // TODO: is it?
+        path: f.optionalArg({ name: "path", description: "local path to export notes to (default: current working directory)" }),
     },
     invoke: async ({ app, filen, args }) => {
         // determine export path
         const exportRoot = await (async () => {
             try {
-                const path = pathModule.resolve(args.path)
+                const path = pathModule.resolve(args.path ?? ".")
 
                 // if path doesn't exist, create it
                 if ((await exists(path)) === false) {

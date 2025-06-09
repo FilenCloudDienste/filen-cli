@@ -7,11 +7,11 @@ import { exists } from "../util/util"
 import getUuidByString from "uuid-by-string"
 import { displayTransferProgressBar } from "../interface/util"
 import os from "os"
-import { App } from "../app"
-import { ArgumentType, feature, FlagType } from "../features"
+import { f, X } from "../app"
 import dedent from "dedent"
+import { App } from "../framework/app"
 
-export const syncCommand = feature({
+export const syncCommand = f.feature({
 	cmd: ["sync"],
 	description: "Sync files and directories to/from your Filen drive.",
 	longDescription: dedent`
@@ -34,15 +34,13 @@ export const syncCommand = feature({
 			sync the local path \`/local1\` (and \`/local2\`) with the cloud path \`/cloud1\` (and \`/cloud2\`) in two-way sync
 			other abbreviations are: \`tw\` = \`twoWay\`, \`ltc\` = \`localToCloud\`, \`lb\` = \`localBackup\`, \`ctl\` = \`cloudToLocal\`, \`cb\` = \`cloudBackup\`
 	`,
-	flags: {
-		continuous: { name: "--continuous", type: FlagType.boolean, description: "keep syncing (instead of only syncing once)" },
-		disableLocalTrash: { name: "--disable-local-trash", type: FlagType.boolean, description: "disable local trash" },
-	},
 	args: {
-		locations: { type: ArgumentType.catchAll, description: "one or many sync pairs (see the examples)" },
+		locations: f.catchAll({ name: "locations", description: "one or many sync pairs (see the examples)" }),
+		continuous: f.flag({ name: "--continuous", description: "keep syncing (instead of only syncing once)" }),
+		disableLocalTrash: f.flag({ name: "--disable-local-trash", description: "disable local trash" }),
 	},
-	invoke: async ({ app, filen, flags, args, quiet }) => {
-		new SyncInterface(app, filen, quiet).invoke(args.locations, flags.continuous, flags.disableLocalTrash)
+	invoke: async ({ app, filen, args, quiet }) => {
+		new SyncInterface(app, filen, quiet).invoke(args.locations, args.continuous, args.disableLocalTrash)
 	},
 })
 
@@ -79,7 +77,7 @@ const syncModeMappings = new Map<string, SyncMode>([
 class SyncInterface {
 	private readonly defaultSyncPairsRegistry = pathModule.join(this.app.dataDir, "syncPairs.json")
 
-	constructor(private app: App, private filen: FilenSDK, private quiet: boolean) {}
+	constructor(private app: App<X>, private filen: FilenSDK, private quiet: boolean) {}
 
 	public invoke(locationsStr: string[], continuous: boolean, disableLocalTrashFlag: boolean) {
 		// eslint-disable-next-line no-async-promise-executor

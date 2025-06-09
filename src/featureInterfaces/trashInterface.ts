@@ -1,9 +1,10 @@
 import FilenSDK, { CloudItem } from "@filen/sdk"
 import { formatBytes, formatTable, formatTimestamp } from "../interface/util"
-import { App } from "../app"
-import { feature, FeatureGroup } from "../features"
+import { FeatureGroup } from "../framework/features"
+import { f, X } from "../app"
+import { App } from "../framework/app"
 
-async function getTrashItems(app: App, filen: FilenSDK) {
+async function getTrashItems(app: App<X>, filen: FilenSDK) {
 	const items = await filen.cloud().listTrash()
 	if (items.length === 0) {
 		app.out("Trash is empty.")
@@ -12,7 +13,7 @@ async function getTrashItems(app: App, filen: FilenSDK) {
 	return items
 }
 
-function printTrashItems(app: App, items: CloudItem[], showIndices: boolean) {
+function printTrashItems(app: App<X>, items: CloudItem[], showIndices: boolean) {
 	app.out(formatTable(items.map((item, i) => [
 		...(showIndices ? [`(${i+1})`] : []),
 		item.type === "file" ? formatBytes(item.size) : "",
@@ -21,7 +22,7 @@ function printTrashItems(app: App, items: CloudItem[], showIndices: boolean) {
 	]), 2, !showIndices))
 }
 
-async function deleteOrRestoreItem(app: App, filen: FilenSDK, trashItems: CloudItem[], mode: "delete" | "restore") {
+async function deleteOrRestoreItem(app: App<X>, filen: FilenSDK, trashItems: CloudItem[], mode: "delete" | "restore") {
 	printTrashItems(app, trashItems, true)
 	const selection = parseInt(await app.prompt(`Select an item to ${mode === "delete" ? "permanently delete" : "restore"} (1-${trashItems.length}): `, { allowExit: true }))
 	if (isNaN(selection) || selection < 1 || selection > trashItems.length) app.errExit("Invalid selection!")
@@ -34,12 +35,12 @@ async function deleteOrRestoreItem(app: App, filen: FilenSDK, trashItems: CloudI
 	}
 }
 
-export const trashCommandsGroup: FeatureGroup = {
+export const trashCommandsGroup: FeatureGroup<X> = {
 	title: "Trash",
 	name: "trash",
 	description: "Manage trash items.",
 	features: [
-		feature({
+		f.feature({
 			cmd: ["trash", "trash list", "trash ls", "trash view"],
 			description: "List trash items.",
 			invoke: async ({ app, filen }) => {
@@ -48,7 +49,7 @@ export const trashCommandsGroup: FeatureGroup = {
 				printTrashItems(app, trashItems, false)
 			}
 		}),
-		feature({
+		f.feature({
 			cmd: ["trash delete"], // todo: same issue as with `links <link>`, see comment there
 			description: "Permanently delete a trash item.",
 			invoke: async ({ app, filen }) => {
@@ -57,7 +58,7 @@ export const trashCommandsGroup: FeatureGroup = {
 				await deleteOrRestoreItem(app, filen, trashItems, "delete")
 			}
 		}),
-		feature({
+		f.feature({
 			cmd: ["trash restore"],
 			description: "Restore a trash item.",
 			invoke: async ({ app, filen }) => {
@@ -66,7 +67,7 @@ export const trashCommandsGroup: FeatureGroup = {
 				await deleteOrRestoreItem(app, filen, trashItems, "restore")
 			}
 		}),
-		feature({
+		f.feature({
 			cmd: ["trash empty"],
 			description: "Permanently delete all trash items.",
 			invoke: async ({ app, filen }) => {

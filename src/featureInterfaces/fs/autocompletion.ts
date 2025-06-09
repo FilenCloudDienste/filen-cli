@@ -1,27 +1,19 @@
-import { CompleterResult } from "node:readline"
-import FilenSDK from "@filen/sdk"
+/* import { CompleterResult } from "node:readline"
 import { CloudPath } from "../../util/cloudPath"
 import * as fs from "node:fs"
 import pathModule from "path"
-import { argumentTypeAcceptsFile, argumentTypeIsCloud, argumentTypeIsFileSystem, Feature, splitCommandSegments } from "../../features"
-import { App } from "../../app"
+import { X } from "../../app"
+import { Extra, Feature, FeatureContext } from "../../framework/features"
+import { App } from "../../framework/app"
+import { splitCommandSegments } from "../../features" */
+
+// todo: IMPLEMENT AUTOCOMPLETION
 
 /**
  * Provides autocompletion for fs commands, cloud paths and local paths.
  */
-export class Autocompletion {
-	/**
-	 * The instance. Is `null` when autocompletion is disabled.
-	 */
-	public static instance: Autocompletion | null
-	//todo: make Autocompletion a member of App
-
-	public cloudWorkingPath: CloudPath
-
-	public constructor(private app: App, private filen: FilenSDK, cloudWorkingPath: CloudPath) {
-		this.filen = filen
-		this.cloudWorkingPath = cloudWorkingPath
-	}
+/* export class Autocompletion<X extends Extra> {
+	public constructor(private app: App<X>, public ctx: FeatureContext<X>) {}
 
 	private autocompleteResults = new Map<string, CompleterResult>()
 
@@ -31,7 +23,7 @@ export class Autocompletion {
 
 	public async autocomplete(input: string): Promise<CompleterResult> {
 		if (!this.autocompleteResults.has(input)) {
-			const result = await autocomplete(input, this.cloudWorkingPath, this.app.features.features, (path) => this.readCloudDirectory(path), (path) => this.readLocalDirectory(path))
+			const result = await autocomplete(input, this.ctx.x.cloudWorkingPath, this.app.features.features, (path) => this.readCloudDirectory(path), (path) => this.readLocalDirectory(path))
 			this.autocompleteResults.set(input, result)
 		}
 		return this.autocompleteResults.get(input)!
@@ -41,12 +33,12 @@ export class Autocompletion {
 
 	private async readCloudDirectory(path: string): Promise<Item[]> {
 		if (!this.cachedCloudPaths.includes(path)) {
-			await this.filen.fs().readdir({ path })
+			await this.ctx.x.filen.fs().readdir({ path })
 			this.cachedCloudPaths.push(path)
 		}
-		return Object.keys(this.filen.fs()._items)
+		return Object.keys(this.ctx.x.filen.fs()._items)
 			.filter(cachedPath => cachedPath.startsWith(path) && cachedPath !== path)
-			.map(cachedPath => ({ name: cachedPath, type: this.filen.fs()._items[cachedPath]!.type }))
+			.map(cachedPath => ({ name: cachedPath, type: this.ctx.x.filen.fs()._items[cachedPath]!.type }))
 			.map(item => ({
 				...item,
 				name: item.name.includes("/") ? item.name.substring(item.name.lastIndexOf("/") + 1) : item.name
@@ -71,7 +63,7 @@ export class Autocompletion {
 export type Item = {
 	name: string,
 	type: "directory" | "file"
-}
+} */
 
 /**
  * Generate autocompletion results for a given input.
@@ -81,10 +73,10 @@ export type Item = {
  * @param readCloudDirectory Callback function that should return the items inside a cloud location, or throw an error if it doesn't exist.
  * @param readLocalDirectory Callback function that should return the items inside a local location, or throw an error if it doesn't exist.
  */
-export async function autocomplete(
+/* export async function autocomplete(
 	input: string,
 	cloudWorkingPath: CloudPath,
-	availableFeatures: Feature[],
+	availableFeatures: Feature<X>[],
 	readCloudDirectory: (path: string) => Promise<Item[]>,
 	readLocalDirectory: (path: string) => Promise<Item[]>
 ): Promise<CompleterResult> {
@@ -130,3 +122,15 @@ export async function autocomplete(
 		}
 	}
 }
+
+function argumentTypeIsFileSystem(type: string) {
+	return ["cloudPath", "cloudFile", "cloudDirectory", "localPath", "localFile", "localDirectory"].includes(type)
+}
+
+function argumentTypeIsCloud(type: string) {
+	return type.includes("cloud")
+}
+
+function argumentTypeAcceptsFile(type: string) {
+	return type === "cloudPath" || type === "cloudFile" || type === "localPath" || type === "localFile"
+} */

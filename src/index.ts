@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 import { checkInjectedBuildInfo } from "./buildInfo"
-import { App, InterfaceAdapter } from "./app"
 import { read } from "read"
 import { CompleterResult } from "readline"
-import { Autocompletion } from "./featureInterfaces/fs/autocompletion"
 import { wrapRedTerminalText } from "./interface/util"
+import { InterfaceAdapter } from "./framework/app"
+import { app } from "./app"
 
 if (!checkInjectedBuildInfo()) {
 	console.error("Build info not injected correctly!")
@@ -56,7 +56,7 @@ class ConsoleInterfaceAdapter implements InterfaceAdapter {
 		console.error(wrapRedTerminalText((error instanceof Error ? error.stack : undefined) ?? String(error)))
 	}
 
-	prompt(message: string, obfuscate: boolean, history: string[] | undefined, allowExit: boolean, autocompletion: Autocompletion | null): Promise<string> {
+	prompt(message: string, obfuscate: boolean, history: string[] | undefined, allowExit: boolean, autocomplete: (input: string) => Promise<CompleterResult>): Promise<string> {
 		return new Promise((resolve) => {
 			this.hasReceivedKeyPresses = 0
 			const cancel = () => {
@@ -74,23 +74,18 @@ class ConsoleInterfaceAdapter implements InterfaceAdapter {
 				silent: obfuscate,
 				replace: obfuscate ? "*" : undefined,
 				completer: (input: string, callback: (err: undefined, result: CompleterResult) => void) => {
-					if (autocompletion !== undefined) {
-						autocompletion!.autocomplete(input).then(result => callback(undefined, result))
-					} else {
-						callback(undefined, [[], input])
-					}
+					autocomplete(input).then(result => callback(undefined, result))
 				},
 				history
-			}).then(input => {
-				autocompletion?.clearPrefetchedResults()
-				resolve(input)
-			}).catch(e => {
-				if (e instanceof Error && e.message === "canceled") {
-					cancel()
-				} else {
-					throw e
-				}
 			})
+				.then(input => resolve(input))
+				.catch(e => {
+					if (e instanceof Error && e.message === "canceled") {
+						cancel()
+					} else {
+						throw e
+					}
+				})
 		})
 	}
 
@@ -99,5 +94,5 @@ class ConsoleInterfaceAdapter implements InterfaceAdapter {
 	}
 }
 
-const app = new App(process.argv.slice(2), new ConsoleInterfaceAdapter())
-app.main().then((success) => process.exit(success ? 0 : 1))
+const _app = app(process.argv.slice(2), new ConsoleInterfaceAdapter())
+_app.main().then((success) => process.exit(success ? 0 : 1))

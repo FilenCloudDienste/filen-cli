@@ -1,23 +1,24 @@
 import WebDAVServer, { WebDAVServerCluster } from "@filen/webdav"
 import FilenSDK from "@filen/sdk"
 import cluster from "node:cluster"
-import { App } from "../app"
-import { feature, FeatureGroup, FlagSpec, FlagType, ParsedFlags } from "../features"
 import dedent from "dedent"
+import { BuiltArgument, FeatureGroup, ParsedArgs } from "../framework/features"
+import { f, X } from "../app"
+import { App } from "../framework/app"
 
-const commonWebdavFlags = {
-	hostname: { name: "--w-hostname", type: FlagType.string, description: "which hostname the server should be started on (default is 0.0.0.0)" },
-	port: { name: "--w-port", type: FlagType.string, description: "which port the server should be started on (default is 80 or 443)" },
-	https: { name: "--w-https", type: FlagType.boolean, description: "use HTTPS instead of HTTP (using a self-signed certificate)" },
-	threads: { name: "--w-threads", type: FlagType.string, description: "enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count). If you experience rate-limiting using this, an auth config might help (`filen help export-auth-config`)`" },
-} as const satisfies Record<string, FlagSpec>
+const commonWebdavArgs = {
+	hostname: f.option({ name: "--w-hostname", description: "which hostname the server should be started on (default is 0.0.0.0" }),
+	port: f.number(f.option({ name: "--w-port", description: "which port the server should be started on (default is 80 or 443)" })),
+	https: f.flag({ name: "--w-https", description: "use HTTPS instead of HTTP (using a self-signed certificate)" }),
+	threads: f.number(f.option({ name: "--w-threads", description: "enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count). If you experience rate-limiting using this, an auth config might help (`filen help export-auth-config`)" })),
+} as const satisfies Record<string, BuiltArgument<X, string | boolean | number | undefined>>
 
-export const webdavCommandGroup: FeatureGroup = {
+export const webdavCommandGroup: FeatureGroup<X> = {
 	title: "WebDAV server",
 	name: "webdav",
 	description: "Run a WebDAV server that mirrors your Filen drive.",
 	features: [
-		feature({
+		f.feature({
 			cmd: ["webdav"],
 			description: "Run a WebDAV server that mirrors your Filen drive (single user).",
 			longDescription: dedent`
@@ -26,15 +27,15 @@ export const webdavCommandGroup: FeatureGroup = {
 				to the server using the \`--w-user\` and \`--w-password\` options (these
 				credentials should be different from your Filen account credentials).
 			`,
-			flags: {
-				username: { name: "--w-user", type: FlagType.string, required: true, description: "username for authentication" },
-				password: { name: "--w-password", type: FlagType.string, required: true, description: "password for authentication" },
-				...commonWebdavFlags,
-				authScheme: { name: "--w-auth-scheme", type: FlagType.string, description: "the authentication scheme the server should use, \"basic\" or \"digest\" (default is basic)" },
+			args: {
+				username: f.arg({ name: "--w-user", description: "username for authentication" }),
+				password: f.arg({ name: "--w-password", description: "password for authentication" }),
+				...commonWebdavArgs,
+				authScheme: f.arg({ name: "--w-auth-scheme", description: "the authentication scheme the server should use, \"basic\" or \"digest\" (default is basic)" }),
 			},
-			invoke: ({ app, filen, flags }) => runWebDAV(app, filen, false, flags)
+			invoke: ({ app, filen, args }) => runWebDAV(app, filen, false, args)
 		}),
-		feature({
+		f.feature({
 			cmd: ["webdav-proxy"],
 			description: "Run a WebDAV server that mirrors Filen drives (proxy mode).",
 			longDescription: dedent`
@@ -47,24 +48,14 @@ export const webdavCommandGroup: FeatureGroup = {
 				\`password=yoursecretpassword&twoFactorAuthentication=<RECOVERY_CODE_OR_6_DIGIT_OTP_CODE>\`
 				(you can also leave out the \`&twoFactorAuthentication=...\` part if 2FA is disabled for your account).
 				`,
-			flags: commonWebdavFlags,
+			args: commonWebdavArgs,
 			skipAuthentication: true,
-			invoke: ({ app, filen, flags }) => runWebDAV(app, filen, true, flags)
+			invoke: ({ app, filen, args }) => runWebDAV(app, filen, true, args)
 		})
 	],
 }
 
-function runWebDAV(app: App, filen: FilenSDK, proxyMode: boolean, flags: ParsedFlags<typeof commonWebdavFlags> & { username?: string, password?: string, authScheme?: string }) {
-	const args = {
-		username: flags.username,
-		password: flags.password,
-		https: flags.https,
-		hostname: flags.hostname,
-		port: flags.port ? parseInt(flags.port) : undefined,
-		authScheme: flags.authScheme,
-		threads: flags.threads ? parseInt(flags.threads) : undefined,
-	}
-
+function runWebDAV(app: App<X>, filen: FilenSDK, proxyMode: boolean, args: ParsedArgs<X, typeof commonWebdavArgs> & { username?: string, password?: string, authScheme?: string }) {
 	// eslint-disable-next-line no-async-promise-executor
 	return new Promise<void>(async (resolve, reject) => {
 		try {

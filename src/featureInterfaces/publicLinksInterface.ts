@@ -1,7 +1,8 @@
 import FilenSDK, { PublicLinkExpiration } from "@filen/sdk"
 import { formatTable, formatTimestamp } from "../interface/util"
 import { getItemPaths } from "../util/util"
-import { ArgumentType, feature, FeatureGroup } from "../features"
+import { FeatureGroup } from "../framework/features"
+import { f, X } from "../app"
 
 async function getPublicLinkStatus(filen: FilenSDK, type: "file" | "directory", uuid: string, fileKey: string | undefined): Promise<{
 	type: "file" | "directory"
@@ -41,12 +42,12 @@ async function getPublicLinkStatus(filen: FilenSDK, type: "file" | "directory", 
 	}
 }
 
-export const publicLinksCommandGroup: FeatureGroup = {
+export const publicLinksCommandGroup: FeatureGroup<X> = {
 	title: "Public Links",
 	name: "links",
 	description: "Manage public links.",
 	features: [
-		feature({
+		f.feature({
 			cmd: ["links", "link", "link list", "links list", "link ls", "links ls"],
 			description: "List public links.",
 			invoke: async ({ app, filen }) => {
@@ -62,11 +63,11 @@ export const publicLinksCommandGroup: FeatureGroup = {
 				}
 			}
 		}),
-		feature({
+		f.feature({
 			cmd: ["links", "link"],
 			description: "Create, view, edit or delete a public link.",
 			args: {
-				path: { type: ArgumentType.cloudPath, description: "cloud file or directory this link is for" }
+				path: f.cloudPath({}, f.arg({ name: "path", description: "cloud file or directory this link is for" }))
 				// todo: have to explicitly specify when optional args are allowed, so that this command is resolved correclty (maybe the command signature is compiled into a regex?)
 			},
 			invoke: async ({ app, filen, args }) => {

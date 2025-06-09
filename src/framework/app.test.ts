@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest"
-import { splitCommandSegments } from "./features"
+import { splitCommandSegments } from "./app"
 
 describe("splitCommandSegments()", () => {
 

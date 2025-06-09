@@ -1,10 +1,11 @@
 import dedent from "dedent"
 import { version } from "../buildInfo"
 import { formatTable } from "./util"
-import { ArgumentType, Feature, FeatureGroup } from "../features"
-import { App } from "../app"
+import { f, X } from "../app"
+import { Feature, FeatureGroup, OptionArgument, PositionalArgument } from "../framework/features"
+import { App } from "../framework/app"
 
-export const versionCommand: Feature = {
+export const versionCommand: Feature<X> = {
 	cmd: ["version", "v"],
 	arguments: [],
 	description: "Display the version of the Filen CLI.",
@@ -12,10 +13,6 @@ export const versionCommand: Feature = {
 	invoke: async ({ app }) => {
 		app.out(version)
 	},
-}
-
-export function helpText({ title, name, text, visibility }: { title?: string, name: string | undefined, text: string, visibility?: "show" | "collapse" | "hide" }): FeatureGroup {
-	return { title, description: text, name, features: [], visibility } satisfies FeatureGroup
 }
 
 export const generalHelpText = dedent`
@@ -42,13 +39,15 @@ export const generalHelpText = dedent`
 	])}
 	`
 
-export const helpCommand: Feature = {
+export const helpCommand = f.feature({
 	cmd: ["help", "h", "?"],
-	arguments: [{ name: "section or command", type: ArgumentType.any, optional: true, description: null }],
+	args: {
+		section: f.catchAll({ name: "section or command", description: "the section or command to display help for" }),
+	},
 	description: "Display usage information.",
 	skipAuthentication: true,
-	invoke: async ({ app, argv, isInteractiveMode: isInteractive }) => {
-		const selectedName = argv.map(arg => arg.toLowerCase()).join(" ")
+	invoke: async ({ app, args, isInteractiveMode }) => {
+		const selectedName = args.section.join(" ").toLowerCase()
 		const selectedFeature = (() => {
 			if (selectedName.length === 0) return app.features.featureGroup
 			const featureGroup = app.features.getFeatureGroup(selectedName)
@@ -61,11 +60,11 @@ export const helpCommand: Feature = {
 		}
 
 		const builder = new HelpTextBuilder()
-		const printFeatureHelp = (feature: Feature | FeatureGroup) => {
+		const printFeatureHelp = (feature: Feature<X> | FeatureGroup<X>) => {
 			// recursively print FeatureGroup
 			if (Object.hasOwn(feature, "features")) { // is FeatureGroup
-				const featureGroup = feature as FeatureGroup
-				const isSelected = featureGroup.name !== undefined && featureGroup.name === (selectedFeature as FeatureGroup).name
+				const featureGroup = feature as FeatureGroup<X>
+				const isSelected = featureGroup.name !== undefined && featureGroup.name === (selectedFeature as FeatureGroup<X>).name
 				if (!isSelected && featureGroup.visibility === "hide") return
 				builder.appendNewline()
 				if (!isSelected && featureGroup.visibility === "collapse") {
@@ -74,14 +73,14 @@ export const helpCommand: Feature = {
 							if (featureGroup.title) return featureGroup.title
 							if (featureGroup.name) return featureGroup.name
 							if (featureGroup.features.length > 0 && Object.prototype.hasOwnProperty.call(featureGroup.features[0], "cmd")) {
-								return (featureGroup.features[0] as Feature).cmd[0]!
+								return (featureGroup.features[0] as Feature<X>).cmd[0]!
 							}
 							return "***"
 						})())
 					const referenceName = featureGroup.name !== undefined ? featureGroup.name
 						: featureGroup.features.length === 0 ? undefined
-						: Object.prototype.hasOwnProperty.call(featureGroup.features[0], "cmd") ? (featureGroup.features[0] as Feature).cmd[0]!
-						: (featureGroup.features[0] as FeatureGroup).name
+						: Object.prototype.hasOwnProperty.call(featureGroup.features[0], "cmd") ? (featureGroup.features[0] as Feature<X>).cmd[0]!
+						: (featureGroup.features[0] as FeatureGroup<X>).name
 					if (referenceName) builder.appendText(` (expand via \`filen help ${referenceName}\`)`)
 					builder.appendNewline()
 					return
@@ -114,8 +113,9 @@ export const helpCommand: Feature = {
 			}
 
 			// print Feature command signature and description
-			feature = feature as Feature
-			builder.appendText("> " + [feature.cmd[0],...feature.arguments.map(arg => `${arg.optional ? "[" : "<"}${arg.name}${arg.type === ArgumentType.catchAll ? "..." : ""}${arg.optional ? "]" : ">"}`)].join(" "))
+			feature = feature as Feature<X>
+			const isOptional = (arg: PositionalArgument | OptionArgument) => arg.kind === "option" && !(arg as OptionArgument).isRequired
+			builder.appendText("> " + [feature.cmd[0],...feature.arguments.map(arg => `${isOptional(arg) ? "[" : "<"}${arg.name}${arg.kind === "catch-all" ? "..." : ""}${isOptional(arg) ? "]" : ">"}`)].join(" "))
 			builder.withIncreasedIndentation(() => {
 				if (feature.description) {
 					builder.appendText(feature.description!)
@@ -125,10 +125,7 @@ export const helpCommand: Feature = {
 					builder.appendText(feature.longDescription!)
 					builder.appendNewline()
 				}
-				const formatArguments = [
-					...(feature.arguments.filter(arg => arg.description !== undefined).map(arg => ({ name: `${arg.name}${arg.type === ArgumentType.catchAll ? "..." : ""}`, description: arg.description, optional: arg.optional ?? false }))),
-					...((feature.flagsDoc ?? []).map(flag => ({ ...flag, optional: !(flag.required ?? false) }))),
-				]
+				const formatArguments = feature.arguments.filter(arg => arg.description !== undefined).map(arg => ({ name: `${arg.name}${arg.kind === "catch-all" ? "..." : ""}`, description: arg.description, optional: isOptional(arg) }))
 				if (formatArguments.length > 0) {
 					builder.appendText(formatTable(formatArguments.map(arg => [`${arg.optional ? "[" : "<"}${arg.name}${arg.optional ? "]" : ">"}`, arg.description ?? ""])))
 				}
@@ -136,13 +133,13 @@ export const helpCommand: Feature = {
 			
 			builder.appendNewline()
 		}
-		if (!isInteractive) {
+		if (!isInteractiveMode) {
 			builder.appendText("Filen CLI " + version)
 		}
 		printFeatureHelp(selectedFeature)
 		builder.print(app)
 	}
-}
+})
 
 class HelpTextBuilder {
 	private lines: { text: string, indentation: number }[] = []
@@ -164,7 +161,7 @@ class HelpTextBuilder {
 		this.indentation--
 	}
 
-	print(app: App) {
+	print(app: App<X>) {
 		this.lines.forEach(line => {
 			app.out(line.text, { indentation: line.indentation })
 		})

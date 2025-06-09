@@ -6,18 +6,18 @@ import { wrapRedTerminalText } from "./interface/util"
 import { ANONYMOUS_SDK_CONFIG } from "./constants"
 import crypto from "node:crypto"
 import { isRunningAsContainer } from "./buildInfo"
-import { App } from "./app"
 import dedent from "dedent"
-import { feature, FeatureContext, FeatureGroup } from "./features"
-import { helpText } from "./interface/helpPage"
+import { f, X } from "./app"
+import { FeatureContext, FeatureGroup } from "./framework/features"
+import { App } from "./framework/app"
 
 const authConfigFileName = ".filen-cli-auth-config"
-const keepMeLoggedInFile = (app: App) => path.join(app.dataDir, ".filen-cli-keep-me-logged-in")
+const keepMeLoggedInFile = (app: App<X>) => path.join(app.dataDir, ".filen-cli-keep-me-logged-in")
 
 const keychainServiceName = "filen-cli"
-const keychainAccountName = (app: App) => "auth-config-crypto-key" + (app.isDevelopment ? "-dev" : "")
+const keychainAccountName = (app: App<X>) => "auth-config-crypto-key" + (app.isDevelopment ? "-dev" : "")
 
-export const authenticationCommandGroup: FeatureGroup = {
+export const authenticationCommandGroup: FeatureGroup<X> = {
 	title: "Authentication", 
 	name: "auth",
 	description: dedent`
@@ -29,7 +29,7 @@ export const authenticationCommandGroup: FeatureGroup = {
 		5) Export an "auth config" using \`filen export-auth-config\` and place it where you invoke the CLI. 
 	`,
 	features: [
-		feature({
+		f.feature({
 			cmd: ["logout"],
 			description: "Delete saved credentials.",
 			invoke: async ({ app }) => {
@@ -49,7 +49,7 @@ export const authenticationCommandGroup: FeatureGroup = {
 			},
 			skipAuthentication: true,
 		}),
-		feature({
+		f.feature({
 			cmd: ["export-auth-config"],
 			description: "Export your Filen credentials to a file.",
 			longDescription: dedent`
@@ -61,7 +61,7 @@ export const authenticationCommandGroup: FeatureGroup = {
 				await exportAuthConfig(ctx, false)
 			}
 		}),
-		feature({
+		f.feature({
 			cmd: ["export-api-key"],
 			description: "Export your Filen API key (for use with Filen Rclone).",
 			invoke: async ({ app, filen }) => {
@@ -70,7 +70,7 @@ export const authenticationCommandGroup: FeatureGroup = {
 				app.out(`API Key for ${filen.config.email}: ${filen.config.apiKey}`)
 			},
 		}),
-		helpText({
+		f.helpText({
 			name: "libsecret",
 			text: dedent`
 				On Linux, the Filen CLI uses libsecret to store the credentials crypto key in the system Secret Service.
@@ -90,8 +90,8 @@ export const authenticationCommandGroup: FeatureGroup = {
 	],
 }
 
-export async function authenticate(ctx: FeatureContext) {
-	const { app, filen, cliArgs } = ctx
+export async function authenticate(ctx: FeatureContext<X>, args: { email?: string, password?: string, twoFactorCode?: string }) {
+	const { app } = ctx; const { filen } = ctx.x
 	try {
 		// delete legacy saved credentials
 		for (const file of [path.join(app.dataDir, ".credentials"), path.join(app.dataDir, ".credentials.salt")]) {
@@ -104,10 +104,10 @@ export async function authenticate(ctx: FeatureContext) {
 		// try various methods to get credentials or login:
 
 		// get credentials from arguments
-		if (cliArgs["--email"] !== undefined) {
-			if (cliArgs["--password"] === undefined) return app.errExit("Need to also specify argument --password")
-			app.outVerbose(`Logging in as ${cliArgs["--email"]} (using arguments)`)
-			credentials = { email: cliArgs["--email"], password: cliArgs["--password"], twoFactorCode: cliArgs["--two-factor-code"] }
+		if (args.email !== undefined) {
+			if (args.password === undefined) return app.errExit("Need to also specify argument --password")
+			app.outVerbose(`Logging in as ${args.email} (using arguments)`)
+			credentials = { email: args.email, password: args.password, twoFactorCode: args.twoFactorCode }
 		}
 
 		// otherwise: get credentials from environment variables
@@ -273,7 +273,9 @@ export async function authenticate(ctx: FeatureContext) {
 /**
  * The `filen export-auth-config` command (export credentials to .filen-cli-auth-config).
  */
-async function exportAuthConfig({ app, filen }: FeatureContext, onlyExportToDataDir = false) {
+async function exportAuthConfig({ app, x }: FeatureContext<X>, onlyExportToDataDir = false) {
+	const { filen } = x
+
 	if (await exists(authConfigFileName)) {
 		if (!(await app.promptConfirm(`overwrite ${authConfigFileName}`))) return
 	}
@@ -340,11 +342,11 @@ async function decryptAuthConfig(encryptedAuthConfig: string, cryptoKey: string)
 
 // `keytar` is imported dynamically so that errors not finding e.g. `libsecret-1.so.0`
 // can be caught when actually attempting to access the keychain, not when importing the module
-async function getKeychainCryptoKey({ app }: FeatureContext): Promise<string | null> {
+async function getKeychainCryptoKey({ app }: FeatureContext<X>): Promise<string | null> {
 	const keytar = await import("keytar")
 	return await keytar.getPassword(keychainServiceName, keychainAccountName(app))
 }
-async function setKeychainCryptoKey({ app }: FeatureContext, cryptoKey: string): Promise<void> {
+async function setKeychainCryptoKey({ app }: FeatureContext<X>, cryptoKey: string): Promise<void> {
 	const keytar = await import("keytar")
 	await keytar.setPassword(keychainServiceName, keychainAccountName(app), cryptoKey)
 }

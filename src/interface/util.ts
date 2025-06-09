@@ -1,6 +1,7 @@
 import cliProgress from "cli-progress"
 import dateFormat from "dateformat"
-import { App } from "../app"
+import { X } from "../app"
+import { App } from "../framework/app"
 
 /**
  * Formats a timestamp like 2024-04-22 15:50:28.00
@@ -31,7 +32,7 @@ export function formatBytes(bytes: number, decimals: number = 2): string {
  * @param isApproximate Whether to display an approximate symbol "~" before the current total
  */
 export function displayTransferProgressBar(
-	app: App,
+	app: App<X>,
 	action: string,
 	file: string,
 	total: number,

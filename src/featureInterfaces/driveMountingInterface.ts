@@ -1,8 +1,8 @@
 import VirtualDrive, { isFUSE3InstalledOnLinux, isWinFSPInstalled, isMacFUSEInstalled, isFUSETInstalledOnMacOS } from "@filen/network-drive"
-import { ArgumentType, feature } from "../features"
 import dedent from "dedent"
+import { f } from "../app"
 
-export const driveMountingCommand = feature({
+export const driveMountingCommand = f.feature({
 	cmd: ["mount"],
 	description: "Mount a network drive that mirrors your Filen drive.",
 	longDescription: dedent`
@@ -11,7 +11,7 @@ export const driveMountingCommand = feature({
 		On macOS, FUSE-T (https://www.fuse-t.org) or macFUSE (https://osxfuse.github.io) needs to be installed.
 	`,
 	args: {
-		mountPoint: { type: ArgumentType.any, description: "drive letter (Windows; default: `X:`) or path (UNIX; default: `/tmp/filen`) to mount at" }
+		mountPoint: f.arg({ name: "mount point", description: "drive letter (Windows; default: `X:`) or path (UNIX; default: `/tmp/filen`) to mount at" }),
 	},
 	invoke: ({ app, filen, args }) => {
 		// eslint-disable-next-line no-async-promise-executor
