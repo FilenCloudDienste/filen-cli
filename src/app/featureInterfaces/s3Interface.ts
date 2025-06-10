@@ -8,8 +8,8 @@ export const s3Command = f.feature({
 	args: {
 		accessKeyId: f.required(f.option({ name: "--s3-access-key-id", description: "Access Key ID for S3" })),
 		secretAccessKey: f.required(f.option({ name: "--s3-secret-access-key", description: "Secret Access Key for S3" })),
-		hostname: f.option({ name: "--s3-hostname", description: "which hostname the server should be started on (default is 0.0.0.0)" }),
-		port: f.number(f.option({ name: "--s3-port", description: "which port the server should be started on (default is 80 or 443)" })),
+		hostname: f.defaultValue("0.0.0.0", f.option({ name: "--s3-hostname", description: "which hostname the server should be started on" })),
+		port: f.number(f.option({ name: "--s3-port", description: "which port the server should be started on (default: 80 or 443)" })),
 		https: f.flag({ name: "--s3-https", description: "use HTTPS instead of HTTP (using a self-signed certificate)" }),
 		threads: f.number(f.option({ name: "--s3-threads", description: "enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count). If you experience rate-limiting using this, an auth config might help (`filen help export-auth-config`)" })),
 	},
@@ -22,7 +22,7 @@ export const s3Command = f.feature({
 		return new Promise<void>(async (resolve, reject) => {
 			try {
 				const https = args.https
-				const hostname = args.hostname ?? "0.0.0.0"
+				const hostname = args.hostname
 				const port = args.port ?? (args.https ? 443 : 80)
 
 				const configuration = {

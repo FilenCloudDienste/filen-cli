@@ -7,7 +7,7 @@ import { f, X } from "../app"
 import { App } from "../../framework/app"
 
 const commonWebdavArgs = {
-	hostname: f.option({ name: "--w-hostname", description: "which hostname the server should be started on (default is 0.0.0.0" }),
+	hostname: f.defaultValue("0.0.0.0", f.option({ name: "--w-hostname", description: "which hostname the server should be started on" })),
 	port: f.number(f.option({ name: "--w-port", description: "which port the server should be started on (default is 80 or 443)" })),
 	https: f.flag({ name: "--w-https", description: "use HTTPS instead of HTTP (using a self-signed certificate)" }),
 	threads: f.number(f.option({ name: "--w-threads", description: "enables clustering, number of threads to use for the server (default is no clustering; explicitly set to 0 to set by CPU core count). If you experience rate-limiting using this, an auth config might help (`filen help export-auth-config`)" })),

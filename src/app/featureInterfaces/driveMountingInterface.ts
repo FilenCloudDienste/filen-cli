@@ -11,7 +11,7 @@ export const driveMountingCommand = f.feature({
 		On macOS, FUSE-T (https://www.fuse-t.org) or macFUSE (https://osxfuse.github.io) needs to be installed.
 	`,
 	args: {
-		mountPoint: f.arg({ name: "mount point", description: "drive letter (Windows; default: `X:`) or path (UNIX; default: `/tmp/filen`) to mount at" }),
+		mountPoint: f.optionalArg({ name: "mount point", description: "drive letter (Windows; default: `X:`) or path (UNIX; default: `/tmp/filen`) to mount at" }),
 	},
 	invoke: ({ app, filen, args }) => {
 		// eslint-disable-next-line no-async-promise-executor

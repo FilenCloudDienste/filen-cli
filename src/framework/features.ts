@@ -1,5 +1,7 @@
 import vercelArg from "arg"
 import { App } from "./app"
+import * as pathModule from "node:path"
+import * as fsModule from "node:fs/promises"
 
 export type Extra = {
     FeatureContext: object
@@ -142,6 +144,13 @@ const optionalArg = <X extends Extra>() => ((spec: Omit<PositionalArgument, "kin
     }}
 })
 
+const defaultValue = <X extends Extra>() => <T>(defaultValue: T, arg: BuiltArgument<X, T | undefined>): BuiltArgument<X, T> => {
+    return {
+        spec: { ...arg.spec, description: `${arg.spec.description} (default: ${defaultValue === "." ? "current directory" : defaultValue})` },
+        value: async (ctx) => await arg.value(ctx) ?? defaultValue
+    }
+}
+
 const option = <X extends Extra>() => (spec: Omit<OptionArgument, "kind" | "type" | "isFlag" | "isRequired">): BuiltArgument<X, string | undefined> => {
     return {
         spec: { kind: "option", type: "any", ...spec },
@@ -179,6 +188,28 @@ const number = <X extends Extra>() => ((arg: BuiltArgument<X, string | undefined
     (arg: BuiltArgument<X, string | undefined>, type?: "int" | "float"): BuiltArgument<X, number | undefined>
 }
 
+const localPath = <X extends Extra>() => ({ restrictType, skipCheckExists }: { restrictType?: "file" | "directory", skipCheckExists?: boolean }, arg: BuiltArgument<X, string | undefined>): BuiltArgument<X, string> => {
+    return {
+        spec: { ...arg.spec, type: "localPath" },
+        value: async (ctx) => {
+            const path = pathModule.resolve(await arg.value(ctx) ?? "")
+            if (!skipCheckExists) {
+                const stat = await (async () => {
+                    try {
+                        return await fsModule.stat(path)
+                    } catch {
+                        return ctx.app.errExit(`No such local ${restrictType ?? "path"}: ${path}`)
+                    }
+                })()
+                if ((restrictType === "file" && !stat.isFile) || (restrictType === "directory" && !stat.isDirectory())) {
+                    ctx.app.errExit(`Not a ${restrictType}: ${path}`)
+                }
+            }
+            return path
+        }
+    }
+}
+
 const required = <X extends Extra>() => <T>(arg: BuiltArgument<X, T | undefined>): BuiltArgument<X, T> => {
     return {
         spec: arg.spec.kind === "option" ? { ...arg.spec, isRequired: true } : arg.spec,
@@ -214,9 +245,11 @@ export const buildF = <X extends Extra>() => ({
     arg: arg<X>(),
     catchAll: catchAll<X>(),
     optionalArg: optionalArg<X>(),
+    defaultValue: defaultValue<X>(),
     option: option<X>(),
     flag: flag<X>(),
     number: number<X>(),
+    localPath: localPath<X>(),
     required: required<X>(),
     argumentBuilder: argumentBuilder<X>(),
     helpText: helpText<X>(),

@@ -18,7 +18,7 @@ const unixStyleCommands: FeatureGroup<X> = {
 			cmd: ["ls", "list"],
 			description: "List files and directories.",
 			args: {
-				directory: f.cloudPath({ restrictType: "directory" }, f.optionalArg({ name: "directory", description: "directory to list (default: the current directory)" })), // todo: optional
+				directory: f.cloudPath({ restrictType: "directory" }, f.defaultValue(".", f.optionalArg({ name: "directory", description: "directory to list" }))),
 				long: f.flag({ name: "--long", alias: "-l", description: "use a long listing format" }),
 			},
 			invoke: async ({ app, filen, args, formatJson }) => {
@@ -75,14 +75,12 @@ const unixStyleCommands: FeatureGroup<X> = {
 			description: `Print the ${cmd === "head" ? "first" : "last"} lines of a file.`,
 			args: {
 				file: f.cloudPath({ restrictType: "file" }, f.arg({ name: "file", description: "file to read" })),
-				lines: f.number(f.option({ name: "-n", description: "number of lines to print" })),
+				lines: f.defaultValue(10, f.number(f.option({ name: "-n", description: "number of lines to print" }))),
 			},
 			invoke: async ({ app, x, args, formatJson }) => {
 				const { filen } = x
-				const nLines = args.lines ?? 10
-				
 				const lines = (await filen.fs().readFile({ path: args.file.toString() })).toString().split("\n")
-				const output = (cmd === "head" ? lines.slice(0, nLines) : lines.slice(lines.length - nLines)).join("\n")
+				const output = (cmd === "head" ? lines.slice(0, args.lines) : lines.slice(lines.length - args.lines)).join("\n")
 				if (formatJson) app.outJson({ text: output })
 				else app.out(output)
 			}
@@ -102,7 +100,7 @@ const unixStyleCommands: FeatureGroup<X> = {
 			cmd: ["rm", "delete"],
 			description: "Delete a file or directory.",
 			args: {
-				path: f.arg({ name: "path", description: "file or directory to delete" }),
+				path: f.cloudPath({}, f.arg({ name: "path", description: "file or directory to delete" })),
 				noTrash: f.flag({ name: "--no-trash", description: "permanently delete the file or directory" }),
 			},
 			invoke: async ({ app, filen, args }) => {
@@ -229,8 +227,8 @@ const filenSpecificCommands: FeatureGroup<X> = {
 			cmd: ["upload"],
 			description: "Upload a local file into the cloud at a specified path.",
 			args: {
-				source: f.arg({ name: "source", description: "local file to upload" }), // todo: check that it exists
-				destination: f.cloudPath({}, f.arg({ name: "destination", description: "destination path or parent directory" })),
+				source: f.localPath({ restrictType: "file" }, f.arg({ name: "source", description: "local file to upload" })),
+				destination: f.cloudPath({}, f.defaultValue(".", f.optionalArg({ name: "destination", description: "destination path or parent directory" }))),
 			},
 			invoke: async ({ app, filen, args, quiet }) => {
 				const stat = fsModule.statSync(args.source, { throwIfNoEntry: false })
@@ -258,11 +256,10 @@ const filenSpecificCommands: FeatureGroup<X> = {
 			description: "Download a file or directory from the cloud into a local destination.",
 			args: {
 				source: f.cloudPath({}, f.arg({ name: "source", description: "cloud file or directory" })),
-				destination: f.optionalArg({ name: "destination", description: "local destination path (default: current working directory)" }),
+				destination: f.localPath({}, f.defaultValue(".", f.optionalArg({ name: "destination", description: "local destination path" }))),
 			},
 			invoke: async ({ app, filen, args, quiet }) => {
-				// todo: resolve ArgumentType.localPath in feature()
-				const rawPath = args.destination === undefined || args.destination === "." ? process.cwd() + "/" : args.destination
+				const rawPath = args.destination === "." ? process.cwd() + "/" : args.destination
 				const path = rawPath.endsWith("/") || rawPath.endsWith("\\") ? pathModule.join(rawPath, args.source.getLastSegment()) : rawPath
 				const size = (await filen.fs().stat({ path: args.source.toString() })).size
 				const progressBar = quiet ? null : displayTransferProgressBar(app, "Downloading", args.source.getLastSegment(), size)
