@@ -64,21 +64,14 @@ export const publicLinksCommandGroup: FeatureGroup<X> = {
 			}
 		}),
 		f.feature({
-			cmd: ["links", "link"],
+			cmd: ["links", "link"], // todo: make this command be resolved correctly
 			description: "Create, view, edit or delete a public link.",
 			args: {
 				path: f.cloudPath({}, f.arg({ name: "path", description: "cloud file or directory this link is for" }))
-				// todo: have to explicitly specify when optional args are allowed, so that this command is resolved correclty (maybe the command signature is compiled into a regex?)
 			},
 			invoke: async ({ app, filen, args }) => {
-				const item = await (async () => {
-					try {
-						return await filen.fs().stat({ path: args.path.toString() })
-					} catch (e) {
-						if (e instanceof Error && e.name === "FileNotFoundError") app.errExit(`No such file or directory: ${args.path.toString()}`)
-						throw e
-					}
-				})()
+				const item = await filen.fs().stat({ path: args.path.toString() })
+				
 				const publicLink = await (async () => {
 					const publicLink = await getPublicLinkStatus(filen, item.type, item.uuid, item.type === "file" ? item.key : undefined)
 					if (publicLink === undefined) { // create

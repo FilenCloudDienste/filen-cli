@@ -231,8 +231,7 @@ const filenSpecificCommands: FeatureGroup<X> = {
 				destination: f.cloudPath({}, f.defaultValue(".", f.optionalArg({ name: "destination", description: "destination path or parent directory" }))),
 			},
 			invoke: async ({ app, filen, args, quiet }) => {
-				const stat = fsModule.statSync(args.source, { throwIfNoEntry: false })
-				if (stat === undefined) return app.errExit("No such source directory") // todo: remove when checked that it exists
+				const stat = fsModule.statSync(args.source)
 				const size = stat.isDirectory() ? (await directorySize(args.source)) : stat.size
 				args.destination = await args.destination.appendFileNameIfNecessary(filen, args.source.split(/[/\\]/)[args.source.split(/[/\\]/).length - 1]!)
 				const progressBar = quiet ? null : displayTransferProgressBar(app, "Uploading", args.destination.getLastSegment(), size)
