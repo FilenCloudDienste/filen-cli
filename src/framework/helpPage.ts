@@ -7,7 +7,7 @@ export function printHelp<X extends Extra>(app: App<X>, selectedName: string, is
 		if (selectedName.length === 0) return app.features.featureGroup
 		const featureGroup = app.features.getFeatureGroup(selectedName)
 		if (featureGroup) return featureGroup
-		return app.features.getFeature(selectedName)
+		return app.features.findFeature(selectedName)?.feature
 	})()
 	if (!selectedFeature) {
 		app.outErr(`Unknown command or help topic: ${selectedName}`)

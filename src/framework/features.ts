@@ -304,7 +304,16 @@ export class FeatureRegistry<X extends Extra> {
         return undefined
     }
 
-    public getFeature(cmd: string): Feature<X> | undefined {
-        return this.features.find(feature => feature.cmd.includes(cmd))
+    public findFeature(input: string): { cmd: string, feature: Feature<X> } | undefined {
+        const signatures = this.features
+            .flatMap(feature => feature.cmd.map(cmd => ({ feature, cmd, signature: 
+                RegExp(`^${cmd === "?" ? "\\?" : cmd}${feature.arguments.filter(arg => arg.kind === "positional").map(() => " \\w+").join("")}`)
+            })))
+            .sort((a, b) => (b.cmd.length - a.cmd.length)*100 + (b.feature.arguments.length - a.feature.arguments.length)*1) // sort by decreasing length of cmd (meaning specificity of the cmd), then by number or args
+        const found = signatures.find(({ signature }) => signature.test(input))
+        return found ? {
+            cmd: found.cmd,
+            feature: found.feature,
+        } : undefined
     }
 }

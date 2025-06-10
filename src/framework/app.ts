@@ -95,22 +95,16 @@ export class App<X extends Extra> {
 		this.dataDir = determineDataDir(args["--data-dir"], this.isDevelopment)
 		this.setupLogs(args["--log-file"])
 
-		// parse cmd and argv (handle --help, --version)
-		let cmd: string | undefined = undefined
+		// handle --help, --version
 		let parsedArgv = args["_"]
 		if (args["--help"]) {
-			cmd = "help"
+			parsedArgv = ["help", ...parsedArgv]
 		} else if (args["--version"]) {
-			cmd = "version"
-		} else if (parsedArgv.length > 0) {
-			cmd = parsedArgv[0]!
-			parsedArgv = parsedArgv.slice(1)
+			parsedArgv = ["version", ...parsedArgv]
 		}
 
 		this.ctx = {
 			app: this,
-			//cloudWorkingPath: args["--root"] !== undefined ? new CloudPath([]).navigate(args["--root"]) : new CloudPath([]),
-			cmd,
 			argv: parsedArgv,
 			verbose: args["--verbose"] ?? false,
 			quiet: args["--quiet"] ?? false,
@@ -361,12 +355,13 @@ export class App<X extends Extra> {
             let ctx = this.ctx
 
             // determine feature
-            ctx.feature = (() => {
-                if (ctx.cmd === undefined) return undefined
-                const feature = this.features.getFeature(ctx.cmd.toLowerCase())
-                if (feature === undefined) this.errExit(`Unknown command: ${ctx.cmd}`)
-                return feature
-            })()
+            if (ctx.argv.length > 0) {
+				const foundFeature = this.features.findFeature(ctx.argv.join(" ").toLowerCase())
+				if (foundFeature === undefined) return this.errExit(`Unknown command: ${ctx.argv.join(" ")}`)
+				ctx.cmd = foundFeature.cmd
+				ctx.argv = ctx.argv.slice(foundFeature.cmd.split(" ").length)
+				ctx.feature = foundFeature.feature
+			}
 
             // execute main
 			const mainResult = await this.mainFeature.invoke({ ...this.ctx, feature: this.mainFeature })
@@ -384,17 +379,17 @@ export class App<X extends Extra> {
 					const interactiveCliArgs = arg(cliArgSpec, { permissive: true, argv: [...ctx.argv, ...splitCommandSegments(input)] }) // combine process.argv and input
 					// todo: do this?: params.args = args.map(arg => (arg.startsWith("\"") && arg.endsWith("\"")) ? arg.substring(1, arg.length - 1) : arg)
 					if (interactiveCliArgs["_"].length === 0) continue
-					const feature = this.features.getFeature(interactiveCliArgs["_"][0]!.toLowerCase())
-					if (feature === undefined) {
+					const foundFeature = this.features.findFeature(interactiveCliArgs["_"].join(" ").toLowerCase())
+					if (foundFeature === undefined) {
 						this.outErr(`Unknown command: ${interactiveCliArgs["_"][0]!.toLowerCase()}`)
 						continue
 					}
+					const { cmd, feature } = foundFeature
 					try {
 						const result = await feature.invoke({
 							...ctx, feature,
 							isInteractiveMode: true,
-							cmd: interactiveCliArgs["_"][0]!,
-							argv: interactiveCliArgs["_"].slice(1),
+							cmd, argv: interactiveCliArgs["_"].slice(cmd.split(" ").length),
 							verbose: ctx.verbose || (interactiveCliArgs["--verbose"] ?? false),
 							quiet: ctx.quiet || (interactiveCliArgs["--quiet"] ?? false),
 							formatJson: ctx.formatJson || (interactiveCliArgs["--json"] ?? false),

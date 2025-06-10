@@ -64,7 +64,7 @@ export const publicLinksCommandGroup: FeatureGroup<X> = {
 			}
 		}),
 		f.feature({
-			cmd: ["links", "link"], // todo: make this command be resolved correctly
+			cmd: ["links", "link"],
 			description: "Create, view, edit or delete a public link.",
 			args: {
 				path: f.cloudPath({}, f.arg({ name: "path", description: "cloud file or directory this link is for" }))

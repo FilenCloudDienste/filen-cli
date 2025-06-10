@@ -50,7 +50,7 @@ export const trashCommandsGroup: FeatureGroup<X> = {
 			}
 		}),
 		f.feature({
-			cmd: ["trash delete"], // todo: same issue as with `links <link>`, see comment there
+			cmd: ["trash delete"],
 			description: "Permanently delete a trash item.",
 			invoke: async ({ app, filen }) => {
 				const trashItems = await getTrashItems(app, filen)

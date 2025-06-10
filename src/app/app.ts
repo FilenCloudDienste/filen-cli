@@ -115,7 +115,7 @@ export const app = (argv: string[], adapter: InterfaceAdapter) => f.app({
 			rootPath: f.option({ name: "--root", alias: "-r", description: "to execute a stateless command from a different cloud working directory", valueName: "path" }),
 		},
 		invoke: async (ctx) => {
-			const { app, cmd, args } = ctx
+			const { app, cmd, argv, args } = ctx
 
 			app.outVerbose(`Filen CLI ${version}`)
 
@@ -131,7 +131,7 @@ export const app = (argv: string[], adapter: InterfaceAdapter) => f.app({
 			runUpdater(ctx, args)
 
 			// authentication
-			const selectedFeature = cmd === undefined ? undefined : app.features.getFeature(cmd.toLowerCase())
+			const selectedFeature = cmd === undefined ? undefined : app.features.findFeature(cmd + argv.join(" "))!.feature
 			if (!(selectedFeature?.skipAuthentication ?? false)) {
 				await authenticate(ctx, args)
 			}
