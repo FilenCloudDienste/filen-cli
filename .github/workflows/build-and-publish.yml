@@ -64,10 +64,14 @@ jobs:
           rm -f certificate.p12
       - name: Rename binaries to include release number
         run: node -e "['win-x64.exe', 'win-arm64.exe', 'linux-x64', 'linux-arm64', 'macos-x64', 'macos-arm64'].forEach(suffix => { if (fs.existsSync('dist/filen-cli-'+suffix)) { fs.renameSync('dist/filen-cli-'+suffix, 'dist/filen-cli-${{ github.event.release.tag_name }}-'+suffix) } })"
+      - name: Build HTML docs
+        run: ./build-docs.sh
       - name: Attach binaries to release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/filen-cli-${{ github.event.release.tag_name }}-*
+          files: |
+            dist/filen-cli-${{ github.event.release.tag_name }}-*
+            ./filen-cli-docs.html
 
   build-and-publish-npm:
     name: Build and publish to npm
