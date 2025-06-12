@@ -4,6 +4,11 @@ import * as pathModule from "node:path"
 import * as fsModule from "node:fs/promises"
 import { exists } from "../app/util/util"
 
+// see also ./README.md for technical documentation
+
+/**
+ * App-specific data that should be included with FeatureContext or Feature.
+ */
 export type Extra = {
     FeatureContext: object
     Feature: object
@@ -13,6 +18,9 @@ export type EmptyX = {
     Feature: object
 }
 
+/**
+ * All information necessary to run a Feature.
+ */
 export type FeatureContext<X extends Extra> = {
     app: App<X>
     cmd?: string
@@ -31,6 +39,9 @@ export type FeatureResult<X extends Extra> = {
     ctx?: Partial<FeatureContext<X>>
 }
 
+/**
+ * A CLI command including its name and aliases, list of arguments, documentation and code to execute.
+ */
 export type Feature<X extends Extra> = {
 	cmd: string[]
 	description: string | null
@@ -269,16 +280,6 @@ const required = <X extends Extra>() => <T>(arg: BuiltArgument<X, T | undefined>
     }
 }
 
-const argumentBuilder = <X extends Extra>() => <In, Out, args extends Record<string, unknown>>(fn: (args: args) => { spec: (arg: BuiltArgument<X, In>) => BuiltArgument<X, Out>["spec"], value: (arg: BuiltArgument<X, In>, ctx: FeatureContextWithFeature<X>) => Promise<ReturnType<BuiltArgument<X, Out>["value"]>> }) => {
-    return (args: args, arg: BuiltArgument<X, In>) => {
-        const { spec, value } = fn(args)
-        return {
-            spec: spec(arg),
-            value: async (ctx) => await value(arg, ctx)
-        } satisfies BuiltArgument<X, Out> as BuiltArgument<X, Out>
-    }
-}
-
 const helpText = <X extends Extra>() => ({ title, name, text, visibility }: { title?: string, name: string | undefined, text: string, visibility?: "show" | "collapse" | "hide" }) => {
     return { title, description: text, name, features: [], visibility } satisfies FeatureGroup<X>
 }
@@ -286,23 +287,66 @@ const helpText = <X extends Extra>() => ({ title, name, text, visibility }: { ti
 // export "f"
 
 export const buildF = <X extends Extra>() => ({
+    /**
+     * Constructs an App.
+     * @see App
+     */
     app: (...args: ConstructorParameters<typeof App<X>>) => new App(...args),
+    /**
+     * Constructs a Feature.
+     * @see Feature
+     */
     feature: feature<X>(),
+    /**
+     * Constructs a positional argument.
+     */
     arg: arg<X>(),
+    /**
+     * Constructs a catch-all argument, returning everything after the positional arguments.
+     * There can be at most one catch-all argument at the end of all arguments.
+     */
     catchAllArg: catchAllArg<X>(),
+    /**
+     * An optional positional argument, after which no non-optional arguments can occur.
+     */
     optionalArg: optionalArg<X>(),
+    /**
+     * Provides a default value for an optional positional argument or option argument.
+     * Appends "(default: ...)" to the description.
+     */
     defaultValue: defaultValue<X>(),
+    /**
+     * Constructs an option argument (like "--option").
+     */
     option: option<X>(),
+    /**
+     * Constructs a boolean option argument (like "--flag").
+     */
     flag: flag<X>(),
+    /**
+     * Parses an argument into a number (provides validation).
+     */
     number: number<X>(),
+    /**
+     * Parses an argument into a path to a local file or directory.
+     * Provides autocompletion and validation.
+     */
     localPath: localPath<X>(),
+    /**
+     * Makes an option argument required.
+     */
     required: required<X>(),
-    argumentBuilder: argumentBuilder<X>(),
+    /**
+     * Creates a FeatureGroup that only contains documentation text.
+     */
     helpText: helpText<X>(),
 })
 
 // feature groups
 
+/**
+ * A grou of features with additional documentation.
+ */
 export type FeatureGroup<X extends Extra> = {
     title?: string
     name?: string
@@ -312,6 +356,9 @@ export type FeatureGroup<X extends Extra> = {
     features: (Feature<X> | FeatureGroup<X>)[]
 }
 
+/**
+ * Manages an App's features.
+ */
 export class FeatureRegistry<X extends Extra> {
     public featureGroup: FeatureGroup<X>
     public features: Feature<X>[]

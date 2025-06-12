@@ -11,6 +11,8 @@ import { CompleterResult } from "node:readline"
 import { printHelp } from "./helpPage"
 import { version } from "../buildInfo"
 
+// see also ./README.md for technical documentation
+
 const cliArgSpec = {
     "--dev": Boolean,
 
@@ -37,7 +39,7 @@ export type AppInfo = {
 }
 
 /**
- * App manages application-wide configuration and console I/O. 
+ * App manages application-wide configuration and console I/O, and provides the main entry point.
  */
 export class App<X extends Extra> {
 	/**
@@ -57,6 +59,14 @@ export class App<X extends Extra> {
     private readonly mainFeature: Feature<X>
     private readonly interactiveModePrompt?: (ctx: FeatureContext<X>) => string
 
+	/**
+	 * @param info Some metadata about the application, including name and version.
+	 * @param argv Usually `process.argv.slice(2)`.
+	 * @param adapter An InterfaceAdapter that handles console I/O, see index.ts.
+	 * @param features The list of available features.
+	 * @param mainFeature The feature that is the main function, having args and containing app-specific setup code.
+	 * @param interactiveModePrompt Optionally, a custom string to be displayed before the `>` prompt in interactive mode.
+	 */
 	constructor({ info, argv, adapter, features, defaultCtx, mainFeature, interactiveModePrompt }: {
         info: AppInfo,
         argv: string[],
@@ -161,7 +171,6 @@ export class App<X extends Extra> {
 
 	/**
 	 * Global output method
-	 * @param message
 	 */
 	public out(message: string, options?: { indentation?: number }) {
 		if (options?.indentation) {
