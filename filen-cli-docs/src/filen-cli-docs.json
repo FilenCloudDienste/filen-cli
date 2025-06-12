@@ -1,7 +1,10 @@
-[
-  {
-    "description": "These docs will be generated at publish time using the build-docs.sh script by executing `node build/index.js internal-export-docs-json`",
-    "name": "general",
-    "features": []
-  }
-]
+{
+  "version": "v0.0.0",
+  "features": [
+    {
+      "description": "These docs will be generated at publish time using the build-docs.sh script by executing `node build/index.js internal-export-docs-json`",
+      "name": "general",
+      "features": []
+    }
+  ]
+}

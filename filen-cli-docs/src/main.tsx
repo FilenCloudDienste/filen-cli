@@ -74,11 +74,11 @@ function renderFeature(feature: Feature | FeatureGroup, depth = 0) {
 }
 
 function FilenCliDocs() {
-  const features = docsJson as unknown as (Feature | FeatureGroup)[]
+  const data = docsJson as unknown as { version: string, features: (Feature | FeatureGroup)[] }
   return (
     <div className="min-h-screen max-w-4xl mx-auto p-6 font-sans bg-black text-white">
-      <h1 className="mt-10 mb-0 text-4xl font-bold text-white-200">Filen CLI Documentation</h1>
-      <div className="text-gray-400 mb-6">Command reference generated from <span className="font-mono">filen --help</span></div>
+      <h1 className="mt-10 mb-2 text-4xl font-bold text-white-200">Filen CLI {data.version} Documentation</h1>
+      <div className="text-gray-400 mb-6">Command reference for <a className="text-blue-400 hover:underline" href={`https://github.com/FilenCloudDienste/filen-cli/releases/tag/${data.version}`}>Filen CLI {data.version}</a> (generated from <span className="font-mono">filen --help</span>)</div>
       <p className="mb-10">
         <div className="flex items-center text-yellow-400 mr-2 mb-2">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 20 20" stroke="currentColor">
@@ -89,8 +89,8 @@ function FilenCliDocs() {
         </div>
         For more extensive and user-friendly docs, please visit <a href="https://docs.filen.io/docs/cli" className="text-blue-400 hover:underline">docs.filen.io</a>.
       </p>
-      <hr className="my-10 border-gray-700"></hr>
-      {features.map(f => renderFeature(f))}
+      <hr className="my-14 border-gray-700"></hr>
+      {data.features.map(f => renderFeature(f))}
     </div>
   )
 }

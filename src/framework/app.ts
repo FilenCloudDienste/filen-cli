@@ -72,7 +72,7 @@ export class App<X extends Extra> {
 
 		// export docs json
 		if (argv.includes("internal-export-docs-json")) {
-			const json = JSON.stringify(features, null, 2)
+			const json = JSON.stringify({ version, features}, null, 2)
 			fs.writeFileSync("filen-cli-docs.json", json)
 			this.out("Exported docs JSON to filen-cli-docs.json")
 			process.exit()
