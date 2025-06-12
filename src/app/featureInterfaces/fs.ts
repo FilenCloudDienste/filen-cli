@@ -1,15 +1,15 @@
 import pathModule from "path"
-import { directorySize, displayTransferProgressBar, getItemPaths, hashFile } from "../../util/util"
-import { CloudPath } from "../../util/cloudPath"
+import { directorySize, displayTransferProgressBar, getItemPaths, hashFile } from "../util/util"
+import { CloudPath } from "../util/cloudPath"
 import * as fsModule from "node:fs"
 import open from "open"
-import { formatBytes, formatTable, formatTimestamp } from "../../../framework/util"
+import { formatBytes, formatTable, formatTimestamp } from "../../framework/util"
 import dedent from "dedent"
-import { exportNotesCommand } from "../exportNotesInterface"
-import { trashCommandsGroup } from "../trashInterface"
-import { publicLinksCommandGroup } from "../publicLinksInterface"
-import { f, X } from "../../app"
-import { FeatureGroup } from "../../../framework/features"
+import { exportNotesCommand } from "./exportNotesInterface"
+import { trashCommandsGroup } from "./trashInterface"
+import { publicLinksCommandGroup } from "./publicLinksInterface"
+import { f, X } from "../app"
+import { FeatureGroup } from "../../framework/features"
 
 const unixStyleCommands: FeatureGroup<X> = {
 	title: "Unix-style commands",
