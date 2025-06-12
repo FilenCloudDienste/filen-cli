@@ -1,7 +1,8 @@
 import vercelArg from "arg"
-import { App } from "./app"
+import { App, splitCommandSegments } from "./app"
 import * as pathModule from "node:path"
 import * as fsModule from "node:fs/promises"
+import { exists } from "../app/util/util"
 
 export type Extra = {
     FeatureContext: object
@@ -34,32 +35,32 @@ export type Feature<X extends Extra> = {
 	cmd: string[]
 	description: string | null
     longDescription?: string
-    arguments: (PositionalArgument | OptionArgument)[]
+    arguments: (PositionalArgument<X> | OptionArgument<X>)[]
 	invoke: (ctx: FeatureContextWithFeature<X>) => Promise<void | FeatureResult<X> | undefined>
 } & Partial<X["Feature"]>
 
-export type PositionalArgument = {
+export type PositionalArgument<X extends Extra> = Argument<X> & {
     kind: "positional" | "catch-all"
-    name: string
-    type: string
-    description: string
-    autocomplete?: (input: string) => string[],
 }
 
-export type OptionArgument = {
+export type OptionArgument<X extends Extra> = Argument<X> & {
     kind: "option"
-    name: string
-    type: string
     alias?: string
     valueName?: string
-    description: string
     isFlag?: boolean
     isRequired?: boolean
 }
 
+type Autocompleter<X extends Extra> = (ctx: FeatureContext<X>, input: string) => Promise<string[]>
+type Argument<X extends Extra> = {
+    name: string
+    description: string
+    autocomplete?: Autocompleter<X>
+}
+
 // feature
 
-export type BuiltArgument<X extends Extra, T> = { spec: PositionalArgument | OptionArgument, value: (ctx: FeatureContextWithFeature<X>) => Promise<T> }
+export type BuiltArgument<X extends Extra, T> = { spec: PositionalArgument<X> | OptionArgument<X>, value: (ctx: FeatureContextWithFeature<X>) => Promise<T> }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ParsedArgs<X extends Extra, args extends Record<string, BuiltArgument<X, any>>> = { [K in keyof args]: Awaited<ReturnType<args[K]["value"]>> }
@@ -112,9 +113,9 @@ export function parseArgs<X extends Extra>(feature: Feature<X>, argv: string[]) 
     return vercelArg(spec, { permissive: true, argv: argv })
 }
 
-const arg = <X extends Extra>() => (spec: Omit<PositionalArgument, "kind" | "type">): BuiltArgument<X, string> => {
+const arg = <X extends Extra>() => (spec: Omit<PositionalArgument<X>, "kind" | "type">): BuiltArgument<X, string> => {
     return {
-        spec: { kind: "positional", type: "any", ...spec },
+        spec: { kind: "positional", ...spec },
         value: async (ctx) => {
             const index = ctx.feature.arguments.filter(arg => arg.kind === "positional").findIndex(arg => arg.name === spec.name)
             const arg = parseArgs(ctx.feature, ctx.argv)
@@ -126,9 +127,9 @@ const arg = <X extends Extra>() => (spec: Omit<PositionalArgument, "kind" | "typ
     }
 }
 
-const catchAll = <X extends Extra>() => (spec: Omit<PositionalArgument, "kind" | "type">): BuiltArgument<X, string[]> => {
+const catchAll = <X extends Extra>() => (spec: Omit<PositionalArgument<X>, "kind" | "type">): BuiltArgument<X, string[]> => {
     return {
-        spec: { kind: "catch-all", type: "any", ...spec },
+        spec: { kind: "catch-all", ...spec },
         value: async (ctx) => {
             const arg = parseArgs(ctx.feature, ctx.argv)
             return arg["_"].slice(ctx.feature.arguments.filter(arg => arg.kind === "positional").length)
@@ -136,13 +137,14 @@ const catchAll = <X extends Extra>() => (spec: Omit<PositionalArgument, "kind" |
     }
 }
 
-const optionalArg = <X extends Extra>() => ((spec: Omit<PositionalArgument, "kind" | "type">): BuiltArgument<X, string | undefined> => {
+const optionalArg = <X extends Extra>() => ((spec: Omit<PositionalArgument<X>, "kind" | "type">): BuiltArgument<X, string | undefined> => {
     const arg = catchAll<X>()(spec)
     return { ...arg, value: async (ctx) => {
         const value = await arg.value(ctx)
         return value.length > 0 ? value[0] : undefined
     }}
 })
+// todo: fix optional args being printed like "ls <directory...>" with required "<>" and "..."
 
 const defaultValue = <X extends Extra>() => <T>(defaultValue: T, arg: BuiltArgument<X, T | undefined>): BuiltArgument<X, T> => {
     return {
@@ -151,9 +153,9 @@ const defaultValue = <X extends Extra>() => <T>(defaultValue: T, arg: BuiltArgum
     }
 }
 
-const option = <X extends Extra>() => (spec: Omit<OptionArgument, "kind" | "type" | "isFlag" | "isRequired">): BuiltArgument<X, string | undefined> => {
+const option = <X extends Extra>() => (spec: Omit<OptionArgument<X>, "kind" | "type" | "isFlag" | "isRequired">): BuiltArgument<X, string | undefined> => {
     return {
-        spec: { kind: "option", type: "any", ...spec },
+        spec: { kind: "option", ...spec },
         value: async (ctx) => {
             const arg = parseArgs(ctx.feature, ctx.argv)
             return arg[spec.name]
@@ -161,9 +163,9 @@ const option = <X extends Extra>() => (spec: Omit<OptionArgument, "kind" | "type
     }
 }
 
-const flag = <X extends Extra>() => (spec: Omit<OptionArgument, "kind" | "type" | "isFlag" | "isRequired">): BuiltArgument<X, boolean> => {
+const flag = <X extends Extra>() => (spec: Omit<OptionArgument<X>, "kind" | "type" | "isFlag" | "isRequired">): BuiltArgument<X, boolean> => {
     return {
-        spec: { kind: "option", type: "flag", ...spec, isFlag: true },
+        spec: { kind: "option", ...spec, isFlag: true },
         value: async (ctx) => {
             const arg = parseArgs(ctx.feature, ctx.argv)
             return arg[spec.name] ?? false
@@ -173,7 +175,7 @@ const flag = <X extends Extra>() => (spec: Omit<OptionArgument, "kind" | "type" 
 
 const number = <X extends Extra>() => ((arg: BuiltArgument<X, string | undefined>, type?: "int" | "float"): BuiltArgument<X, number | undefined> => {
     return {
-        spec: { ...arg.spec, type: type ?? "int" },
+        spec: { ...arg.spec },
         value: async (ctx) => {
             const value = await arg.value(ctx)
             const number = value ? (type === "float" ? parseFloat(value) : parseInt(value)) : undefined
@@ -188,9 +190,43 @@ const number = <X extends Extra>() => ((arg: BuiltArgument<X, string | undefined
     (arg: BuiltArgument<X, string | undefined>, type?: "int" | "float"): BuiltArgument<X, number | undefined>
 }
 
+export const fileSystemAutocompleter = <X extends Extra>({ restrictToDirectories, exists, readdir, isDirectory }: {
+    restrictToDirectories: boolean,
+    exists: (ctx: FeatureContext<X>, path: string) => Promise<boolean>,
+    readdir: (ctx: FeatureContext<X>, path: string) => Promise<{ name: string, isDirectory: boolean }[]>,
+    isDirectory: (ctx: FeatureContext<X>, path: string) => Promise<boolean>
+}): Autocompleter<X> => async (ctx, input) => {
+    // if the path doesn't exist, or ends in "/", check the parent instead for items beginning with string
+    if (!(await exists(ctx, input)) || input.endsWith("/")) {
+        const { parent, filename } = input.endsWith("/")
+            ? { parent: input, filename: "" }
+            : { parent: pathModule.dirname(input), filename: pathModule.basename(input) }
+        const parentItems = await readdir(ctx, parent)
+        return parentItems
+            .filter(item => item.name.startsWith(filename))
+            .filter(item => !restrictToDirectories || item.isDirectory)
+            .map(item => input.substring(0, input.length - filename.length) + item.name)
+    }
+    
+    // if the path exists, append "/" if it's a directory
+    if (await isDirectory(ctx, input) && !input.endsWith("/")) {
+        return [input + "/"]
+    } else {
+        return [input]
+    }
+}
+
 const localPath = <X extends Extra>() => ({ restrictType, skipCheckExists }: { restrictType?: "file" | "directory", skipCheckExists?: boolean }, arg: BuiltArgument<X, string | undefined>): BuiltArgument<X, string> => {
     return {
-        spec: { ...arg.spec, type: "localPath" },
+        spec: {
+            ...arg.spec,
+            autocomplete: fileSystemAutocompleter({
+                restrictToDirectories: restrictType === "directory",
+                exists: (_, path) => exists(path),
+                readdir: async (_, path) => (await fsModule.readdir(path, { withFileTypes: true })).map(dirent => ({ name: dirent.name, isDirectory: dirent.isDirectory() })),
+                isDirectory: async (_, path) => (await fsModule.stat(path)).isDirectory()
+            }),
+        },
         value: async (ctx) => {
             const path = pathModule.resolve(await arg.value(ctx) ?? "")
             if (!skipCheckExists) {
@@ -307,13 +343,86 @@ export class FeatureRegistry<X extends Extra> {
     public findFeature(input: string): { cmd: string, feature: Feature<X> } | undefined {
         const signatures = this.features
             .flatMap(feature => feature.cmd.map(cmd => ({ feature, cmd, signature: 
-                RegExp(`^${cmd === "?" ? "\\?" : cmd}${feature.arguments.filter(arg => arg.kind === "positional").map(() => " \\w+").join("")}`)
+                RegExp(`^${cmd === "?" ? "\\?" : cmd}${feature.arguments.filter(arg => arg.kind === "positional").map(() => " [^\\s]+").join("")}`) // missing "$" allows for more characters at the end
+                // todo: differentiate between "catch-all" and single "optional" positional arguments? -> allows for autocompleting them
             })))
             .sort((a, b) => (b.cmd.length - a.cmd.length)*100 + (b.feature.arguments.length - a.feature.arguments.length)*1) // sort by decreasing length of cmd (meaning specificity of the cmd), then by number or args
         const found = signatures.find(({ signature }) => signature.test(input))
-        return found ? {
-            cmd: found.cmd,
-            feature: found.feature,
-        } : undefined
+        if (found) {
+            return { cmd: found.cmd, feature: found.feature }
+        }
+
+        // if no feature matches exactly, find the one with the longest cmd that matches the input
+        return this.features.flatMap(feature => feature.cmd.map(cmd => ({ feature, cmd })))
+            .sort((a, b) => b.cmd.length - a.cmd.length) // sort by decreasing length of cmd
+            .find(({ cmd }) => input.startsWith(cmd))
+    }
+
+    public async autocomplete(ctx: FeatureContext<X>, input: string): Promise<[string[], string]> {
+        // from every feature, get the list of space-separated strings that make up the cmd/argv
+        const features = this.features.flatMap(feature => feature.cmd.map(cmd => ({
+            feature,
+            segments: [
+                ...cmd.split(" ").map(c => ({ type: "constant", value: c })),
+                ...feature.arguments.filter(arg => arg.kind === "positional").map(arg => ({ type: "word", autocomplete: arg.autocomplete })),
+                ...feature.arguments.filter(arg => arg.kind === "catch-all").map(arg => ({ type: "catch-all", autocomplete: arg.autocomplete })),
+            ]
+        }))) as { feature: Feature<X>, segments: ({ type: "constant", value: string } | { type: "word" | "catch-all", autocomplete?: Autocompleter<X> })[] }[]
+
+        // filter which features would fit what's already written
+        const inputSegments = splitCommandSegments(input)
+        const matchingFeatures = features.filter(({ segments }) => {
+            return inputSegments.length === 0 || inputSegments.every((inputSegment, i) => {
+                if (i >= segments.length) return true // additional input segments are allowed, since we're not checking option arguments
+                const segment = segments[i]!
+                if (segment.type === "constant") {
+                    // exact match
+                    if (inputSegment === segment.value) return true
+                    // constants may match only start, if they are the one being typed
+                    if (i === inputSegments.length - 1 && segment.value.startsWith(inputSegment)) return true
+                    return false
+                }
+                return true // word segments always match
+            })
+        })
+        // todo: does this need to take option arguments into account?
+
+        // the segment currently being typed is the last one
+        // but if the input ends in a space, it's the next segment
+        const currentSegmentIndex = inputSegments.length === 0 ? 0 : input.endsWith(" ") ? inputSegments.length : inputSegments.length - 1
+        const currentSegmentInput = inputSegments[currentSegmentIndex] ?? ""
+
+        // for every matching feature, get the completions
+        const completionsPromises: Promise<string[]>[] = matchingFeatures.map(async ({ segments }) => {
+            // if the currentSegmentIndex is out of bounds and the last segment is a catch-all segment, it is the current segment
+            const currentSegment = segments[currentSegmentIndex] ?? (segments[segments.length - 1]?.type === "catch-all" ? segments[segments.length - 1] : undefined)
+            if (!currentSegment) return [] // no more segment
+
+            // apppend a space if there are more segments after the current one
+            const optionalSpace = currentSegmentIndex < segments.length - 1 ? " " : ""
+
+            // if the current segment is a constant
+            if (currentSegment.type === "constant") {
+                return [currentSegment.value + optionalSpace]
+            }
+
+            // if the current segment is a word, get the autocomplete results
+            return await currentSegment.autocomplete?.call(this, ctx, currentSegmentInput) ?? []
+        })
+        const allCompletions = (await Promise.all(completionsPromises)).flat()
+        
+        // deduplicate completions
+        // if "link " and "link" exist, keep only "link"; keep "cd ", where there isn't "cd"
+        const completions: string[] = []
+        for (const completion of [...allCompletions].sort((a, b) => a.length - b.length)) {
+            const trimmedCompletion = completion.trimEnd()
+            if (!(completion.endsWith(" ") && allCompletions.includes(trimmedCompletion))) {
+                completions.push(completion)
+            }
+        }
+        // bring back in correct order
+        completions.sort((a, b) => allCompletions.indexOf(a) - allCompletions.indexOf(b))
+
+        return [completions, currentSegmentInput]
     }
 }

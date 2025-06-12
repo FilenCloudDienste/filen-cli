@@ -69,7 +69,7 @@ export function printHelp<X extends Extra>(app: App<X>, selectedName: string, is
 
 		// print Feature command signature and description
 		feature = feature as Feature<X>
-		const isOptional = (arg: PositionalArgument | OptionArgument) => arg.kind === "option" && !(arg as OptionArgument).isRequired
+		const isOptional = (arg: PositionalArgument<X> | OptionArgument<X>) => arg.kind === "option" && !(arg as OptionArgument<X>).isRequired
 		builder.appendText("> " + [feature.cmd[0],...feature.arguments.map(arg => `${isOptional(arg) ? "[" : "<"}${arg.name}${arg.kind === "catch-all" ? "..." : ""}${isOptional(arg) ? "]" : ">"}`)].join(" "))
 		builder.withIncreasedIndentation(() => {
 			if (feature.description) {

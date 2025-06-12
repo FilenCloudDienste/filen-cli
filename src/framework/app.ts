@@ -112,10 +112,6 @@ export class App<X extends Extra> {
             isInteractiveMode: false,
             x: defaultCtx,
 		}
-
-		// setup autocompletion
-        //this.autocompletion = args["--no-autocomplete"] ? new Autocompletion(this, this.ctx) : null
-		// todo: implement autocompletion
 	}
 
 	// logs
@@ -266,14 +262,22 @@ export class App<X extends Extra> {
 	/**
 	 * Global input prompting method
 	 * @param message The message to print before the prompt
+	 * @param options.autocompletionCtx FeatureContext<X> for FeatureRegistry.autocomplete (leave out to disable autcompletion)
 	 * @param options.allowExit Whether to allow to exit the application here via `^C`
 	 * @param options.obfuscate Whether to obfuscate the input (for password input)
 	 * @param options.useHistory Whether to read from and append to the history
 	 */
-	public async prompt(message: string, options: { allowExit?: boolean, obfuscate?: boolean, useHistory?: boolean } = {}) {
+	public async prompt(message: string, options: { autocompletionCtx?: FeatureContext<X>, allowExit?: boolean, obfuscate?: boolean, useHistory?: boolean } = {}) {
 		return new Promise<string>((resolve) => {
+			const autocomplete = async (input: string): Promise<CompleterResult> => {
+				if (!options.autocompletionCtx) return [[], ""]
+				try {
+					return await this.features.autocomplete(options.autocompletionCtx!, input)
+				} catch (e) {
+					return this.errExit("autocomplete", e)
+				}
+			}
 			try {
-				const autocomplete = async (input: string): Promise<[string[], string]> => [[], input] // todo: implement autocompletion
 				this.adapter.prompt(message, options.obfuscate ?? false, options.useHistory ? this.readlineHistory : undefined, options.allowExit ?? false, autocomplete)
 					.then(input => {
 						this.writeLog(message, "log")
@@ -375,7 +379,7 @@ export class App<X extends Extra> {
 				// interactive mode
 				while (true) {
                     const prompt = this.interactiveModePrompt ? this.interactiveModePrompt(ctx) : undefined
-					const input = await this.prompt(`${prompt ?? ""}${prompt !== undefined ? " " : ""}> `, { allowExit: true, useHistory: true })
+					const input = await this.prompt(`${prompt ?? ""}${prompt !== undefined ? " " : ""}> `, { autocompletionCtx: ctx, allowExit: true, useHistory: true })
 					const interactiveCliArgs = arg(cliArgSpec, { permissive: true, argv: [...ctx.argv, ...splitCommandSegments(input)] }) // combine process.argv and input
 					// todo: do this?: params.args = args.map(arg => (arg.startsWith("\"") && arg.endsWith("\"")) ? arg.substring(1, arg.length - 1) : arg)
 					if (interactiveCliArgs["_"].length === 0) continue
@@ -396,7 +400,6 @@ export class App<X extends Extra> {
 						})
 						if (result?.exit) break
                         ctx = { ...ctx, ...result?.ctx }
-                        //if (this.autocompletion) this.autocompletion.ctx = ctx // todo: implement
 					} catch (e) {
 						this.handleExitError(e)
 					}
