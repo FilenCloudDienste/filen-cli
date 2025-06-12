@@ -3,7 +3,6 @@ import fs from "node:fs"
 import { exists } from "./util/util"
 import path from "path"
 import { wrapRedTerminalText } from "../framework/util"
-import { ANONYMOUS_SDK_CONFIG } from "./constants"
 import crypto from "node:crypto"
 import { isRunningAsContainer } from "../buildInfo"
 import dedent from "dedent"
@@ -190,8 +189,6 @@ export async function authenticate(ctx: FeatureContext<X>, args: { email?: strin
 			let twoFactorCode: string | undefined = credentials.twoFactorCode
 
 			try {
-				filen.init(ANONYMOUS_SDK_CONFIG)
-
 				await filen.login(credentials)
 
 				authed = true
@@ -211,8 +208,6 @@ export async function authenticate(ctx: FeatureContext<X>, args: { email?: strin
 
 			if (!authed && twoFactorCode) {
 				try {
-					filen.init(ANONYMOUS_SDK_CONFIG)
-
 					await filen.login({
 						...credentials,
 						twoFactorCode

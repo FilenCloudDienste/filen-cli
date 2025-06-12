@@ -76,12 +76,11 @@ export const f = { ..._f, cloudPath }
 
 // (these things can only be imported now, because they depend on `f`)
 
-import FilenSDK from "@filen/sdk"
+import FilenSDK, { FilenSDKConfig } from "@filen/sdk"
 import path from "path"
 import os from "os"
 import { isRunningAsContainer, isRunningAsNPMPackage, version } from "../buildInfo"
 import { canaryCommand, installCommand, runUpdater, updateHelpText } from "./updater"
-import { ANONYMOUS_SDK_CONFIG } from "./constants"
 import { CloudPath } from "./util/cloudPath"
 import { authenticate, authenticationCommandGroup } from "./auth"
 import { formatTable } from "../framework/util"
@@ -188,3 +187,18 @@ const versionCommand: Feature<X> = {
 		app.out(version)
 	},
 }
+
+export const ANONYMOUS_SDK_CONFIG: FilenSDKConfig = {
+	email: "anonymous",
+	password: "anonymous",
+	masterKeys: ["anonymous"],
+	connectToSocket: true,
+	metadataCache: true,
+	twoFactorCode: "anonymous",
+	publicKey: "anonymous",
+	privateKey: "anonymous",
+	apiKey: "anonymous",
+	authVersion: 2,
+	baseFolderUUID: "anonymous",
+	userId: 1
+} as const satisfies FilenSDKConfig
