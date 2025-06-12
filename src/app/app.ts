@@ -147,7 +147,7 @@ export const app = (argv: string[], adapter: InterfaceAdapter) => f.app({
 		args: {
 			email: f.option({ name: "--email", alias: "-e", description: "your Filen account's email address", valueName: "email" }),
 			password: f.option({ name: "--password", alias: "-p", description: "your Filen account's password", valueName: "password" }),
-			twoFactorCode: f.option({ name: "--two-factor-code", alias: "-c", description: "your Filen account's two-factor authentication code", valueName: "code" }),
+			twoFactorCode: f.option({ name: "--two-factor-code", alias: "-c", description: "your Filen account's two-factor authentication code", valueName: "2fa" }),
 			skipUpdate: f.flag({ name: "--skip-update", description: "skip checking for updates" }),
 			forceUpdate: f.flag({ name: "--force-update", description: "check for updates even if it was recently checked" }),
 			autoUpdate: f.flag({ name: "--auto-update", description: "skip the confirmation prompt and update automatically (will still exit after updating)" }),
