@@ -19,7 +19,7 @@ function renderFeature(feature: Feature | FeatureGroup, depth = 0) {
       <div className={`ml-[${depth * 6}]`} key={featureGroup.name || featureGroup.title}>
         {featureGroup.title && (
           depth === 0 ? (
-            <h2 className="text-2xl font-bold mt-8 mb-2 text-white whitespace-pre-line">{featureGroup.title}</h2>
+            <h2 className="text-2xl font-bold mt-16 mb-4 text-white whitespace-pre-line">{featureGroup.title}</h2>
           ) : depth === 1 ? (
             <h3 className="text-xl font-bold mt-8 mb-2 text-white whitespace-pre-line">{featureGroup.title}</h3>
           ) : depth === 2 ? (
@@ -32,7 +32,7 @@ function renderFeature(feature: Feature | FeatureGroup, depth = 0) {
           <div className="mb-2 text-gray-300 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: featureGroup.description.replace(/`([^`]+)`/g, '<code class=\'font-mono px-1 py-0.5\'>$1</code>') }} />
         )}
         {featureGroup.longDescription && (
-          <div className="my-2 whitespace-pre-line italic text-gray-400" dangerouslySetInnerHTML={{ __html: featureGroup.longDescription.replace(/`([^`]+)`/g, '<code class=\'font-mono px-1 py-0.5\'>$1</code>') }} />
+          <div className="my-2 whitespace-pre-line text-gray-400" dangerouslySetInnerHTML={{ __html: featureGroup.longDescription.replace(/`([^`]+)`/g, '<code class=\'font-mono px-1 py-0.5\'>$1</code>') }} />
         )}
         {featureGroup.features && featureGroup.features.map(f => renderFeature(f, depth + 1))}
       </div>
@@ -40,7 +40,7 @@ function renderFeature(feature: Feature | FeatureGroup, depth = 0) {
   }
   // Feature
   const f = feature as Feature
-  const isOptional = (arg: any) => arg.kind === "option" && !arg.isRequired
+  const isOptional = (arg: any) => arg.kind === "optional" || (arg.kind === "option" && !arg.isRequired)
   const signature = [
     f.cmd[0],
     ...((f.arguments || []).map(arg => `${isOptional(arg) ? "[" : "<"}${arg.name}${arg.kind === "catch-all" ? "..." : ""}${isOptional(arg) ? "]" : ">"}`))
@@ -50,7 +50,7 @@ function renderFeature(feature: Feature | FeatureGroup, depth = 0) {
       <div className="font-mono font-semibold text-blue-400 whitespace-pre-line"><span className="text-white">&gt;</span> {signature}</div>
       {f.description && <div className="my-1 text-gray-200 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: f.description.replace(/`([^`]+)`/g, '<code class=\'font-mono px-1 py-0.5\'>$1</code>') }} />}
       {f.longDescription && (
-        <div className="my-1 whitespace-pre-line italic text-gray-400" dangerouslySetInnerHTML={{ __html: f.longDescription.replace(/`([^`]+)`/g, '<code class=\'font-mono px-1 py-0.5\'>$1</code>') }} />
+        <div className="my-1 whitespace-pre-line text-gray-400" dangerouslySetInnerHTML={{ __html: f.longDescription.replace(/`([^`]+)`/g, '<code class=\'font-mono px-1 py-0.5\'>$1</code>') }} />
       )}
       {(f.arguments || []).filter(arg => arg.description).length > 0 && (
         <table className="my-2 border-collapse text-sm w-full">

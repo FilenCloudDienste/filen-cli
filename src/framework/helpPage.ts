@@ -2,6 +2,8 @@ import { formatTable } from "./util"
 import { Extra, Feature, FeatureGroup, OptionArgument, PositionalArgument } from "./features"
 import { App } from "./app"
 
+// IMPORTANT: when modifying how help is rendered, make sure to also update the HTML docs generator in /filen-cli-docs/src/main.tsx
+
 export function printHelp<X extends Extra>(app: App<X>, selectedName: string, isInteractiveMode: boolean) {
 	const selectedFeature = (() => {
 		if (selectedName.length === 0) return app.features.featureGroup
@@ -69,7 +71,7 @@ export function printHelp<X extends Extra>(app: App<X>, selectedName: string, is
 
 		// print Feature command signature and description
 		feature = feature as Feature<X>
-		const isOptional = (arg: PositionalArgument<X> | OptionArgument<X>) => arg.kind === "option" && !(arg as OptionArgument<X>).isRequired
+		const isOptional = (arg: PositionalArgument<X> | OptionArgument<X>) => arg.kind === "optional" || (arg.kind === "option" && !(arg as OptionArgument<X>).isRequired)
 		builder.appendText("> " + [feature.cmd[0],...feature.arguments.map(arg => `${isOptional(arg) ? "[" : "<"}${arg.name}${arg.kind === "catch-all" ? "..." : ""}${isOptional(arg) ? "]" : ">"}`)].join(" "))
 		builder.withIncreasedIndentation(() => {
 			if (feature.description) {

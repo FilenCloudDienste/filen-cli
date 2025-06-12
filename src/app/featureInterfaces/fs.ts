@@ -282,7 +282,7 @@ const filenSpecificCommands: FeatureGroup<X> = {
 			description: "Write plain text to a file.",
 			args: {
 				file: f.cloudPath({}, f.arg({ name: "file", description: "file to write to (will be created if it doesn't exist)" })),
-				content: f.catchAll({ name: "content", description: "any string content" }),
+				content: f.catchAllArg({ name: "content", description: "any string content" }),
 			},
 			invoke: async ({ app, filen, args }) => {
 				const content = args.content.join(" ")

@@ -34,7 +34,7 @@ export const syncCommand = f.feature({
 			other abbreviations are: \`tw\` = \`twoWay\`, \`ltc\` = \`localToCloud\`, \`lb\` = \`localBackup\`, \`ctl\` = \`cloudToLocal\`, \`cb\` = \`cloudBackup\`
 	`,
 	args: {
-		locations: f.catchAll({ name: "locations", description: "one or many sync pairs (see the examples)" }),
+		locations: f.catchAllArg({ name: "locations", description: "one or many sync pairs (see the examples)" }),
 		continuous: f.flag({ name: "--continuous", description: "keep syncing (instead of only syncing once)" }),
 		disableLocalTrash: f.flag({ name: "--disable-local-trash", description: "disable local trash" }),
 	},

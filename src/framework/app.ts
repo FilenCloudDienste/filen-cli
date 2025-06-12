@@ -9,6 +9,7 @@ import { randomUUID } from "node:crypto"
 import { formatTimestamp } from "./util"
 import { CompleterResult } from "node:readline"
 import { printHelp } from "./helpPage"
+import { version } from "../buildInfo"
 
 const cliArgSpec = {
     "--dev": Boolean,
@@ -82,7 +83,7 @@ export class App<X extends Extra> {
 		const helpCommand = f.feature({
 			cmd: ["help", "h", "?"],
 			args: {
-				section: f.catchAll({ name: "section or command", description: "the section or command to display help for" }),
+				section: f.catchAllArg({ name: "section or command", description: "the section or command to display help for" }),
 			},
 			description: "Display usage information.",
 			invoke: async ({ app, args, isInteractiveMode }) => {

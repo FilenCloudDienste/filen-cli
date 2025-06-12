@@ -40,7 +40,7 @@ export type Feature<X extends Extra> = {
 } & Partial<X["Feature"]>
 
 export type PositionalArgument<X extends Extra> = Argument<X> & {
-    kind: "positional" | "catch-all"
+    kind: "positional" | "optional" | "catch-all"
 }
 
 export type OptionArgument<X extends Extra> = Argument<X> & {
@@ -77,11 +77,19 @@ const feature = <X extends Extra>() => <args extends Record<string, BuiltArgumen
             throw Error("Feature needs at least one cmd")
         }
 
-        if (argumentsSpec.filter(arg => arg.kind === "catch-all").length > 1) {
-            throw Error(`Feature "${feature.cmd[0]}" has more than one catch-all argument`)
+        // check ordering of argument kinds
+        let hasHadOptional = false
+        let hasHadCatchAll = false
+        for (const arg of argumentsSpec) {
+            if (arg.kind === "positional" && hasHadOptional) {
+                throw Error(`Feature "${feature.cmd[0]}" has a positional argument after an optional argument`)
+            }
+            if (hasHadCatchAll && (arg.kind !== "option")) {
+                throw Error(`Feature "${feature.cmd[0]}" has an (optional) positional argument after a catch-all argument`)
+            }
+            if (arg.kind === "optional") hasHadOptional = true
+            if (arg.kind === "catch-all") hasHadCatchAll = true
         }
-
-        // todo: other checks?
     } catch (e) {
         throw Error(`Error constructing feature "${feature.cmd}": ${e instanceof Error ? e.message : e}`)
     }
@@ -127,7 +135,7 @@ const arg = <X extends Extra>() => (spec: Omit<PositionalArgument<X>, "kind" | "
     }
 }
 
-const catchAll = <X extends Extra>() => (spec: Omit<PositionalArgument<X>, "kind" | "type">): BuiltArgument<X, string[]> => {
+const catchAllArg = <X extends Extra>() => (spec: Omit<PositionalArgument<X>, "kind" | "type">): BuiltArgument<X, string[]> => {
     return {
         spec: { kind: "catch-all", ...spec },
         value: async (ctx) => {
@@ -138,13 +146,15 @@ const catchAll = <X extends Extra>() => (spec: Omit<PositionalArgument<X>, "kind
 }
 
 const optionalArg = <X extends Extra>() => ((spec: Omit<PositionalArgument<X>, "kind" | "type">): BuiltArgument<X, string | undefined> => {
-    const arg = catchAll<X>()(spec)
-    return { ...arg, value: async (ctx) => {
-        const value = await arg.value(ctx)
-        return value.length > 0 ? value[0] : undefined
-    }}
+    return {
+        spec: { kind: "optional", ...spec },
+        value: async (ctx) => {
+            const index = ctx.feature.arguments.filter(arg => arg.kind === "positional" || arg.kind === "optional").findIndex(arg => arg.name === spec.name)
+            const arg = parseArgs(ctx.feature, ctx.argv)
+            return arg["_"][index]
+        }
+    }
 })
-// todo: fix optional args being printed like "ls <directory...>" with required "<>" and "..."
 
 const defaultValue = <X extends Extra>() => <T>(defaultValue: T, arg: BuiltArgument<X, T | undefined>): BuiltArgument<X, T> => {
     return {
@@ -279,7 +289,7 @@ export const buildF = <X extends Extra>() => ({
     app: (...args: ConstructorParameters<typeof App<X>>) => new App(...args),
     feature: feature<X>(),
     arg: arg<X>(),
-    catchAll: catchAll<X>(),
+    catchAllArg: catchAllArg<X>(),
     optionalArg: optionalArg<X>(),
     defaultValue: defaultValue<X>(),
     option: option<X>(),
@@ -343,8 +353,7 @@ export class FeatureRegistry<X extends Extra> {
     public findFeature(input: string): { cmd: string, feature: Feature<X> } | undefined {
         const signatures = this.features
             .flatMap(feature => feature.cmd.map(cmd => ({ feature, cmd, signature: 
-                RegExp(`^${cmd === "?" ? "\\?" : cmd}${feature.arguments.filter(arg => arg.kind === "positional").map(() => " [^\\s]+").join("")}`) // missing "$" allows for more characters at the end
-                // todo: differentiate between "catch-all" and single "optional" positional arguments? -> allows for autocompleting them
+                RegExp(`^${cmd === "?" ? "\\?" : cmd}${feature.arguments.filter(arg => arg.kind === "positional").map(() => " [^\\s]+").join("")}\\b`) // word boundary "\b" allows for more characters at the end
             })))
             .sort((a, b) => (b.cmd.length - a.cmd.length)*100 + (b.feature.arguments.length - a.feature.arguments.length)*1) // sort by decreasing length of cmd (meaning specificity of the cmd), then by number or args
         const found = signatures.find(({ signature }) => signature.test(input))
@@ -364,7 +373,7 @@ export class FeatureRegistry<X extends Extra> {
             feature,
             segments: [
                 ...cmd.split(" ").map(c => ({ type: "constant", value: c })),
-                ...feature.arguments.filter(arg => arg.kind === "positional").map(arg => ({ type: "word", autocomplete: arg.autocomplete })),
+                ...feature.arguments.filter(arg => arg.kind === "positional" || arg.kind === "optional").map(arg => ({ type: "word", autocomplete: arg.autocomplete })),
                 ...feature.arguments.filter(arg => arg.kind === "catch-all").map(arg => ({ type: "catch-all", autocomplete: arg.autocomplete })),
             ]
         }))) as { feature: Feature<X>, segments: ({ type: "constant", value: string } | { type: "word" | "catch-all", autocomplete?: Autocompleter<X> })[] }[]

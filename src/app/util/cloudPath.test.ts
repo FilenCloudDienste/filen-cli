@@ -60,13 +60,13 @@ describe("navigateAndAppendFileNameIfNecessary()", () => {
 
 	test("appending necessary", async () => {
 		expect(
-			(await new CloudPath([]).navigateAndAppendFileNameIfNecessary(filen as unknown as FilenSDK, "folder", "file.txt")).cloudPath
+			(await new CloudPath(["folder"]).appendFileNameIfNecessary(filen as unknown as FilenSDK, "file.txt")).cloudPath
 		).toEqual(["folder", "file.txt"])
 	})
 
 	test("appending not necessary", async () => {
 		expect(
-			(await new CloudPath([]).navigateAndAppendFileNameIfNecessary(filen as unknown as FilenSDK, "folder/any_file.txt", "file.txt")).cloudPath
+			(await new CloudPath(["folder", "any_file.txt"]).appendFileNameIfNecessary(filen as unknown as FilenSDK, "file.txt")).cloudPath
 		).toEqual(["folder", "any_file.txt"])
 	})
 
