@@ -1,6 +1,82 @@
 import { describe, it, expect } from "vitest"
 import { Extra, FeatureContext, FeatureRegistry } from "./features"
 
+describe("findFeature", () => {
+    const registry = new FeatureRegistry({
+        features: [
+            {
+                cmd: ["help", "h"],
+                description: "help",
+                arguments: [],
+                invoke: async () => {}
+            },
+            {
+                cmd: ["ls"],
+                description: "ls",
+                arguments: [
+                    {
+                        kind: "optional",
+                        name: "path",
+                        description: "path to list",
+                    }
+                ],
+                invoke: async () => {}
+            },
+            {
+                cmd: ["head"],
+                description: "head",
+                arguments: [
+                    {
+                        kind: "positional",
+                        name: "file",
+                        description: "file to read"
+                    }
+                ],
+                invoke: async () => {}
+            },
+            {
+                cmd: ["link", "link ls", "links", "links ls"],
+                description: "link-list",
+                arguments: [],
+                invoke: async () => {}
+            },
+            {
+                cmd: ["links", "link"],
+                description: "link-edit",
+                arguments: [
+                    {
+                        kind: "positional",
+                        name: "path",
+                        description: "path to link"
+                    }
+                ],
+                invoke: async () => {}
+            }
+        ]
+    })
+
+    it("should find feature by full command", () => {
+        const feature = registry.findFeature("help")
+        expect(feature?.cmd).toBe("help")
+    })
+
+    it("should find feature without arguments / should not find shorter feature whose command is a prefix of another", () => {
+        const feature = registry.findFeature("head")
+        expect(feature?.cmd).toBe("head") // not "h"
+    })
+
+    it("shouldn't find feature by partial cmd", () => {
+        const feature = registry.findFeature("hea")
+        expect(feature?.cmd).toBeUndefined()
+    })
+
+    it("should differentiate based on arguments", () => {
+        expect(registry.findFeature("link")?.feature.description).toBe("link-list")
+        expect(registry.findFeature("link ls")?.feature.description).toBe("link-list")
+        expect(registry.findFeature("link asdf")?.feature.description).toBe("link-edit")
+    })
+})
+
 describe("autocomplete", () => {
     const registry = new FeatureRegistry({
         features: [
