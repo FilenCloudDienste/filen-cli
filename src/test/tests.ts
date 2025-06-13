@@ -6,7 +6,7 @@ import { rimraf } from "rimraf"
 import { app } from "../app/app"
 import { X } from "../app/f"
 import { InterfaceAdapter } from "../framework/app"
-import { FeatureContext } from "../framework/features"
+import { buildF, EmptyX, Extra, Feature, FeatureContext, FeatureGroup } from "../framework/features"
 import { CloudPath } from "../app/util/cloudPath"
 
 export const testDir = path.resolve("testing")
@@ -17,6 +17,23 @@ export async function clearTestDir() {
     await fs.mkdir(testDataDir, { recursive: true })
 }
 
+export function mockFrameworkApp<X extends Extra = EmptyX>(features: (f: ReturnType<typeof buildF<X>>) => (Feature<X> | FeatureGroup<X>)[], consoleOutput: boolean = false) {
+    const f = buildF<X>()
+    const { adapter, output } = mockInterfaceAdapter({ input: [], consoleOutput })
+    const app = f.app({
+        info: { name: "MyName", version: "0.0.0" },
+        argv: [],
+        adapter,
+        features: features(f),
+        defaultCtx: {},
+        mainFeature: { cmd: [], description: null, arguments: [], invoke: async () => {} },
+    }).app()
+    return {
+        f, app, 
+        adapter, output,
+    }
+}
+
 export async function runMockApp(...args: Parameters<typeof mockApp>) {
     const mock = await mockApp(...args)
     const isError = await mock.run()
@@ -25,10 +42,11 @@ export async function runMockApp(...args: Parameters<typeof mockApp>) {
 
 export async function mockApp({ ctx, cmd, input, consoleOutput, unauthenticated }: { ctx?: Partial<FeatureContext<X>>, cmd?: string, input?: string[], consoleOutput?: boolean, unauthenticated?: boolean }) {
     process.env.FILEN_CLI_DATA_DIR = testDataDir
-    const adapter = new MockInterfaceAdapter(input ?? [], consoleOutput ?? false)
-    const argv = cmd?.split(" ") ?? []
-    const _app = app(argv, adapter)
+    const { adapter, input: adapterInput, isInputEmpty, output } = mockInterfaceAdapter({ input, consoleOutput })
+    const argv = ["--dev", "--verbose", ...(cmd?.split(" ") ?? [])]
     const filen = unauthenticated ? unauthenticatedFilenSDK() : await authenticatedFilenSDK()
+    const x = { filen, cloudWorkingPath: new CloudPath([]), ...ctx?.x }
+    const _app = app(argv, adapter).mockApp(x)
     return {
         app: _app,
         filen,
@@ -39,18 +57,25 @@ export async function mockApp({ ctx, cmd, input, consoleOutput, unauthenticated 
             quiet: false,
             formatJson: false,
             isInteractiveMode: false,
+            x,
             ...ctx,
-            x: { filen, cloudWorkingPath: new CloudPath([]), ...ctx?.x },
         } satisfies FeatureContext<X> as FeatureContext<X>,
-        input: (input: string | string[]) => Array.isArray(input) ? adapter.input.push(...input) : adapter.input.push(input),
-        isInputEmpty: () => adapter.input.length === 0,
-        output: () => adapter.totalOutput,
+        input: adapterInput, isInputEmpty, output,
         run: async () => await _app.main(),
     }
 }
 export type MockApp = Awaited<ReturnType<typeof mockApp>>
 
-class MockInterfaceAdapter implements InterfaceAdapter {
+export function mockInterfaceAdapter({ input, consoleOutput }: { input?: string[], consoleOutput?: boolean }) {
+    const adapter = new MockInterfaceAdapter(input ?? [], consoleOutput ?? false)
+    return {
+        adapter,
+        input: (input: string | string[]) => Array.isArray(input) ? adapter.input.push(...input) : adapter.input.push(input),
+        isInputEmpty: () => adapter.input.length === 0,
+        output: () => adapter.totalOutput,
+    }
+}
+export class MockInterfaceAdapter implements InterfaceAdapter {
     constructor(public input: string[], public output: boolean) {}
 
     public totalOutput = ""

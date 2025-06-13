@@ -1,5 +1,4 @@
 import { InterfaceAdapter } from "../framework/app"
-import { Feature } from "../framework/features"
 import FilenSDK, { FilenSDKConfig } from "@filen/sdk"
 import path from "path"
 import os from "os"
@@ -14,7 +13,7 @@ import { syncCommand } from "./featureInterfaces/syncInterface"
 import { driveMountingCommand } from "./featureInterfaces/driveMountingInterface"
 import { webdavCommandGroup } from "./featureInterfaces/webdavInterface"
 import { s3Command } from "./featureInterfaces/s3Interface"
-import { f, X } from "./f"
+import { f } from "./f"
 
 export const app = (argv: string[], adapter: InterfaceAdapter) => f.app({
 	info: {

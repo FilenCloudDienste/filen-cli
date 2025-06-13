@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, test } from "vitest"
-import { clearTestDir, getCredentials, testDataDir, mockApp, runMockApp } from "./test/tests"
+import { clearTestDir, getCredentials, testDataDir, mockApp, runMockApp } from "../test/tests"
 import fs from "fs/promises"
 import path from "path"
-import { authenticate } from "./app/auth"
-import { FeatureContext } from "./framework/features"
-import { X } from "./app/app"
-import { exists } from "./app/util/util"
+import { authenticate } from "./auth"
+import { FeatureContext } from "../framework/features"
+import { exists } from "./util/util"
+import { X } from "./f"
 
 describe("ways to authenticate", () => {
 
@@ -31,6 +31,8 @@ describe("ways to authenticate", () => {
         const { ctx } = await mockApp({ unauthenticated: true })
         await authenticate(ctx, {})
         expect(isAuthenticated(ctx)).toBe(true)
+        delete process.env.FILEN_EMAIL
+        delete process.env.FILEN_PASSWORD
     })
 
     test("get credentials from .filen-cli-credentials", async () => {
@@ -53,7 +55,7 @@ describe("ways to authenticate", () => {
         expect(isAuthenticated(ctx)).toBe(true)
     })
 
-    test.todo("login from .filen-cli-keep-me-logged-in")
+    test.todo("log in from .filen-cli-keep-me-logged-in file")
 
     test("get credentials from prompt", async () => {
         const { ctx, isInputEmpty } = await mockApp({ unauthenticated: true, input: [email, password, "N"] })
@@ -63,7 +65,7 @@ describe("ways to authenticate", () => {
     })
 
     test("export api key", async () => {
-        const { output } = await runMockApp({ cmd: "export-api-key", unauthenticated: true, input: ["y"] })
+        const { output } = await runMockApp({ cmd: "export-api-key", input: ["y"] })
         expect(output()).toContain("API Key for")
     })
 

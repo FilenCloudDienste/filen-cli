@@ -44,7 +44,7 @@ export const installCommand = f.feature({
 })
 
 export async function runUpdater({ app }: FeatureContext<X>, args: { skipUpdate: boolean, forceUpdate: boolean, autoUpdate: boolean }) {
-	if (args.skipUpdate) {
+	if (app.isDevelopment || args.skipUpdate) {
 		app.outVerbose("Update check skipped")
 		return
 	}

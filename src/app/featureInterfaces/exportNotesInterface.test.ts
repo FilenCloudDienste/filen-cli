@@ -1,24 +1,18 @@
 import { beforeAll, describe, expect, test } from "vitest"
-import { authenticatedFilenSDK, clearTestDir, MockApp, testDir } from "../../test/tests"
+import { clearTestDir, runMockApp, testDir } from "../../test/tests"
+import { mockNotes, markdownNoteParsed } from "../../test/prepareCloud"
 import fs from "fs/promises"
 import path from "path"
 import { exists } from "../util/util"
-import { mockNotes, markdownNoteParsed } from "../test/prepareCloud"
 
-test.todo("export notes")
-
-// todo: update to features architecture
-
-/* describe("export notes", () => {
+describe("export notes", () => {
 
     const exportDir = path.join(testDir, "exportNotes")
 
     beforeAll(async () => {
         await clearTestDir()
-        const app = new MockApp()
-        const filen = await authenticatedFilenSDK()
         await fs.mkdir(exportDir, { recursive: true })
-        await new ExportNotesInterface(app, filen).invoke([exportDir])
+        await runMockApp({ cmd: `export-notes ${exportDir}` })
     })
 
     test("plain text file", async () => {
@@ -69,4 +63,4 @@ test.todo("export notes")
         expect(content).toBe(mockNotes.find(note => note.title === "Code")!.content)
     })
 
-}) */
+})

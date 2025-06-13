@@ -94,5 +94,5 @@ class ConsoleInterfaceAdapter implements InterfaceAdapter {
 	}
 }
 
-const _app = app(process.argv.slice(2), new ConsoleInterfaceAdapter())
+const _app = app(process.argv.slice(2), new ConsoleInterfaceAdapter()).app()
 _app.main().then((success) => process.exit(success ? 0 : 1))

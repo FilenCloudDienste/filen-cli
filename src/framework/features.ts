@@ -309,7 +309,10 @@ export const buildF = <X extends Extra>() => ({
      * Constructs an App.
      * @see App
      */
-    app: (...args: ConstructorParameters<typeof App<X>>) => new App(...args),
+    app: (args: ConstructorParameters<typeof App<X>>[0]) => ({
+        app: () => new App(args),
+        mockApp: (ctx: X["FeatureContext"]) => new App({...args, defaultCtx: ctx}),
+    }),
     /**
      * Constructs a Feature.
      * @see Feature
