@@ -101,8 +101,16 @@ export class App<X extends Extra> {
 				printHelp(app, selectedName, isInteractiveMode)
 			}
 		})
+		const versionCommand = f.feature({
+			cmd: ["version", "v"],
+			description: `Display the version of ${this.info.name}.`,
+			builtin: true,
+			invoke: async ({ app }) => {
+				app.out(`${this.info.name} ${this.info.version}`)
+			}
+		})
 		this.features = new FeatureRegistry({ features: [
-			{ features: [helpCommand], visibility: "hide" },
+			{ features: [helpCommand, versionCommand], visibility: "hide" },
 			...features
 		] })
 

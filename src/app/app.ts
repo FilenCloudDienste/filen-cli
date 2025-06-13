@@ -22,7 +22,7 @@ export const app = (argv: string[], adapter: InterfaceAdapter) => f.app({
 		version
 	},
 	features: [
-		{ features: [versionCommand, canaryCommand, installCommand], visibility: "hide" },
+		{ features: [canaryCommand, installCommand], visibility: "hide" },
 		f.helpText({ name: "general", text: dedent`
 			Usage: filen [options...] [cmd]
 
@@ -102,16 +102,6 @@ export const app = (argv: string[], adapter: InterfaceAdapter) => f.app({
 	}),
 	interactiveModePrompt: (ctx) => ctx.x.cloudWorkingPath.toString(),
 })
-
-const versionCommand: Feature<X> = {
-	cmd: ["version", "v"],
-	arguments: [],
-	description: "Display the version of the Filen CLI.",
-	skipAuthentication: true,
-	invoke: async ({ app }) => {
-		app.out(version)
-	},
-}
 
 export const ANONYMOUS_SDK_CONFIG: FilenSDKConfig = {
 	email: "anonymous",
