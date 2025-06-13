@@ -411,7 +411,7 @@ export class FeatureRegistry<X extends Extra> {
         // if no feature matches exactly, find the one with the longest cmd that matches the input
         return this.features.flatMap(feature => feature.cmd.map(cmd => ({ feature, cmd })))
             .sort((a, b) => b.cmd.length - a.cmd.length) // sort by decreasing length of cmd
-            .find(({ cmd }) => RegExp(`^${cmd}\\b`).test(input))
+            .find(({ cmd }) => RegExp(`^${cmd === "?" ? "\\?" : cmd}\\b`).test(input))
     }
 
     public async autocomplete(ctx: FeatureContext<X>, input: string): Promise<[string[], string]> {
