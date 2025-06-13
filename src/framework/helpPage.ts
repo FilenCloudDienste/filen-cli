@@ -87,6 +87,7 @@ export function printHelp<X extends Extra>(app: App<X>, selectedName: string, is
 				builder.appendText(formatTable(formatArguments.map(arg => [`${arg.optional ? "[" : "<"}${arg.name}${arg.optional ? "]" : ">"}`, arg.description ?? ""])))
 			}
 		})
+		// todo: print option argument valueName, print option argument aliases
 		
 		builder.appendNewline()
 	}
