@@ -201,4 +201,4 @@ export const ANONYMOUS_SDK_CONFIG: FilenSDKConfig = {
 	authVersion: 2,
 	baseFolderUUID: "anonymous",
 	userId: 1
-} as const satisfies FilenSDKConfig
+} as const

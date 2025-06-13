@@ -13,7 +13,7 @@
 		"skipDefaultLibCheck": true,
 		"skipLibCheck": true,
 		"resolveJsonModule": true,
-		"noUncheckedIndexedAccess": true
+		"noUncheckedIndexedAccess": true,
 	},
 	"ts-node": {
 		"files": true
