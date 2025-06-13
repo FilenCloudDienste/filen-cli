@@ -96,6 +96,7 @@ export class App<X extends Extra> {
 				section: f.catchAllArg({ name: "section or command", description: "the section or command to display help for" }),
 			},
 			description: "Display usage information.",
+			builtin: true,
 			invoke: async ({ app, args, isInteractiveMode }) => {
 				const selectedName = args.section.join(" ").toLowerCase()
 				printHelp(app, selectedName, isInteractiveMode)

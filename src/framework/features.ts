@@ -48,6 +48,7 @@ export type Feature<X extends Extra> = {
     longDescription?: string
     arguments: (PositionalArgument<X> | OptionArgument<X>)[]
 	invoke: (ctx: FeatureContextWithFeature<X>) => Promise<void | FeatureResult<X> | undefined>
+    builtin?: boolean
 } & Partial<X["Feature"]>
 
 export type PositionalArgument<X extends Extra> = Argument<X> & {
