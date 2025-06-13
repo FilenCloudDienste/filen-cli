@@ -6,7 +6,7 @@ import pathModule from "path"
 import cliProgress from "cli-progress"
 import FilenSDK, { CloudItem } from "@filen/sdk"
 import { App } from "../../framework/app"
-import { X } from "../app"
+import { X } from "../f"
 import { formatBytes } from "../../framework/util"
 
 /**

@@ -8,7 +8,7 @@ import dedent from "dedent"
 import { exportNotesCommand } from "./exportNotesInterface"
 import { trashCommandsGroup } from "./trashInterface"
 import { publicLinksCommandGroup } from "./publicLinksInterface"
-import { f, X } from "../app"
+import { f, X } from "../f"
 import { FeatureGroup } from "../../framework/features"
 
 const unixStyleCommands: FeatureGroup<X> = {

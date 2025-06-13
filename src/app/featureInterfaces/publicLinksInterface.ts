@@ -1,7 +1,7 @@
 import FilenSDK, { PublicLinkExpiration } from "@filen/sdk"
 import { formatTable, formatTimestamp } from "../../framework/util"
 import { FeatureGroup } from "../../framework/features"
-import { f, X } from "../app"
+import { f, X } from "../f"
 import { getItemPaths } from "../util/util"
 
 async function getPublicLinkStatus(filen: FilenSDK, type: "file" | "directory", uuid: string, fileKey: string | undefined): Promise<{

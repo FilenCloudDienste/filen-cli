@@ -6,7 +6,7 @@ import fsModule, { PathLike } from "node:fs"
 import { displayTransferProgressBar, exists } from "../util/util"
 import getUuidByString from "uuid-by-string"
 import os from "os"
-import { f, X } from "../app"
+import { f, X } from "../f"
 import dedent from "dedent"
 import { App } from "../../framework/app"
 

@@ -1,6 +1,6 @@
 import S3Server, { S3ServerCluster } from "@filen/s3"
 import dedent from "dedent"
-import { f } from "../app"
+import { f } from "../f"
 
 export const s3Command = f.feature({
 	cmd: ["s3"],

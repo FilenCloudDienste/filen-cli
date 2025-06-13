@@ -3,7 +3,7 @@ import fs from "fs/promises"
 import dateFormat from "dateformat"
 import * as cheerio from "cheerio"
 import dedent from "dedent"
-import { f } from "../app"
+import { f } from "../f"
 import { exists, sanitizeFileName } from "../util/util"
 
 export const exportNotesCommand = f.feature({

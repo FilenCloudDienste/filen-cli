@@ -6,7 +6,7 @@ import * as fs from "node:fs"
 import semver from "semver"
 import dedent from "dedent"
 import { FeatureContext } from "../framework/features"
-import { f, X } from "./app"
+import { f, X } from "./f"
 import { App } from "../framework/app"
 
 export const updateHelpText = f.helpText({

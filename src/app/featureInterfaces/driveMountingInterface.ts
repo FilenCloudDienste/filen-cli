@@ -1,6 +1,6 @@
 import VirtualDrive, { isFUSE3InstalledOnLinux, isWinFSPInstalled, isMacFUSEInstalled, isFUSETInstalledOnMacOS } from "@filen/network-drive"
 import dedent from "dedent"
-import { f } from "../app"
+import { f } from "../f"
 
 export const driveMountingCommand = f.feature({
 	cmd: ["mount"],

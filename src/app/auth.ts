@@ -6,7 +6,7 @@ import { wrapRedTerminalText } from "../framework/util"
 import crypto from "node:crypto"
 import { isRunningAsContainer } from "../buildInfo"
 import dedent from "dedent"
-import { f, X } from "./app"
+import { f, X } from "./f"
 import { FeatureContext, FeatureGroup } from "../framework/features"
 import { App } from "../framework/app"
 

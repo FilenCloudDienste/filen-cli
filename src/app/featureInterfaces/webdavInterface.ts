@@ -3,7 +3,7 @@ import FilenSDK from "@filen/sdk"
 import cluster from "node:cluster"
 import dedent from "dedent"
 import { BuiltArgument, FeatureGroup, ParsedArgs } from "../../framework/features"
-import { f, X } from "../app"
+import { f, X } from "../f"
 import { App } from "../../framework/app"
 
 const commonWebdavArgs = {
