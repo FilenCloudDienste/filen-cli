@@ -109,7 +109,12 @@ export async function authenticatedFilenSDK() {
         return _authenticatedFilenSDK
     }
     const filen = unauthenticatedFilenSDK()
-    await filen.login(getCredentials())
+    if (process.env.FILEN_CLI_TESTING_AUTHCONFIG) {
+        const authConfig = JSON.parse(Buffer.from(process.env.FILEN_CLI_TESTING_AUTHCONFIG, "base64").toString()) as FilenSDKConfig
+        filen.init(authConfig)
+    } else {
+        await filen.login(getCredentials())
+    }
     _authenticatedFilenSDK = filen
     return filen
 }

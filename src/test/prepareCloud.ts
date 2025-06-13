@@ -1,6 +1,6 @@
 // Usage: npm run prepare-testing
 
-import FilenSDK from "@filen/sdk"
+import FilenSDK, { FilenSDKConfig } from "@filen/sdk"
 import "dotenv/config"
 import { NoteType } from "@filen/sdk/dist/types/api/v3/notes"
 import dedent from "dedent"
@@ -41,10 +41,15 @@ if (process.argv.join().includes("prepareCloud")) (async () => { // run only if 
         process.exit(1)
     }
     const filen = new FilenSDK()
-    await filen.login({
-        email: process.env.FILEN_CLI_TESTING_EMAIL,
-        password: process.env.FILEN_CLI_TESTING_PASSWORD,
-    })
+    if (process.env.FILEN_CLI_TESTING_AUTHCONFIG) {
+        const authConfig = JSON.parse(Buffer.from(process.env.FILEN_CLI_TESTING_AUTHCONFIG, "base64").toString()) as FilenSDKConfig
+        filen.init(authConfig)
+    } else {
+        await filen.login({
+            email: process.env.FILEN_CLI_TESTING_EMAIL,
+            password: process.env.FILEN_CLI_TESTING_PASSWORD,
+        })
+    }
 
     // command: lock
     if (process.argv.includes("lock")) {
@@ -91,7 +96,7 @@ if (process.argv.join().includes("prepareCloud")) (async () => { // run only if 
 
     console.log("All done.")
 
-})()
+})().then(() => process.exit())
 
 export class NoOverwriteError extends Error {
     constructor(context: string) {
