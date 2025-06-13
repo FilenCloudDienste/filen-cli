@@ -64,15 +64,10 @@ jobs:
           rm -f certificate.p12
       - name: Rename binaries to include release number
         run: node -e "['win-x64.exe', 'win-arm64.exe', 'linux-x64', 'linux-arm64', 'macos-x64', 'macos-arm64'].forEach(suffix => { if (fs.existsSync('dist/filen-cli-'+suffix)) { fs.renameSync('dist/filen-cli-'+suffix, 'dist/filen-cli-${{ github.event.release.tag_name }}-'+suffix) } })"
-      - name: Build HTML docs
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: chmod +x build-docs.sh && ./build-docs.sh
       - name: Attach binaries to release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            dist/filen-cli-${{ github.event.release.tag_name }}-*
-            filen-cli-docs.html
+          files: dist/filen-cli-${{ github.event.release.tag_name }}-*
 
   build-and-publish-npm:
     name: Build and publish to npm
@@ -81,7 +76,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Set version
+      - name: Inject version
         uses: richardrigutins/replace-in-files@v2
         with:
           files: "package.json"
@@ -126,3 +121,39 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: filen/cli:latest,filen/cli:${{ github.event.release.tag_name }}
+  
+  build-html-docs:
+    name: Build HTML docs
+    runs-on: ubuntu-latest
+    #if: ${{ github.event.release.prerelease == false }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Inject version
+        uses: richardrigutins/replace-in-files@v2
+        with:
+          files: "package.json"
+          search-text: "\"version\": \"0.0.0\""
+          replacement-text: "\"version\": \"${{ github.event.release.tag_name }}\""
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23.x"
+      - run: npm ci
+      - name: Build filen-cli
+        run: npm run build
+      - name: Build docs
+        run: chmod +x build-docs.sh && ./build-docs.sh
+      - name: Attach HTML file to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: filen-cli-docs.html
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: filen-cli-docs/dist/index.html
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
