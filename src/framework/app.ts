@@ -295,7 +295,7 @@ export class App<X extends Extra> {
 	 * @param options.useHistory Whether to read from and append to the history
 	 */
 	public async prompt(message: string, options: { autocompletionCtx?: FeatureContext<X>, allowExit?: boolean, obfuscate?: boolean, useHistory?: boolean } = {}) {
-		return new Promise<string>((resolve) => {
+		return new Promise<string>((resolve, reject) => {
 			const autocomplete = async (input: string): Promise<CompleterResult> => {
 				if (!options.autocompletionCtx) return [[], ""]
 				try {
@@ -304,19 +304,19 @@ export class App<X extends Extra> {
 					return this.errExit("autocomplete", e)
 				}
 			}
-			try {
-				this.adapter.prompt(message, options.obfuscate ?? false, options.useHistory ? this.readlineHistory : undefined, options.allowExit ?? false, autocomplete)
-					.then(input => {
-						this.writeLog(message, "log")
-						this.writeLog(" ".repeat(message.length) + (options.obfuscate ? "***" : input), "input")
-						resolve(input)
-					})
-					.catch(e => {
-						throw e
-					})
-			} catch (e) {
-				this.errExit("prompt for user input", e, "maybe you're in an environment without stdin, like a Docker container")
-			}
+			this.adapter.prompt(message, options.obfuscate ?? false, options.useHistory ? this.readlineHistory : undefined, options.allowExit ?? false, autocomplete)
+				.then(input => {
+					this.writeLog(message, "log")
+					this.writeLog(" ".repeat(message.length) + (options.obfuscate ? "***" : input), "input")
+					resolve(input)
+				})
+				.catch(e => {
+					try {
+						this.errExit("prompt for user input", e, "maybe you're in an environment without stdin, like a Docker container")
+					} catch (e) {
+						reject(e)
+					}
+				})
 		})
 	}
 
