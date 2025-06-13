@@ -102,6 +102,23 @@ const feature = <X extends Extra>() => <args extends Record<string, BuiltArgumen
             if (arg.kind === "optional") hasHadOptional = true
             if (arg.kind === "catch-all") hasHadCatchAll = true
         }
+
+        // check "--" and "-" in options
+        for (const option of argumentsSpec.filter(arg => arg.kind === "option")) {
+            if (!option.name.startsWith("--")) {
+                if (option.name.startsWith("-")) {
+                    if (option.alias) {
+                        throw Error(`Feature "${feature.cmd[0]}" has an option argument starting with "-", which also has an alias`)
+                    }
+                } else {
+                    throw Error(`Feature "${feature.cmd[0]}" has an option argument "${option.name}" that does not start with "--".`)
+                }
+            } else {
+                if (option.alias && !option.alias.startsWith("-")) {
+                    throw Error(`Feature "${feature.cmd[0]}" has an option argument with an alias that does not start with "-".`)
+                }
+            }
+        }
     } catch (e) {
         throw Error(`Error constructing feature "${feature.cmd}": ${e instanceof Error ? e.message : e}`)
     }
