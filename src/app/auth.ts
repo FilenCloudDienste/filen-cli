@@ -121,12 +121,14 @@ export async function authenticate(ctx: FeatureContext<X>, args: { email?: strin
 		}
 
 		// otherwise: get credentials from .filen-cli-credentials
-		if (needCredentials() && await exists(".filen-cli-credentials")) {
-			const lines = (await fs.promises.readFile(".filen-cli-credentials")).toString().split("\n")
-			if (lines.length < 2) app.errExit("Invalid .filen-cli-credentials!")
-			const twoFactorCode = lines.length > 2 ? lines[2] : undefined
-			app.outVerbose(`Logging in as ${lines[0]} (using .filen-cli-credentials)`)
-			credentials = { email: lines[0]!, password: lines[1]!, twoFactorCode }
+		for (const filePath of [".filen-cli-credentials", path.join(app.dataDir, ".filen-cli-credentials")]) {
+			if (needCredentials() && await exists(filePath)) {
+				const lines = (await fs.promises.readFile(filePath)).toString().split("\n")
+				if (lines.length < 2) app.errExit("Invalid .filen-cli-credentials!")
+				const twoFactorCode = lines.length > 2 ? lines[2] : undefined
+				app.outVerbose(`Logging in as ${lines[0]} (using .filen-cli-credentials)`)
+				credentials = { email: lines[0]!, password: lines[1]!, twoFactorCode }
+			}
 		}
 
 		// otherwise: login from .filen-cli-auth-config
