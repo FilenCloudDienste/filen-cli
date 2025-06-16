@@ -30,6 +30,6 @@ The Filen CLI includes an automatic updater, for which you can enable canary rel
 
 ## Documentation
 
-You can find exhaustive but concise documentation from within the CLI using the `filen --help <cmd or topic>` command. 
+You can find exhaustive but concise documentation from within the CLI using the `filen --help <cmd or topic>` command and at [docs.cli.filen.io](https://docs.cli.filen.io/).
 
 Longer-form documentation is at [docs.filen.io](https://docs.filen.io/docs/cli).
