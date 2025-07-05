@@ -1,17 +1,47 @@
 import { beforeAll, describe, expect, test } from "vitest"
-import { clearTestDir, runMockApp, testDir } from "../../test/tests"
-import { mockNotes, markdownNoteParsed } from "../../test/prepareCloud"
+import { authenticatedFilenSDK, runMockApp } from "../../test/tests"
 import fs from "fs/promises"
 import path from "path"
 import { exists } from "../util/util"
+import { prepareLocalFs } from "../../test/fsTests"
+import dedent from "dedent"
+import { NoteType } from "@filen/sdk/dist/types/api/v3/notes"
+import { randomUUID } from "crypto"
 
-describe("export notes", () => {
+const mockNotes: { title: string, type: NoteType, content: string }[] = [
+    { title: "Plain Text", type: "text", content: "This is some text" },
+    { title: "Markdown", type: "md", content: "# Title\nSome **formatting**." },
+    { title: "Same Title", type: "text", content: "This is same title note 1" },
+    { title: "Same Title", type: "text", content: "This is same title note 2" },
+    { title: "Checklist", type: "checklist", content: "<ul data-checked=\"false\"><li>Item 1</li><li>Item 2</li></ul><ul data-checked=\"true\"><li>Checked item</li></ul><ul data-checked=\"false\"><li>other</li></ul>" },
+    { title: "Rich Text", type: "rich", content: "<p>This is a te<u>st with </u><strong><u>form</u>atting in all sorts</strong> <em>of ways</em> <u>differently</u>.</p>" },
+    { title: "Code", type: "code", content: "<!doctype html>\n    <body>\n        <h1>Code note</h1>\n    </body>\n</html>" }
+]
+const markdownNoteParsed = dedent`
+    - [ ] Item 1
+    - [ ] Item 2
+    - [x] Checked item
+    - [ ] other
+`
 
-    const exportDir = path.join(testDir, "exportNotes")
+describe("export notes", async () => {
 
+    let exportDir = ""
     beforeAll(async () => {
-        await clearTestDir()
-        await fs.mkdir(exportDir, { recursive: true })
+        const filen = await authenticatedFilenSDK()
+        // prepare notes
+        const existingNotes = await filen.notes().all()
+        await Promise.all(existingNotes.map(note => filen.notes().delete({ uuid: note.uuid })))
+        await Promise.all(mockNotes.map(async (note) => {
+            const uuid = randomUUID()
+            await filen.notes().create({ uuid, title: note.title })
+            await filen.notes().changeType({ uuid, newType: note.type })
+            await filen.notes().edit({ uuid, content: note.content, type: note.type })
+        }))
+
+        // run export notes
+        const { localRoot } = await prepareLocalFs([])
+        exportDir = localRoot
         await runMockApp({ cmd: `export-notes ${exportDir}` })
     })
 

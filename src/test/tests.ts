@@ -9,6 +9,7 @@ import { InterfaceAdapter } from "../framework/app"
 import { buildF, EmptyX, Extra, Feature, FeatureContext, FeatureGroup } from "../framework/features"
 import { CloudPath } from "../app/util/cloudPath"
 
+export const testingRootPath = new CloudPath(["filen-cli-testing"])
 export const testDir = path.resolve("testing")
 export const testDataDir = path.join(testDir, "dataDir")
 export async function clearTestDir() {
