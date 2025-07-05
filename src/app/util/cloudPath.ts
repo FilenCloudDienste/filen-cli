@@ -9,7 +9,7 @@ export class CloudPath {
 	readonly navigationStringEndedInSlash: boolean | undefined = undefined
 
 	public constructor(cloudPath: string[], navigationStringEndedInSlash?: boolean) {
-		this.cloudPath = cloudPath
+		this.cloudPath = cloudPath.filter(segment => segment.length > 0) // no empty segments
 		this.navigationStringEndedInSlash = navigationStringEndedInSlash
 	}
 
@@ -19,7 +19,15 @@ export class CloudPath {
 	 *             Navigations string starting with "/" are interpreted as new absolute paths.
 	 * @returns The resulting CloudPath
 	 */
-	public navigate(path: string): CloudPath {
+	public navigate(path: string | string[]): CloudPath {
+		if (Array.isArray(path)) {
+			let newPath = new CloudPath(this.cloudPath)
+			for (const segment of path as string[]) {
+				newPath = newPath.navigate(segment)
+			}
+			return newPath
+		}
+
 		if (path.startsWith("\"") && path.endsWith("\"")) path = path.substring(1, path.length - 1)
 		if (path.startsWith("/")) return new CloudPath(path.substring(1).split("/"))
 		else {

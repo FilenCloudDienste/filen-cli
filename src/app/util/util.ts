@@ -98,6 +98,23 @@ export async function exists(path: PathLike): Promise<boolean> {
 }
 
 /**
+ * Append a filename to a path if it points to a directory.
+ */
+export async function appendFileNameIfEndsInSlashOrIsDirectory(path: string, fileName: string): Promise<string> {
+	if (path.endsWith("/") || path.endsWith("\\")) return pathModule.join(path, fileName)
+	try {
+		const stats = await fsModule.promises.stat(path)
+		if (stats.isDirectory()) {
+			return pathModule.join(path, fileName)
+		} else {
+			return path
+		}
+	} catch {
+		return path
+	}
+}
+
+/**
  * Determine the accumulated size of all files inside a directory.
  */
 export async function directorySize(path: PathLike) {

@@ -44,29 +44,37 @@ export const exportNotesCommand = f.feature({
 
         // fetch notes and write to disk
         const notes = await filen.notes().all()
-        await Promise.all(notes.map(note => (async () => {
-            try {
-                let { content } = await filen.notes().content({ uuid: note.uuid })
+        const usedFileNames: string[] = []
+        const promises = []
+        for (const note of notes) {
+            // choose file ending
+            const fileEnding = (() => {
+                if (note.type === "rich") return "html"
+                if (note.type === "md" || note.type === "checklist") return "md"
+                return "txt"
+            })()
 
-                // convert to readable format, choose file ending
-                if (note.type === "checklist") content = convertChecklistHTMLToMarkdown(content)
-                const fileEnding = (() => {
-                    if (note.type === "rich") return "html"
-                    if (note.type === "md" || note.type === "checklist") return "md"
-                    return "txt"
-                })()
-
-                // find unique file name
-                let file
-                for (let i = 0; i === 0 || await exists(file!); i++) {
-                    file = pathModule.join(exportRoot, `${sanitizeFileName(note.title)}${i === 0 ? "" : `-${i}`}.${fileEnding}`)
-                }
-
-                await fs.writeFile(file!, content)
-            } catch (e) {
-                app.errExit(`export note "${note.title}" (${note.uuid})`, e)
+            // find unique file name
+            let exportFilePath
+            for (let i = 0; i === 0 || usedFileNames.includes(exportFilePath!); i++) {
+                exportFilePath = pathModule.join(exportRoot, `${sanitizeFileName(note.title)}${i === 0 ? "" : `-${i}`}.${fileEnding}`)
             }
-        })()))
+            usedFileNames.push(exportFilePath!)
+
+            promises.push((async () => {
+                try {
+                    let { content } = await filen.notes().content({ uuid: note.uuid })
+
+                    // convert to readable format
+                    if (note.type === "checklist") content = convertChecklistHTMLToMarkdown(content)
+    
+                    await fs.writeFile(exportFilePath!, content)
+                } catch (e) {
+                    app.errExit(`export note "${note.title}" (${note.uuid})`, e)
+                }
+            })())
+        }
+        await Promise.all(promises)
 
         app.outUnlessQuiet(`Exported notes to ${exportRoot}`)
     }

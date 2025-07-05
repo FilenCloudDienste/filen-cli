@@ -267,20 +267,23 @@ const localPath = <X extends Extra>() => ({ restrictType, skipCheckExists }: { r
             }),
         },
         value: async (ctx) => {
-            const path = pathModule.resolve(await arg.value(ctx) ?? "")
+            const rawPath = await arg.value(ctx) ?? ""
+            const path = pathModule.resolve(rawPath ?? "")
+            let shouldAppendSlash = rawPath === "." || rawPath.endsWith("/") || rawPath.endsWith("\\") // should append slash if rawPath ended in slash
             if (!skipCheckExists) {
                 const stat = await (async () => {
                     try {
                         return await fsModule.stat(path)
                     } catch {
-                        return ctx.app.errExit(`No such local ${restrictType ?? "path"}: ${path}`)
+                        return ctx.app.errExit(`No such local file or directory: ${path}`)
                     }
                 })()
                 if ((restrictType === "file" && !stat.isFile) || (restrictType === "directory" && !stat.isDirectory())) {
                     ctx.app.errExit(`Not a ${restrictType}: ${path}`)
                 }
+                shouldAppendSlash = stat.isDirectory()
             }
-            return path
+            return shouldAppendSlash ? path + "/" : path
         }
     }
 }
@@ -351,6 +354,7 @@ export const buildF = <X extends Extra>() => ({
     /**
      * Parses an argument into a path to a local file or directory.
      * Provides autocompletion and validation.
+     * If the specified path is a directory, or a slash had been appended to the original input, the path will end in a slash.
      */
     localPath: localPath<X>(),
     /**

@@ -1,60 +1,60 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`help page > collapsed sections > should print in full when requested 1`] = `
-"  
-  My Title
-  
-  This is a collapsed help text description.
-  
+"
+My Title
+
+This is a collapsed help text description.
+
 "
 `;
 
 exports[`help page > should also print general help by specified name 1`] = `
-"  MyName 0.0.0
-  
-  This is general help.
-  
+"MyName 0.0.0
+
+This is general help.
+
 "
 `;
 
 exports[`help page > should print any help by specified name 1`] = `
-"  MyName 0.0.0
-  
-  This is something help.
-  
+"MyName 0.0.0
+
+This is something help.
+
 "
 `;
 
 exports[`help page > should print feature correctly 1`] = `
-"  MyName 0.0.0
-  > my-feature <myArg> [myOptionalArg] [myDefaultValueArg] <myCatchAllArg...> [--myOptionArg] [--myFlagArg] <--myRequiredOptionArg>
-      This is my feature.
-      
-      This is a longer description of my feature.
-      
-      <myArg>                   This is my argument.                                            
-      [myOptionalArg]           This is my optional argument.                                   
-      [myDefaultValueArg]       This is my argument with a default value. (default: hello there)
-      <myCatchAllArg...>        This is my catch-all argument.                                  
-      [--myOptionArg]           This is my option argument.                                     
-      [--myFlagArg]             This is my flag argument.                                       
-      <--myRequiredOptionArg>   This is my required option argument.                            
-  
+"MyName 0.0.0
+> my-feature <myArg> [myOptionalArg] [myDefaultValueArg] <myCatchAllArg...> [--myOptionArg] [--myFlagArg] <--myRequiredOptionArg>
+    This is my feature.
+    
+    This is a longer description of my feature.
+    
+    <myArg>                   This is my argument.                                            
+    [myOptionalArg]           This is my optional argument.                                   
+    [myDefaultValueArg]       This is my argument with a default value. (default: hello there)
+    <myCatchAllArg...>        This is my catch-all argument.                                  
+    [--myOptionArg]           This is my option argument.                                     
+    [--myFlagArg]             This is my flag argument.                                       
+    <--myRequiredOptionArg>   This is my required option argument.                            
+
 "
 `;
 
 exports[`help page > should print general help 1`] = `
-"  MyName 0.0.0
-  
-  This is general help.
-  
-  This is something help.
-  
-  my-feature
-   (expand via \`filen help my-feature\`)
-  
-  My Title
-   (expand via \`filen help my-title\`)
-  
+"MyName 0.0.0
+
+This is general help.
+
+This is something help.
+
+my-feature
+ (expand via \`filen help my-feature\`)
+
+My Title
+ (expand via \`filen help my-title\`)
+
 "
 `;

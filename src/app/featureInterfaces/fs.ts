@@ -1,5 +1,5 @@
 import pathModule from "path"
-import { directorySize, displayTransferProgressBar, getItemPaths, hashFile } from "../util/util"
+import { appendFileNameIfEndsInSlashOrIsDirectory, directorySize, displayTransferProgressBar, getItemPaths, hashFile } from "../util/util"
 import { CloudPath } from "../util/cloudPath"
 import * as fsModule from "node:fs"
 import open from "open"
@@ -54,7 +54,7 @@ const unixStyleCommands: FeatureGroup<X> = {
 			}
 		}),
 		f.feature({
-			cmd: ["cat"],
+			cmd: ["cat", "more"],
 			description: "Print the contents of a file.",
 			args: {
 				file: f.cloudPath({ restrictType: "file" }, f.arg({ name: "file", description: "file to read" })),
@@ -89,7 +89,7 @@ const unixStyleCommands: FeatureGroup<X> = {
 			cmd: ["mkdir"],
 			description: "Create a directory.",
 			args: {
-				directory: f.cloudPath({ restrictType: "directory" }, f.arg({ name: "directory", description: "directory to create" }))
+				directory: f.cloudPath({ restrictType: "directory", skipCheckExists: true }, f.arg({ name: "directory", description: "directory to create" }))
 			},
 			invoke: async ({ app, filen, args }) => {
 				await filen.fs().mkdir({ path: args.directory.toString() })
@@ -174,11 +174,11 @@ const unixStyleCommands: FeatureGroup<X> = {
 			description: "Move or rename a file or directory.",
 			args: {
 				from: f.cloudPath({}, f.arg({ name: "from", description: "source file or directory" })),
-				to: f.cloudPath({}, f.arg({ name: "to", description: "destination path or parent directory" })),
+				to: f.cloudPath({ skipCheckExists: true }, f.arg({ name: "to", description: "destination path or parent directory" })),
 			},
 			invoke: async ({ app, filen, args }) => {
 				const from = args.from
-				const to = await from.appendFileNameIfNecessary(filen, from.getLastSegment())
+				const to = await args.to.appendFileNameIfNecessary(filen, from.getLastSegment())
 				await filen.fs().rename({ from: from.toString(), to: to.toString() })
 				app.outUnlessQuiet(`Moved ${from.toString()} to ${to.toString()}`)
 			}
@@ -188,11 +188,11 @@ const unixStyleCommands: FeatureGroup<X> = {
 			description: "Copy a file or directory.",
 			args: {
 				from: f.cloudPath({}, f.arg({ name: "from", description: "source file or directory" })),
-				to: f.cloudPath({}, f.arg({ name: "to", description: "destination path or parent directory" })),
+				to: f.cloudPath({ skipCheckExists: true }, f.arg({ name: "to", description: "destination path or parent directory" })),
 			},
 			invoke: async ({ app, filen, args, quiet }) => {
 				const from = args.from
-				const to = from.appendFileNameIfNecessary(filen, from.getLastSegment())
+				const to = await args.to.appendFileNameIfNecessary(filen, from.getLastSegment())
 
 				const fromSize = (await filen.fs().stat({ path: from.toString() })).size
 				let progressBar = quiet ? null : displayTransferProgressBar(app, "Downloading", from.getLastSegment(), fromSize, true)
@@ -228,7 +228,7 @@ const filenSpecificCommands: FeatureGroup<X> = {
 			description: "Upload a local file into the cloud at a specified path.",
 			args: {
 				source: f.localPath({ restrictType: "file" }, f.arg({ name: "source", description: "local file to upload" })),
-				destination: f.cloudPath({}, f.defaultValue(".", f.optionalArg({ name: "destination", description: "destination path or parent directory" }))),
+				destination: f.cloudPath({ skipCheckExists: true }, f.defaultValue(".", f.optionalArg({ name: "destination", description: "destination path or parent directory" }))),
 			},
 			invoke: async ({ app, filen, args, quiet }) => {
 				const stat = fsModule.statSync(args.source)
@@ -255,11 +255,10 @@ const filenSpecificCommands: FeatureGroup<X> = {
 			description: "Download a file or directory from the cloud into a local destination.",
 			args: {
 				source: f.cloudPath({}, f.arg({ name: "source", description: "cloud file or directory" })),
-				destination: f.localPath({}, f.defaultValue(".", f.optionalArg({ name: "destination", description: "local destination path" }))),
+				destination: f.localPath({ skipCheckExists: true }, f.defaultValue(".", f.optionalArg({ name: "destination", description: "local destination path" }))),
 			},
 			invoke: async ({ app, filen, args, quiet }) => {
-				const rawPath = args.destination === "." ? process.cwd() + "/" : args.destination
-				const path = rawPath.endsWith("/") || rawPath.endsWith("\\") ? pathModule.join(rawPath, args.source.getLastSegment()) : rawPath
+				const path = await appendFileNameIfEndsInSlashOrIsDirectory(args.destination, args.source.getLastSegment())
 				const size = (await filen.fs().stat({ path: args.source.toString() })).size
 				const progressBar = quiet ? null : displayTransferProgressBar(app, "Downloading", args.source.getLastSegment(), size)
 				try {
@@ -281,7 +280,7 @@ const filenSpecificCommands: FeatureGroup<X> = {
 			cmd: ["write", "touch"],
 			description: "Write plain text to a file.",
 			args: {
-				file: f.cloudPath({}, f.arg({ name: "file", description: "file to write to (will be created if it doesn't exist)" })),
+				file: f.cloudPath({ skipCheckExists: true }, f.arg({ name: "file", description: "file to write to (will be created if it doesn't exist)" })),
 				content: f.catchAllArg({ name: "content", description: "any string content" }),
 			},
 			invoke: async ({ app, filen, args }) => {

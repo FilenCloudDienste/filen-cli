@@ -41,12 +41,12 @@ export async function runMockApp(...args: Parameters<typeof mockApp>) {
     return { ...mock, isError }
 }
 
-export async function mockApp({ ctx, cmd, input, consoleOutput, unauthenticated }: { ctx?: Partial<FeatureContext<X>>, cmd?: string, input?: string[], consoleOutput?: boolean, unauthenticated?: boolean }) {
+export async function mockApp({ ctx, cmd, input, consoleOutput, unauthenticated, root }: { ctx?: Partial<FeatureContext<X>>, cmd?: string, input?: string[], consoleOutput?: boolean, unauthenticated?: boolean, root?: CloudPath } = {}) {
     process.env.FILEN_CLI_DATA_DIR = testDataDir
     const { adapter, input: adapterInput, isInputEmpty, output } = mockInterfaceAdapter({ input, consoleOutput })
-    const argv = ["--dev", "--verbose", ...(cmd?.split(" ") ?? [])]
+    const argv = ["--dev", ...(consoleOutput ? ["--verbose"] : []), ...(cmd?.split(" ") ?? [])]
     const filen = unauthenticated ? unauthenticatedFilenSDK() : await authenticatedFilenSDK()
-    const x = { filen, cloudWorkingPath: new CloudPath([]), ...ctx?.x }
+    const x = { filen, cloudWorkingPath: root ?? testingRootPath, ...ctx?.x }
     const _app = app(argv, adapter).mockApp(x)
     return {
         app: _app,
@@ -62,7 +62,11 @@ export async function mockApp({ ctx, cmd, input, consoleOutput, unauthenticated 
             ...ctx,
         } satisfies FeatureContext<X> as FeatureContext<X>,
         input: adapterInput, isInputEmpty, output,
-        run: async () => await _app.main(),
+        runWithStatus: async () => await _app.main(),
+        run: async () => {
+            const ok = await _app.main()
+            if (!ok) throw Error(`Exit error: ${output()}`)
+        }
     }
 }
 export type MockApp = Awaited<ReturnType<typeof mockApp>>
@@ -73,18 +77,21 @@ export function mockInterfaceAdapter({ input, consoleOutput }: { input?: string[
         adapter,
         input: (input: string | string[]) => Array.isArray(input) ? adapter.input.push(...input) : adapter.input.push(input),
         isInputEmpty: () => adapter.input.length === 0,
-        output: () => adapter.totalOutput,
+        labelledOutput: () => adapter.totalOutput,
+        output: () => adapter.totalOutputRaw,
     }
 }
 export class MockInterfaceAdapter implements InterfaceAdapter {
     constructor(public input: string[], public output: boolean) {}
 
     public totalOutput = ""
+    public totalOutputRaw = ""
     private totalErrorOutput = ""
     private appendOutput(message: string, label: string = " ") {
-        message = message.split("\n").map(line => label + " " + line).join("\n")
-        this.totalOutput += message + "\n"
-        if (label === "E") this.totalErrorOutput += message + "\n"
+        const labeledMessage = message.split("\n").map(line => label + " " + line).join("\n")
+        this.totalOutput += labeledMessage + "\n"
+        this.totalOutputRaw += message + "\n"
+        if (label === "E") this.totalErrorOutput += labeledMessage + "\n"
     }
 
     out(message: string) {
