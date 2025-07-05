@@ -87,7 +87,9 @@ function runWebDAV(app: App<X>, filen: FilenSDK, proxyMode: boolean, args: Parse
 				cluster.setupPrimary({ execArgv: [] })
 			}
 			const webdavServer = args.threads === undefined
+				// @ts-expect-error next-line (other @filen dependencies are not yet updated to the latest @filen/sdk version)
 				? new WebDAVServer(configuration)
+				// @ts-expect-error next-line (other @filen dependencies are not yet updated to the latest @filen/sdk version)
 				: new WebDAVServerCluster({ ...configuration, threads: args.threads !== 0 ? args.threads : undefined })
 			await webdavServer.start()
 			let location = `${https ? "https" : "http"}://${hostname}:${port}`

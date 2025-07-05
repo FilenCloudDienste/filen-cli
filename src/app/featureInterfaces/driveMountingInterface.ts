@@ -31,6 +31,7 @@ export const driveMountingCommand = f.feature({
 				}
 
 				const virtualDrive = new VirtualDrive({
+					// @ts-expect-error next-line (other @filen dependencies are not yet updated to the latest @filen/sdk version)
 					sdk: filen,
 					mountPoint: args.mountPoint
 				})

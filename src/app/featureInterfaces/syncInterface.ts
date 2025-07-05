@@ -124,6 +124,7 @@ class SyncInterface {
 				const worker = new SyncWorker({
 					syncPairs: fullSyncPairs,
 					dbPath: pathModule.join(this.app.dataDir, "sync"),
+					// @ts-expect-error next-line (other @filen dependencies are not yet updated to the latest @filen/sdk version)
 					sdk: this.filen,
 					onMessage: msg => {
 						this.app.outVerbose(JSON.stringify(msg, null, 2))

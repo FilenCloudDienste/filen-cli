@@ -37,7 +37,9 @@ export const s3Command = f.feature({
 				}
 				const threads = args.threads ?? 0
 				const s3Server = args.threads === undefined
+					// @ts-expect-error next-line (other @filen dependencies are not yet updated to the latest @filen/sdk version)
 					? new S3Server(configuration)
+					// @ts-expect-error next-line (other @filen dependencies are not yet updated to the latest @filen/sdk version)
 					: new S3ServerCluster({ ...configuration, threads: threads !== 0 ? threads : undefined })
 				await s3Server.start()
 				let location = `${https ? "https" : "http"}://${hostname}:${port}`
