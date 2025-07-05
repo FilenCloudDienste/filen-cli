@@ -5,8 +5,8 @@
 	"main": "build/index.js",
 	"scripts": {
 		"start-dev": "tsc && node build/index.js",
-		"lint": "eslint src/**/* --ext .js,.jsx,.ts,.tsx",
-		"lint-ci": "eslint src/**/* --ext .js,.jsx,.ts,.tsx --format=@microsoft/eslint-formatter-sarif --output-file=eslint-report.sarif",
+		"lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --ext .js,.jsx,.ts,.tsx",
+		"lint-ci": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --ext .js,.jsx,.ts,.tsx --format=@microsoft/eslint-formatter-sarif --output-file=eslint-report.sarif",
 		"test": "vitest --dir=src/",
 		"prepare-testing": "tsc && node build/test/prepareCloud.js",
 		"build": "tsc && node injectBuildInfo.mjs && esbuild build/index.js --bundle --outfile=dist/bundle.js \"--external:*keytar.node\" --external:keytar --format=cjs --platform=node",
