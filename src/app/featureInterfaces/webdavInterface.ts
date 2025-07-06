@@ -31,7 +31,7 @@ export const webdavCommandGroup: FeatureGroup<X> = {
 				username: f.required(f.option({ name: "--w-user", description: "username for authentication" })),
 				password: f.required(f.option({ name: "--w-password", description: "password for authentication" })),
 				...commonWebdavArgs,
-				authScheme: f.required(f.option({ name: "--w-auth-scheme", description: "the authentication scheme the server should use, \"basic\" or \"digest\" (default is basic)" })),
+				authScheme: f.defaultValue("basic", f.option({ name: "--w-auth-scheme", description: "the authentication scheme the server should use, \"basic\" or \"digest\"" })),
 			},
 			invoke: ({ app, filen, args }) => runWebDAV(app, filen, false, args)
 		}),
