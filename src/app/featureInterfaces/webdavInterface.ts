@@ -28,10 +28,10 @@ export const webdavCommandGroup: FeatureGroup<X> = {
 				credentials should be different from your Filen account credentials).
 			`,
 			args: {
-				username: f.arg({ name: "--w-user", description: "username for authentication" }),
-				password: f.arg({ name: "--w-password", description: "password for authentication" }),
+				username: f.required(f.option({ name: "--w-user", description: "username for authentication" })),
+				password: f.required(f.option({ name: "--w-password", description: "password for authentication" })),
 				...commonWebdavArgs,
-				authScheme: f.arg({ name: "--w-auth-scheme", description: "the authentication scheme the server should use, \"basic\" or \"digest\" (default is basic)" }),
+				authScheme: f.required(f.option({ name: "--w-auth-scheme", description: "the authentication scheme the server should use, \"basic\" or \"digest\" (default is basic)" })),
 			},
 			invoke: ({ app, filen, args }) => runWebDAV(app, filen, false, args)
 		}),

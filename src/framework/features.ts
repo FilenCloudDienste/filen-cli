@@ -423,9 +423,11 @@ export class FeatureRegistry<X extends Extra> {
     }
 
     public findFeature(input: string): { cmd: string, feature: Feature<X> } | undefined {
+        const regexOptionalMoreArgumentsAtEnd = "( .*)?$"
+
         const signatures = this.features
             .flatMap(feature => feature.cmd.map(cmd => ({ feature, cmd, signature: 
-                RegExp(`^${cmd === "?" ? "\\?" : cmd}${feature.arguments.filter(arg => arg.kind === "positional").map(() => " [^\\s]+").join("")}\\b`) // word boundary "\b" allows for more characters at the end
+                RegExp(`^${cmd === "?" ? "\\?" : cmd}${feature.arguments.filter(arg => arg.kind === "positional").map(() => " [^\\s]+").join("")}${regexOptionalMoreArgumentsAtEnd}`)
             })))
             .sort((a, b) => (b.cmd.length - a.cmd.length)*100 + (b.feature.arguments.length - a.feature.arguments.length)*1) // sort by decreasing length of cmd (meaning specificity of the cmd), then by number or args
         const found = signatures.find(({ signature }) => signature.test(input))
@@ -436,7 +438,7 @@ export class FeatureRegistry<X extends Extra> {
         // if no feature matches exactly, find the one with the longest cmd that matches the input
         return this.features.flatMap(feature => feature.cmd.map(cmd => ({ feature, cmd })))
             .sort((a, b) => b.cmd.length - a.cmd.length) // sort by decreasing length of cmd
-            .find(({ cmd }) => RegExp(`^${cmd === "?" ? "\\?" : cmd}\\b`).test(input))
+            .find(({ cmd }) => RegExp(`^${cmd === "?" ? "\\?" : cmd}${regexOptionalMoreArgumentsAtEnd}`).test(input))
     }
 
     public async autocomplete(ctx: FeatureContext<X>, input: string): Promise<[string[], string]> {
