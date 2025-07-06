@@ -72,7 +72,7 @@ export function printHelp<X extends Extra>(app: App<X>, selectedName: string, is
 		// print Feature command signature and description
 		feature = feature as Feature<X>
 		const isOptional = (arg: PositionalArgument<X> | OptionArgument<X>) => arg.kind === "optional" || (arg.kind === "option" && !(arg as OptionArgument<X>).isRequired)
-		builder.appendText("> " + [feature.cmd[0],...feature.arguments.map(arg => `${isOptional(arg) ? "[" : "<"}${arg.name}${arg.kind === "catch-all" ? "..." : ""}${isOptional(arg) ? "]" : ">"}`)].join(" "))
+		builder.appendText("> " + [feature.cmd[0],...feature.arguments.map(arg => `${isOptional(arg) ? "[" : "<"}${arg.name}${arg.kind === "option" && !(arg as OptionArgument<X>).isFlag ? ` <${(arg as OptionArgument<X>).valueName ?? "..."}>` : ""}${arg.kind === "catch-all" ? "..." : ""}${isOptional(arg) ? "]" : ">"}`)].join(" "))
 		builder.withIncreasedIndentation(() => {
 			if (feature.description) {
 				builder.appendText(feature.description!)
@@ -82,12 +82,11 @@ export function printHelp<X extends Extra>(app: App<X>, selectedName: string, is
 				builder.appendText(feature.longDescription!)
 				builder.appendNewline()
 			}
-			const formatArguments = feature.arguments.filter(arg => arg.description !== undefined).map(arg => ({ name: `${arg.name}${arg.kind === "catch-all" ? "..." : ""}`, description: arg.description, optional: isOptional(arg) }))
+			const formatArguments = feature.arguments.filter(arg => arg.description !== undefined).map(arg => ({ name: arg.kind === "option" && !(arg as OptionArgument<X>).isFlag ? `${arg.name} <${(arg as OptionArgument<X>).valueName ?? "..."}>` : `${arg.name}${arg.kind === "catch-all" ? "..." : ""}`, description: arg.description, optional: isOptional(arg) }))
 			if (formatArguments.length > 0) {
 				builder.appendText(formatTable(formatArguments.map(arg => [`${arg.optional ? "[" : "<"}${arg.name}${arg.optional ? "]" : ">"}`, arg.description ?? ""])))
 			}
 		})
-		// todo: print option argument valueName, print option argument aliases
 		
 		builder.appendNewline()
 	}

@@ -75,7 +75,7 @@ const unixStyleCommands: FeatureGroup<X> = {
 			description: `Print the ${cmd === "head" ? "first" : "last"} lines of a file.`,
 			args: {
 				file: f.cloudPath({ restrictType: "file" }, f.arg({ name: "file", description: "file to read" })),
-				lines: f.defaultValue(10, f.number(f.option({ name: "-n", description: "number of lines to print" }))),
+				lines: f.defaultValue(10, f.number(f.option({ name: "-n", description: "number of lines to print", valueName: "lines" }))),
 			},
 			invoke: async ({ app, x, args, formatJson }) => {
 				const { filen } = x

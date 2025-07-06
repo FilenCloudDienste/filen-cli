@@ -27,18 +27,18 @@ This is something help.
 
 exports[`help page > should print feature correctly 1`] = `
 "MyName 0.0.0
-> my-feature <myArg> [myOptionalArg] [myDefaultValueArg] <myCatchAllArg...> [--myOptionArg] [--myFlagArg] <--myRequiredOptionArg>
+> my-feature <myArg> [myOptionalArg] [myDefaultValueArg] <myCatchAllArg...> [--myOptionArg <...>] [--myFlagArg] <--myRequiredOptionArg <...>>
     This is my feature.
     
     This is a longer description of my feature.
     
-    <myArg>                   This is my argument.                                            
-    [myOptionalArg]           This is my optional argument.                                   
-    [myDefaultValueArg]       This is my argument with a default value. (default: hello there)
-    <myCatchAllArg...>        This is my catch-all argument.                                  
-    [--myOptionArg]           This is my option argument.                                     
-    [--myFlagArg]             This is my flag argument.                                       
-    <--myRequiredOptionArg>   This is my required option argument.                            
+    <myArg>                         This is my argument.                                            
+    [myOptionalArg]                 This is my optional argument.                                   
+    [myDefaultValueArg]             This is my argument with a default value. (default: hello there)
+    <myCatchAllArg...>              This is my catch-all argument.                                  
+    [--myOptionArg <...>]           This is my option argument.                                     
+    [--myFlagArg]                   This is my flag argument.                                       
+    <--myRequiredOptionArg <...>>   This is my required option argument.                            
 
 "
 `;
