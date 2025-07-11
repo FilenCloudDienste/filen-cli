@@ -97,6 +97,22 @@ export const app = (argv: string[], adapter: InterfaceAdapter) => f.app({
 			if (!selectedFeature?.skipAuthentication && !selectedFeature?.builtin) {
 				await authenticate(ctx, args)
 			}
+			
+			// apply root path (cannot be handled directly in args, since ctx.x.filen is then not yet authenticated)
+			const cloudWorkingPath = ctx.x.cloudWorkingPath.navigate(args.rootPath ?? "")
+			try {
+				const stat = await ctx.x.filen.fs().stat({ path: cloudWorkingPath.toString() })
+				if (stat.type !== "directory") {
+					app.errExit(`The specified root path is not a directory: ${cloudWorkingPath.toString()}`)
+				}
+			} catch (e) {
+				if (e instanceof Error && e.name === "FileNotFoundError") {
+					app.errExit(`The specified root path does not exist: ${cloudWorkingPath.toString()}`)
+				}
+				throw e
+			}
+
+			return { ctx: { x: { ...ctx.x, cloudWorkingPath } } }
 		},
 	}),
 	interactiveModePrompt: (ctx) => ctx.x.cloudWorkingPath.toString(),

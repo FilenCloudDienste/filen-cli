@@ -385,19 +385,21 @@ export class App<X extends Extra> {
 		try {
             let ctx = this.ctx
 
+			let parsedArgv = parseArgs(this.mainFeature, ctx.argv)["_"]
+
             // determine feature
-            if (ctx.argv.length > 0) {
-				const foundFeature = this.features.findFeature(ctx.argv.join(" ").toLowerCase())
-				if (foundFeature === undefined) return this.errExit(`Unknown command: ${ctx.argv.join(" ")}`)
+            if (parsedArgv.length > 0) {
+				const foundFeature = this.features.findFeature(parsedArgv.join(" ").toLowerCase())
+				if (foundFeature === undefined) return this.errExit(`Unknown command: ${parsedArgv.join(" ")}`)
 				ctx.cmd = foundFeature.cmd
-				ctx.argv = ctx.argv.slice(foundFeature.cmd.split(" ").length)
+				parsedArgv = parsedArgv.slice(foundFeature.cmd.split(" ").length)
 				ctx.feature = foundFeature.feature
 			}
 
             // execute main
 			const mainResult = await this.mainFeature.invoke({ ...this.ctx, feature: this.mainFeature })
             ctx = typeof mainResult === "object" ? { ...ctx, ...(mainResult as FeatureResult<X>).ctx } : this.ctx
-            ctx.argv = parseArgs(this.mainFeature, ctx.argv)["_"]
+            ctx.argv = parsedArgv
 
 			if (ctx.feature !== undefined) {
 				// execute single command
