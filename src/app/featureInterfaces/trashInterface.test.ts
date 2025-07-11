@@ -1,0 +1,41 @@
+import { beforeAll, describe, expect, it } from "vitest"
+import { authenticatedFilenSDK, runMockApp } from "../../test/tests"
+import { prepareCloudFs } from "../../test/fsTests"
+import { CloudPath } from "../util/cloudPath"
+
+describe.sequential("trash", async () => {
+
+    const filen = await authenticatedFilenSDK()
+    let root: CloudPath = new CloudPath([])
+
+    beforeAll(async () => {
+        await filen.cloud().emptyTrash()
+        root = (await prepareCloudFs([ "file1.txt", "file2.txt" ])).root
+        await filen.fs().rm({ path: root.navigate("file1.txt").toString(), permanent: false })
+        await filen.fs().rm({ path: root.navigate("file2.txt").toString(), permanent: false })
+        console.log(root.toString())
+    }, 15000)
+
+    it("should list trash items", async () => {
+        const { output } = await runMockApp({ cmd: "trash list" })
+        expect(output()).toContain("file1.txt")
+        expect(output()).toContain("file2.txt")
+    })
+
+    it("should delete trash item", async () => {
+        const { isInputEmpty } = await runMockApp({ consoleOutput: true, cmd: "trash delete", input: ["1", "y"] })
+        expect(isInputEmpty()).toBe(true)
+    })
+
+    it("should restore trash item", async () => {
+        const { isInputEmpty } = await runMockApp({ consoleOutput: true, cmd: "trash restore", input: ["1"] })
+        expect(isInputEmpty()).toBe(true)
+        // will check if restore action was called in next test
+    })
+
+    it("should list empty trash", async () => {
+        const { output } = await runMockApp({ cmd: "trash list" })
+        expect(output()).toContain("empty")
+    })
+
+})

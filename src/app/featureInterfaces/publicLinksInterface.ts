@@ -1,4 +1,4 @@
-import FilenSDK, { PublicLinkExpiration } from "@filen/sdk"
+import FilenSDK, { APIError, PublicLinkExpiration } from "@filen/sdk"
 import { formatTable, formatTimestamp } from "../../framework/util"
 import { FeatureGroup } from "../../framework/features"
 import { f, X } from "../f"
@@ -70,54 +70,62 @@ export const publicLinksCommandGroup: FeatureGroup<X> = {
 				path: f.cloudPath({}, f.arg({ name: "path", description: "cloud file or directory this link is for" }))
 			},
 			invoke: async ({ app, filen, args }) => {
-				const item = await filen.fs().stat({ path: args.path.toString() })
-				
-				const publicLink = await (async () => {
-					const publicLink = await getPublicLinkStatus(filen, item.type, item.uuid, item.type === "file" ? item.key : undefined)
-					if (publicLink === undefined) { // create
-						await filen.cloud().enablePublicLink({ type: item.type, uuid: item.uuid })
-						app.out("Public link created:")
-						return (await getPublicLinkStatus(filen, item.type, item.uuid, item.type === "file" ? item.key : undefined))!
-					} else {
-						return publicLink
-					}
-				})()
+				try {
+					const item = await filen.fs().stat({ path: args.path.toString() })
+					
+					const publicLink = await (async () => {
+						const publicLink = await getPublicLinkStatus(filen, item.type, item.uuid, item.type === "file" ? item.key : undefined)
+						if (publicLink === undefined) { // create
+							await filen.cloud().enablePublicLink({ type: item.type, uuid: item.uuid })
+							app.out("Public link created:")
+							return (await getPublicLinkStatus(filen, item.type, item.uuid, item.type === "file" ? item.key : undefined))!
+						} else {
+							return publicLink
+						}
+					})()
 
-				app.out(formatTable([
-					["Password:", publicLink.password !== null ? "***" : "<none>"],
-					["Download Button:", publicLink.downloadButtonEnabled ? "enabled" : "disabled"],
-					...(publicLink.downloadButtonEnabled !== undefined ? [ ["Expiration:", `${publicLink.expiration !== "never" ? formatTimestamp(publicLink.expirationMs) : "-"} (${publicLink.expiration})`] ] : []),
-					["Link URL:", publicLink.url],
-				]))
+					app.out(formatTable([
+						["Password:", publicLink.password !== null ? "***" : "<none>"],
+						["Download Button:", publicLink.downloadButtonEnabled ? "enabled" : "disabled"],
+						...(publicLink.downloadButtonEnabled !== undefined ? [ ["Expiration:", `${publicLink.expiration !== "never" ? formatTimestamp(publicLink.expirationMs) : "-"} (${publicLink.expiration})`] ] : []),
+						["Link URL:", publicLink.url],
+					]))
 
-				const selection = await app.prompt("Quit (Enter) / Edit (e) / Delete (d): ", { allowExit: true })
-				if (selection.toLowerCase() === "e") { // edit
-					const password = await app.prompt(`Password (current: ${publicLink.password !== null ? "***" : "<none>"}) [<password>/"-" to remove]: `)
-					const downloadButtonEnabled = item.type === "file" ? await app.prompt(`Download button enabled (current: ${publicLink.downloadButtonEnabled ? "y" : "n"}) [y/n]: `) : undefined
-					if (downloadButtonEnabled !== undefined && downloadButtonEnabled !== "" && (downloadButtonEnabled.toLowerCase() !== "y" && downloadButtonEnabled.toLowerCase() !== "n")) app.errExit("Invalid input for download button enabled: needs y/n")
-					const expiration = await app.prompt(`Expiration (current: ${publicLink.expiration}) [never/1h/6h/1d/3d/7d/14d/30d]: `)
-					if (expiration !== "" && !["never", "1h", "6h", "1d", "3d", "7d", "14d", "30d"].includes(expiration)) app.errExit("Invalid input for expiration: needs never/1h/6h/1d/3d/7d/14d/30d")
-					if (password !== "" || downloadButtonEnabled !== "" || expiration !== "") {
-						await filen.cloud().editPublicLink({
-							type: publicLink.type,
-							itemUUID: item.uuid,
-							linkUUID: publicLink.uuid,
-							password: password !== "" ? (password === "-" ? undefined : password) : (publicLink.password ?? undefined),
-							enableDownload: item.type === "file" ? downloadButtonEnabled !== "" ? downloadButtonEnabled!.toLowerCase() === "y" : publicLink.downloadButtonEnabled : undefined,
-							expiration: expiration !== "" ? expiration as PublicLinkExpiration : publicLink.expiration,
-						})
-						app.out("Public link updated.")
+					const selection = await app.prompt("Quit (Enter) / Edit (e) / Delete (d): ", { allowExit: true })
+					if (selection.toLowerCase() === "e") { // edit
+						const password = await app.prompt(`Password (current: ${publicLink.password !== null ? "***" : "<none>"}) [<password>/"-" to remove]: `)
+						const downloadButtonEnabled = item.type === "file" ? await app.prompt(`Download button enabled (current: ${publicLink.downloadButtonEnabled ? "y" : "n"}) [y/n]: `) : undefined
+						if (downloadButtonEnabled !== undefined && downloadButtonEnabled !== "" && (downloadButtonEnabled.toLowerCase() !== "y" && downloadButtonEnabled.toLowerCase() !== "n")) app.errExit("Invalid input for download button enabled: needs y/n")
+						const expiration = await app.prompt(`Expiration (current: ${publicLink.expiration}) [never/1h/6h/1d/3d/7d/14d/30d]: `)
+						if (expiration !== "" && !["never", "1h", "6h", "1d", "3d", "7d", "14d", "30d"].includes(expiration)) app.errExit("Invalid input for expiration: needs never/1h/6h/1d/3d/7d/14d/30d")
+						if (password !== "" || downloadButtonEnabled !== "" || expiration !== "") {
+							await filen.cloud().editPublicLink({
+								type: publicLink.type,
+								itemUUID: item.uuid,
+								linkUUID: publicLink.uuid,
+								password: password !== "" ? (password === "-" ? undefined : password) : (publicLink.password ?? undefined),
+								enableDownload: item.type === "file" ? downloadButtonEnabled !== "" ? downloadButtonEnabled!.toLowerCase() === "y" : publicLink.downloadButtonEnabled : undefined,
+								expiration: expiration !== "" ? expiration as PublicLinkExpiration : publicLink.expiration,
+							})
+							app.out("Public link updated.")
+						}
 					}
-				}
-				if (selection.toLowerCase() === "d") { // delete
-					if (item.type === "file") {
-						await filen.cloud().disablePublicLink({ type: "file", itemUUID: item.uuid, linkUUID: publicLink.uuid })
+					if (selection.toLowerCase() === "d") { // delete
+						if (item.type === "file") {
+							await filen.cloud().disablePublicLink({ type: "file", itemUUID: item.uuid, linkUUID: publicLink.uuid })
+						} else {
+							await filen.cloud().disablePublicLink({ type: "directory", itemUUID: item.uuid })
+						}
+						app.out("Public link deleted.")
+					}
+				} catch (e) {
+					if (e instanceof APIError && e.code === "subscription_needed") {
+						app.errExit("You need an active subscription to create public links.")
 					} else {
-						await filen.cloud().disablePublicLink({ type: "directory", itemUUID: item.uuid })
+						throw e
 					}
-					app.out("Public link deleted.")
 				}
 			}
-		})
+		}),
 	]
 }

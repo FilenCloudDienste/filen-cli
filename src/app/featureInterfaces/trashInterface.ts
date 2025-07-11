@@ -10,7 +10,7 @@ async function getTrashItems(app: App<X>, filen: FilenSDK) {
 		app.out("Trash is empty.")
 		return
 	}
-	return items
+	return items.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
 }
 
 function printTrashItems(app: App<X>, items: CloudItem[], showIndices: boolean) {
