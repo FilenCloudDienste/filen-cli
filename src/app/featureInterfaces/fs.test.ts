@@ -3,7 +3,7 @@ import { runMockApp } from "../../test/tests"
 import { file, largeFile, prepareCloudFs, prepareLocalFs } from "../../test/fsTests"
 import { CloudPath } from "../util/cloudPath"
 
-describe.concurrent("fs commands", { timeout: 20*1000 }, async () => {
+describe.concurrent("fs commands", async () => {
     
     describe("ls", () => {
         let root = {} as CloudPath
