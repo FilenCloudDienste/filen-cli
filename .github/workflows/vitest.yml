@@ -21,6 +21,6 @@ jobs:
         run: npm run prepare-testing lock && npm run prepare-testing overwrite all
       - name: Run Vitest
         run: npm run test
-        continue-on-error: true
       - name: Unlock testing environment
         run: npm run prepare-testing unlock
+        if: always() # ensure the environment is unlocked even if tests fail
