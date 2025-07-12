@@ -1,8 +1,6 @@
 import "dotenv/config" // authenticate from FILEN_EMAIL and FILEN_PASSWORD via .env
 import path from "path"
 import FilenSDK, { FilenSDKConfig } from "@filen/sdk"
-import fs from "fs/promises"
-import { rimraf } from "rimraf"
 import { app } from "../app/app"
 import { X } from "../app/f"
 import { InterfaceAdapter } from "../framework/app"
@@ -11,12 +9,6 @@ import { CloudPath } from "../app/util/cloudPath"
 
 export const testingRootPath = new CloudPath(["filen-cli-testing"])
 export const testDir = path.resolve("testing")
-export const testDataDir = path.join(testDir, "dataDir")
-export async function clearTestDir() {
-    await rimraf(testDir)
-    await fs.mkdir(testDir, { recursive: true })
-    await fs.mkdir(testDataDir, { recursive: true })
-}
 
 export function mockFrameworkApp<X extends Extra = EmptyX>(features: (f: ReturnType<typeof buildF<X>>) => (Feature<X> | FeatureGroup<X>)[], consoleOutput: boolean = false) {
     const f = buildF<X>()
@@ -41,8 +33,8 @@ export async function runMockApp(...args: Parameters<typeof mockApp>) {
     return { ...mock, isError }
 }
 
-export async function mockApp({ ctx, cmd, input, consoleOutput, unauthenticated, root }: { ctx?: Partial<FeatureContext<X>>, cmd?: string, input?: string[], consoleOutput?: boolean, unauthenticated?: boolean, root?: CloudPath } = {}) {
-    process.env.FILEN_CLI_DATA_DIR = testDataDir
+export async function mockApp({ ctx, cmd, input, consoleOutput, unauthenticated, root, dataDir }: { ctx?: Partial<FeatureContext<X>>, cmd?: string, input?: string[], consoleOutput?: boolean, unauthenticated?: boolean, root?: CloudPath, dataDir?: string } = {}) {
+    process.env.FILEN_CLI_DATA_DIR = dataDir ?? path.join(testDir, "dataDirShouldStayEmpty")
     const { adapter, input: adapterInput, isInputEmpty, output } = mockInterfaceAdapter({ input, consoleOutput })
     const argv = ["--dev", ...(consoleOutput ? ["--verbose"] : []), ...(cmd?.split(" ") ?? [])]
     const filen = unauthenticated ? unauthenticatedFilenSDK() : await authenticatedFilenSDK()

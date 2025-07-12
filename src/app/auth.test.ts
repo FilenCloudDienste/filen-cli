@@ -1,19 +1,16 @@
-import { beforeEach, describe, expect, test } from "vitest"
-import { clearTestDir, getCredentials, testDataDir, mockApp, runMockApp } from "../test/tests"
+import { describe, expect, test } from "vitest"
+import { getCredentials, mockApp, runMockApp } from "../test/tests"
 import fs from "fs/promises"
 import path from "path"
 import { authenticate } from "./auth"
 import { FeatureContext } from "../framework/features"
 import { exists } from "./util/util"
 import { X } from "./f"
+import { prepareLocalFs } from "../test/fsTests"
 
 describe("ways to authenticate", () => {
 
     const { email, password } = getCredentials()
-
-    beforeEach(async () => {
-        await clearTestDir()
-    })
 
     const isAuthenticated = (ctx: FeatureContext<X>) => {
         return ctx.x.filen.config.email !== "anonymous" && ctx.x.filen.config.password !== "anonymous"
@@ -36,21 +33,23 @@ describe("ways to authenticate", () => {
     })
 
     test("get credentials from .filen-cli-credentials", async () => {
+        const { localRoot: dataDir } = await prepareLocalFs([])
         const file = `${email}\n${password}\n`
-        await fs.writeFile(path.join(testDataDir, ".filen-cli-credentials"), file)
-        const { ctx } = await mockApp({ unauthenticated: true })
+        await fs.writeFile(path.join(dataDir, ".filen-cli-credentials"), file)
+        const { ctx } = await mockApp({ dataDir, unauthenticated: true })
         await authenticate(ctx, {})
         expect(isAuthenticated(ctx)).toBe(true)
-        await fs.unlink(path.join(testDataDir, ".filen-cli-credentials"))
+        await fs.unlink(path.join(dataDir, ".filen-cli-credentials"))
     })
 
     test("export and login from .filen-cli-auth-config", async () => {
         // export .filen-cli-auth-config
-        await runMockApp({ cmd: "export-auth-config", input: ["i am aware of the risks", "1"] })
-        expect(await exists(path.join(testDataDir, ".filen-cli-auth-config"))).toBe(true)
-        
+        const { localRoot: dataDir } = await prepareLocalFs([])
+        await runMockApp({ dataDir, cmd: "export-auth-config", input: ["i am aware of the risks", "1"] })
+        expect(await exists(path.join(dataDir, ".filen-cli-auth-config"))).toBe(true)
+
         // login from .filen-cli-auth-config
-        const { ctx } = await mockApp({ unauthenticated: true })
+        const { ctx } = await mockApp({ dataDir, unauthenticated: true })
         await authenticate(ctx, {})
         expect(isAuthenticated(ctx)).toBe(true)
     })
