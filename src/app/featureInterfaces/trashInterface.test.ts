@@ -13,7 +13,6 @@ describe.sequential("trash", async () => {
         root = (await prepareCloudFs([ "file1.txt", "file2.txt" ])).root
         await filen.fs().rm({ path: root.navigate("file1.txt").toString(), permanent: false })
         await filen.fs().rm({ path: root.navigate("file2.txt").toString(), permanent: false })
-        console.log(root.toString())
     }, 15000)
 
     it("should list trash items", async () => {
@@ -23,12 +22,12 @@ describe.sequential("trash", async () => {
     })
 
     it("should delete trash item", async () => {
-        const { isInputEmpty } = await runMockApp({ consoleOutput: true, cmd: "trash delete", input: ["1", "y"] })
+        const { isInputEmpty } = await runMockApp({ cmd: "trash delete", input: ["1", "y"] })
         expect(isInputEmpty()).toBe(true)
     })
 
     it("should restore trash item", async () => {
-        const { isInputEmpty } = await runMockApp({ consoleOutput: true, cmd: "trash restore", input: ["1"] })
+        const { isInputEmpty } = await runMockApp({ cmd: "trash restore", input: ["1"] })
         expect(isInputEmpty()).toBe(true)
         // will check if restore action was called in next test
     })
