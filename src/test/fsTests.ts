@@ -1,7 +1,9 @@
 import * as path from "node:path"
 import * as fs from "node:fs/promises"
-import { authenticatedFilenSDK, testDir, testingRootPath } from "./tests"
+import { authenticatedFilenSDK, testDir } from "./tests"
 import { randomUUID } from "node:crypto"
+import { inject } from "vitest"
+import { prepareCloudFsRoot } from "./constants"
 
 // file tree
 
@@ -109,7 +111,7 @@ export async function prepareCloudFs(tree: Tree) {
     const filen = await authenticatedFilenSDK()
 
     // create directory
-    const root = testingRootPath.navigate("prepareCloudFs").navigate(randomUUID())
+    const root = prepareCloudFsRoot(inject("testRunId")).navigate(randomUUID())
     await filen.fs().mkdir({ path: root.toString() })
 
     // create files and directories from tree

@@ -40,6 +40,7 @@ export async function mockApp({ ctx, cmd, input, consoleOutput, unauthenticated,
     const argv = ["--dev", ...(consoleOutput ? ["--verbose"] : []), ...(cmd?.split(" ") ?? [])]
     const filen = unauthenticated ? unauthenticatedFilenSDK() : await authenticatedFilenSDK()
     const x = { filen, cloudWorkingPath: root ?? testingRootPath, ...ctx?.x }
+    await (await authenticatedFilenSDK()).fs().mkdir({ path: x.cloudWorkingPath.toString() })
     const _app = app(argv, adapter).mockApp(x)
     return {
         app: _app,
