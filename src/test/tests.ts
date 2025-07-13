@@ -6,6 +6,7 @@ import { X } from "../app/f"
 import { InterfaceAdapter } from "../framework/app"
 import { buildF, EmptyX, Extra, Feature, FeatureContext, FeatureGroup } from "../framework/features"
 import { CloudPath } from "../app/util/cloudPath"
+import { randomUUID } from "crypto"
 
 export const testingRootPath = new CloudPath(["filen-cli-testing"])
 export const testDir = path.resolve("testing")
@@ -167,3 +168,14 @@ export const ANONYMOUS_SDK_CONFIG: FilenSDKConfig = {
     baseFolderUUID: "anonymous",
     userId: 1
 } as const
+
+export class ResourceLock {
+    private lockUUID = randomUUID()
+    public constructor(private resourceName: string) {}
+    public async acquire() {
+        return (await authenticatedFilenSDK()).user().acquireResourceLock({ resource: `filen-cli-testing_${this.resourceName}`, lockUUID: this.lockUUID })
+    }
+    public async release() {
+        return (await authenticatedFilenSDK()).user().releaseResourceLock({ resource: `filen-cli-testing_${this.resourceName}`, lockUUID: this.lockUUID })
+    }
+}

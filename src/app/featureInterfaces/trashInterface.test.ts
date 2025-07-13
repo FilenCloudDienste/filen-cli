@@ -1,9 +1,13 @@
-import { beforeAll, describe, expect, it } from "vitest"
-import { authenticatedFilenSDK, runMockApp } from "../../test/tests"
+import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { authenticatedFilenSDK, ResourceLock, runMockApp } from "../../test/tests"
 import { prepareCloudFs } from "../../test/fsTests"
 import { CloudPath } from "../util/cloudPath"
 
 describe.sequential("trash", async () => {
+
+    const lock = new ResourceLock("trash")
+    beforeAll(async () => await lock.acquire())
+    afterAll(async () => await lock.release())
 
     const filen = await authenticatedFilenSDK()
     let root: CloudPath = new CloudPath([])

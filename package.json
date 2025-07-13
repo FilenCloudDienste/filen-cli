@@ -8,7 +8,6 @@
 		"lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --ext .js,.jsx,.ts,.tsx",
 		"lint-ci": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --ext .js,.jsx,.ts,.tsx --format=@microsoft/eslint-formatter-sarif --output-file=eslint-report.sarif",
 		"test": "vitest --dir=src/ --testTimeout=60000 --hookTimeout=60000",
-		"prepare-testing": "tsc && node build/test/prepareCloud.js",
 		"build": "tsc && node injectBuildInfo.mjs && esbuild build/index.js --bundle --outfile=dist/bundle.js \"--external:*keytar.node\" --external:keytar --format=cjs --platform=node",
 		"package-win": "npm run build && node package.mjs win",
 		"package-linux": "npm run build && node package.mjs linux",

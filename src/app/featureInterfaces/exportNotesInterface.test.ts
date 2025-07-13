@@ -1,5 +1,5 @@
-import { beforeAll, describe, expect, test } from "vitest"
-import { authenticatedFilenSDK, runMockApp } from "../../test/tests"
+import { afterAll, beforeAll, describe, expect, test } from "vitest"
+import { authenticatedFilenSDK, ResourceLock, runMockApp } from "../../test/tests"
 import fs from "fs/promises"
 import path from "path"
 import { exists } from "../util/util"
@@ -25,6 +25,10 @@ const markdownNoteParsed = dedent`
 `
 
 describe("export notes", async () => {
+
+    const lock = new ResourceLock("notes")
+    beforeAll(async () => await lock.acquire())
+    afterAll(async () => await lock.release())
 
     let exportDir = ""
     beforeAll(async () => {
