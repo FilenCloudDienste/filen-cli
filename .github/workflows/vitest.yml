@@ -16,6 +16,8 @@ jobs:
         uses: actions/checkout@v3
       - name: Setup Node
         uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
       - run: npm ci
       - name: Run Vitest
         run: npm run test

@@ -31,7 +31,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "23.x"
+          node-version-file: .node-version
       - run: npm ci
       - run: npm run package-${{ matrix.target }}
       - name: Codesign and notarize on macOS
@@ -85,7 +85,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "23.x"
+          node-version-file: .node-version
           registry-url: "https://registry.npmjs.org"
       - run: npm ci
       - run: npm publish --access public  # includes build
@@ -142,7 +142,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "23.x"
+          node-version-file: .node-version
       - run: npm ci
       - name: Build filen-cli
         run: npm run build
