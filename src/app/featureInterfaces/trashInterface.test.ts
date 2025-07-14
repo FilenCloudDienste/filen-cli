@@ -17,7 +17,7 @@ describe.sequential("trash", async () => {
         root = (await prepareCloudFs([ "file1.txt", "file2.txt" ])).root
         await filen.fs().rm({ path: root.navigate("file1.txt").toString(), permanent: false })
         await filen.fs().rm({ path: root.navigate("file2.txt").toString(), permanent: false })
-    }, 15000)
+    })
 
     it("should list trash items", async () => {
         const { output } = await runMockApp({ cmd: "trash list" })
