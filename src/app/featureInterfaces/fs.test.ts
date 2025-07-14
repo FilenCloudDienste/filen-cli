@@ -76,12 +76,14 @@ describe.concurrent("fs commands", async () => {
             const { root, actualTree, normalizeTree } = await prepareCloudFs([ "filetodelete.txt" ])
             const { isInputEmpty } = await runMockApp({ cmd: "rm filetodelete.txt", input: ["y"], root })
             expect(isInputEmpty()).toBe(true)
+            await sleep(10000)
             expect(await actualTree()).toEqual(normalizeTree([]))
         })
         it("should remove a directory", async () => {
             const { root, actualTree, normalizeTree } = await prepareCloudFs([ "folder/" ])
             const { isInputEmpty } = await runMockApp({ cmd: "rm folder", input: ["y"], root })
             expect(isInputEmpty()).toBe(true)
+            await sleep(10000)
             expect(await actualTree()).toEqual(normalizeTree([]))
         })
     })
@@ -175,3 +177,7 @@ describe.concurrent("fs commands", async () => {
     })
 
 })
+
+async function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
