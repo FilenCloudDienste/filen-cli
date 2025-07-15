@@ -22,7 +22,7 @@ export const syncCommand = f.feature({
 			syncPairs.json is of the type:
 				{local: string, remote: string, syncMode: string, alias?: string, disableLocalTrash?: boolean, ignore?: string[], excludeDotFiles?: boolean}[]
 				(written as a TypeScript type definition, where \`?\` denotes an optional property)
-			\`syncMode\` can be \`twoWay\`, \`localToCloud\`, \`localBackup\`, \`cloudToLocal\`, or \`cloudBackup\` (see https://docs.filen.io/docs/desktop/setup#sync-modes)
+			\`syncMode\` can be \`twoWay\`, \`localToCloud\`, \`localBackup\`, \`cloudToLocal\`, or \`cloudBackup\` (see https://docs.filen.io/docs/cli/syncing#sync-modes)
 		\`filen sync <file>\`
 			read sync pairs from custom JSON file
 		\`filen sync mypair myotherpair\`
