@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { authenticatedFilenSDK, ResourceLock, runMockApp } from "../../test/tests"
 import { prepareCloudFs } from "../../test/fsTests"
 import { CloudPath } from "../util/cloudPath"
+import { waitForAsyncEndpoint } from "./fs.test"
 
 describe.sequential("trash", async () => {
 
@@ -37,6 +38,7 @@ describe.sequential("trash", async () => {
     })
 
     it("should list empty trash", async () => {
+        await waitForAsyncEndpoint()
         const { output } = await runMockApp({ cmd: "trash list" })
         expect(output()).toContain("empty")
     })

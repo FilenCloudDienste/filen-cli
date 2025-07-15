@@ -181,6 +181,6 @@ describe.concurrent("fs commands", async () => {
 /**
  * Waits for 15s to allow async operations to complete.
  */
-async function waitForAsyncEndpoint() {
+export async function waitForAsyncEndpoint() {
     return new Promise(resolve => setTimeout(resolve, 1500))
 }
