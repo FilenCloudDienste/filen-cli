@@ -53,7 +53,7 @@ function normalizeTree(tree: Tree): NormalizedTree {
     })
     const items = normalizeItems(tree)
     // sort and deduplicate
-    const files = items.filter(i => i.type === "file").map(i => ({ path: i.path, content: (i as NormalizedFile).content }))
+    const files = items.filter(i => i.type === "file").map(i => ({ path: i.path, content: (i as NormalizedFile).content })).sort()
     const directoryPaths = new Set<string>(items.filter(i => i.type === "directory").map(i => i.path))
     return { files, directories: Array.from(directoryPaths).sort().map(path => ({ path })) }
 }
@@ -164,7 +164,7 @@ export async function cleanupCloudFs() {
     const filen = await authenticatedFilenSDK()
     const fsRoots = await filen.fs().ls({ path: cloudTestingRoot.toString() })
     if (fsRoots.length > 5) {
-        const sortedFsRoots = fsRoots.sort((a, b) => a.localeCompare(b))
+        const sortedFsRoots = fsRoots.sort()
         const toDelete = sortedFsRoots.slice(0, sortedFsRoots.length - 5)
         for (const dir of toDelete) {
             const path = cloudTestingRoot.navigate(dir).toString()
