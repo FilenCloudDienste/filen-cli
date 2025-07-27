@@ -9,6 +9,7 @@ import dedent from "dedent"
 import { f, X } from "./f"
 import { FeatureContext, FeatureGroup } from "../framework/features"
 import { App } from "../framework/app"
+import * as keyring from "@jupiterpi/node-keyring"
 
 const authConfigFileName = ".filen-cli-auth-config"
 const keepMeLoggedInFile = (app: App<X>) => path.join(app.dataDir, ".filen-cli-keep-me-logged-in")
@@ -156,7 +157,7 @@ export async function authenticate(ctx: FeatureContext<X>, args: { email?: strin
 		if (needCredentials() && await exists(keepMeLoggedInFile(app))) {
 			const cryptoKey = await (async () => {
 				try {
-					const key = await getKeychainCryptoKey(ctx)
+					const key = getKeychainCryptoKey(ctx)
 					if (key === null) return app.errExit("There's a saved credentials file, but no crypto key in the keychain. Try `filen logout` and login again.")
 					return key
 				} catch (e) {
@@ -242,7 +243,7 @@ export async function authenticate(ctx: FeatureContext<X>, args: { email?: strin
 				if (await app.promptYesNo("Keep me logged in?", { defaultAnswer: false, allowExit: true })) {
 					try {
 						const cryptoKey = generateCryptoKey()
-						await setKeychainCryptoKey(ctx, cryptoKey)
+						setKeychainCryptoKey(ctx, cryptoKey)
 						try {
 							const encryptedAuthConfig = await encryptAuthConfig(filen.config, cryptoKey)
 							await fs.promises.writeFile(keepMeLoggedInFile(app), encryptedAuthConfig)
@@ -336,13 +337,9 @@ async function decryptAuthConfig(encryptedAuthConfig: string, cryptoKey: string)
 	return JSON.parse(decrypted) as FilenSDKConfig
 }
 
-// `keytar` is imported dynamically so that errors not finding e.g. `libsecret-1.so.0`
-// can be caught when actually attempting to access the keychain, not when importing the module
-async function getKeychainCryptoKey({ app }: FeatureContext<X>): Promise<string | null> {
-	const keytar = await import("keytar")
-	return await keytar.getPassword(keychainServiceName, keychainAccountName(app))
+function getKeychainCryptoKey({ app }: FeatureContext<X>) {
+	return keyring.getPassword(keychainServiceName, keychainAccountName(app))
 }
-async function setKeychainCryptoKey({ app }: FeatureContext<X>, cryptoKey: string): Promise<void> {
-	const keytar = await import("keytar")
-	await keytar.setPassword(keychainServiceName, keychainAccountName(app), cryptoKey)
+function setKeychainCryptoKey({ app }: FeatureContext<X>, cryptoKey: string) {
+	keyring.setPassword(keychainServiceName, keychainAccountName(app), cryptoKey)
 }

@@ -1,4 +1,4 @@
-import WebDAVServer, { WebDAVServerCluster } from "@filen/webdav"
+import { WebDAVServer, WebDAVServerCluster } from "@filen/webdav"
 import FilenSDK from "@filen/sdk"
 import cluster from "node:cluster"
 import dedent from "dedent"

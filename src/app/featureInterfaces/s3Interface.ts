@@ -1,4 +1,4 @@
-import S3Server, { S3ServerCluster } from "@filen/s3"
+import { S3Server, S3ServerCluster } from "@filen/s3"
 import dedent from "dedent"
 import { f } from "../f"
 

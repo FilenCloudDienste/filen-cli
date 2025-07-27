@@ -1,16 +1,16 @@
 // build info is injected at compile time
 // see package.json
 
-export const version: string = "{{INJECT: VERSION}}"
+export const version: string = "0.0.0"
 
-// @ts-expect-error will be injected
-export const isRunningAsContainer: boolean = "{{INJECT: IS_CONTAINER}}"
+export const isRunningAsContainer = false
 
-// @ts-expect-error will be injected
-export const isRunningAsNPMPackage: boolean = "{{INJECT: IS_NPM_PACKAGE}}"
+export const isRunningAsNPMPackage = false
 
 export function checkInjectedBuildInfo() {
 	return version !== "{{INJECT: VERSION}}"
 		&& (isRunningAsContainer.toString() === "true" || isRunningAsContainer.toString() === "false")
 		&& (isRunningAsNPMPackage.toString() === "true" || isRunningAsNPMPackage.toString() === "false")
 }
+
+//TODO: solve this another way
