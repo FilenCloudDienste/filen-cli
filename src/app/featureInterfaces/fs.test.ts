@@ -1,9 +1,10 @@
-import { beforeAll, describe, expect, it } from "vitest"
+import { beforeAll, describe, expect, it } from "bun:test"
 import { runMockApp } from "../../test/tests"
 import { file, largeFile, prepareCloudFs, prepareLocalFs } from "../../test/fsTests"
 import { CloudPath } from "../util/cloudPath"
 
-describe.concurrent("fs commands", async () => {
+describe("fs commands", async () => {
+    // could run in parallel, but bun test doesn't support concurrency
     
     describe("ls", () => {
         let root = {} as CloudPath
@@ -153,9 +154,6 @@ describe.concurrent("fs commands", async () => {
     })
 
     describe("download", () => {
-        it.skip("should download a file to the current directory", async () => {
-            // doesn't actually need to be checked, since this behaviour is handled by f.localPath
-        })
         it("should download a file to a specified path", async () => {
             const { localRoot, localActualTree, normalizeTree } = await prepareLocalFs([ "downloaddir/" ])
             const { root } = await prepareCloudFs([ "downloadfile.txt" ])

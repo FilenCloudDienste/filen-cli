@@ -136,11 +136,13 @@ export async function authenticatedFilenSDK() {
         return _authenticatedFilenSDK
     }
     const filen = unauthenticatedFilenSDK()
-    if (process.env.FILEN_CLI_TESTING_AUTHCONFIG) {
-        const authConfig = JSON.parse(Buffer.from(process.env.FILEN_CLI_TESTING_AUTHCONFIG, "base64").toString()) as FilenSDKConfig
+    const dotenvAuthConfig = await readFromDotenvFile("FILEN_CLI_TESTING_AUTHCONFIG")
+    if (dotenvAuthConfig) {
+        const authConfig = JSON.parse(Buffer.from(dotenvAuthConfig, "base64").toString()) as FilenSDKConfig
         filen.init(authConfig)
     } else {
         await filen.login(getCredentials())
+        await writeAuthConfigToDotenvFile("FILEN_CLI_TESTING_AUTHCONFIG", Buffer.from(JSON.stringify(filen.config)).toString("base64"))
     }
     _authenticatedFilenSDK = filen
     return filen
@@ -179,4 +181,45 @@ export class ResourceLock {
     public async release() {
         return (await authenticatedFilenSDK()).user().releaseResourceLock({ resource: `filen-cli-testing_${this.resourceName}`, lockUUID: this.lockUUID })
     }
+}
+
+/**
+ * This handles storing the Filen auth config in the .env file.
+ * Since the stringified JSON is too long, it can't simply be stored in a single variable, but must be split into chunks.
+ * This is done by writing multiple variables with the same key and different suffixes.
+ * The first login is done via the credentials in the .env file, and the stored auth config is used for subsequent logins.
+ * We cannot simply use the credentials every time (or even every run) because of rate limiting.
+ */
+async function readFromDotenvFile(key: string) {
+    const dotenvFile = Bun.file(".env");
+    if (!(await dotenvFile.exists())) return undefined
+
+    const content = await dotenvFile.text()
+    let value = ""
+    for (let i = 0;; i++) {
+        const chunk = content.match(new RegExp(`${key}_${i}="([^"]+)"`))
+        if (!chunk) break
+        value += chunk[1]
+    }
+    return value
+}
+async function writeAuthConfigToDotenvFile(key: string, str: string) {
+    const dotenvFile = Bun.file(".env");
+    if (!(await dotenvFile.exists())) return
+
+    const CHUNK_LENGTH = 4096
+    const chunks: string[] = []
+    let i = 0
+    while (i < str.length) {
+        if (i + CHUNK_LENGTH >= str.length) {
+            chunks.push(str.slice(i))
+            break
+        }
+        chunks.push(str.slice(i, i + CHUNK_LENGTH))
+        i += CHUNK_LENGTH
+    }
+    
+    let content = await dotenvFile.text()
+    content += `\n# written by src/test/tests.ts after loggin in using credentials\n${chunks.map((chunk, index) => `${key}_${index}="${chunk}"`).join("\n")}\n`
+    await dotenvFile.write(content)
 }
