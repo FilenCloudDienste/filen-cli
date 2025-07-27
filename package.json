@@ -8,11 +8,6 @@
     "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --ext .js,.jsx,.ts,.tsx",
     "lint-ci": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --ext .js,.jsx,.ts,.tsx --format=@microsoft/eslint-formatter-sarif --output-file=eslint-report.sarif",
     "test": "vitest --config src/test/vitest.config.ts",
-    "build": "tsc && node injectBuildInfo.mjs && esbuild build/index.js --bundle --outfile=dist/bundle.js \"--external:*keytar.node\" --external:keytar --format=cjs --platform=node",
-    "package-win": "npm run build && node package.mjs win",
-    "package-linux": "npm run build && node package.mjs linux",
-    "package-macos": "npm run build && node package.mjs macos",
-    "package-dev": "npm run build && node package.mjs --dev",
     "bump-filen-dependencies": "npm i @filen/sdk@latest @filen/sync@latest @filen/webdav@latest @filen/s3@latest @filen/network-drive@latest",
     "prepublishOnly": "node -e \"if (process.env.FILEN_IS_NPM_PACKAGE !== 'true') process.exit(1)\" && npm run build",
     "compile": "bun build --compile --target=bun --sourcemap src/index.ts --outfile filen-cli"

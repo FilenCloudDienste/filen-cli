@@ -1,16 +1,10 @@
 #!/usr/bin/env node
 
-import { checkInjectedBuildInfo } from "./buildInfo"
 import { read } from "read"
 import { CompleterResult } from "readline"
 import { wrapRedTerminalText } from "./framework/util"
 import { InterfaceAdapter } from "./framework/app"
 import { app } from "./app/app"
-
-if (!checkInjectedBuildInfo()) {
-	console.error("Build info not injected correctly!")
-	process.exit(1)
-}
 
 class ConsoleInterfaceAdapter implements InterfaceAdapter {
 	private hasReceivedKeyPresses = 0
