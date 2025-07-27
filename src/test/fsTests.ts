@@ -94,7 +94,7 @@ export async function prepareLocalFs(tree: Tree) {
                     files.push({ path: relativePath, content: content === UNDEFINED_FILE_CONTENT_PLACEHOLDER ? undefined : content })
                 }
             }
-            return { files, directories }
+            return { files: files.sort((a, b) => a.path.localeCompare(b.path)), directories: directories.sort((a, b) => a.path.localeCompare(b.path)) }
         }
         return readDirectory(root)
     }
@@ -145,7 +145,7 @@ export async function prepareCloudFs(tree: Tree) {
                     files.push({ path: relativePath, content: content === UNDEFINED_FILE_CONTENT_PLACEHOLDER ? undefined : content })
                 }
             }
-            return { files, directories }
+            return { files: files.sort((a, b) => a.path.localeCompare(b.path)), directories: directories.sort((a, b) => a.path.localeCompare(b.path)) }
         }
         return readDirectory(root.toString())
     }
