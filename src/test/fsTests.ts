@@ -53,7 +53,7 @@ function normalizeTree(tree: Tree): NormalizedTree {
     })
     const items = normalizeItems(tree)
     // sort and deduplicate
-    const files = items.filter(i => i.type === "file").map(i => ({ path: i.path, content: (i as NormalizedFile).content })).sort()
+    const files = items.filter(i => i.type === "file").map(i => ({ path: i.path, content: (i as NormalizedFile).content })).sort((a, b) => a.path.localeCompare(b.path))
     const directoryPaths = new Set<string>(items.filter(i => i.type === "directory").map(i => i.path))
     return { files, directories: Array.from(directoryPaths).sort().map(path => ({ path })) }
 }
