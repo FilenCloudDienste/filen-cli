@@ -25,12 +25,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-      - run: npm ci
-      - run: npm run lint-ci
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: bun run lint-ci
         continue-on-error: true
       - name: Upload analysis results to GitHub
         uses: github/codeql-action/upload-sarif@v3

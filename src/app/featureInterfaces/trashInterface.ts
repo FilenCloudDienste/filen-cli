@@ -26,12 +26,20 @@ async function deleteOrRestoreItem(app: App<X>, filen: FilenSDK, trashItems: Clo
 	printTrashItems(app, trashItems, true)
 	const selection = parseInt(await app.prompt(`Select an item to ${mode === "delete" ? "permanently delete" : "restore"} (1-${trashItems.length}): `, { allowExit: true }))
 	if (isNaN(selection) || selection < 1 || selection > trashItems.length) app.errExit("Invalid selection!")
+	const item = trashItems[selection-1]!
 	if (mode === "delete") {
-		const item = trashItems[selection-1]!
 		if (!await app.promptConfirm(`permanently delete ${item.name}`)) return
-		await filen.cloud().deleteFile({ uuid: item.uuid })
+		if (item.type === "file") {
+			await filen.cloud().deleteFile({ uuid: item.uuid })
+		} else {
+			await filen.cloud().deleteDirectory({ uuid: item.uuid })
+		}
 	} else {
-		await filen.cloud().restoreFile({ uuid: trashItems[selection-1]!.uuid })
+		if (item.type === "file") {
+			await filen.cloud().restoreFile({ uuid: item.uuid })
+		} else {
+			await filen.cloud().restoreDirectory({ uuid: item.uuid })
+		}
 	}
 }
 

@@ -75,11 +75,15 @@ type ReleaseInfo = {
  * Manages updates.
  */
 class Updater {
-	private readonly updateCacheDirectory = this.app.dataDir
-	private readonly updateCacheFile = path.join(this.updateCacheDirectory, "updateCache.json")
-	private readonly updateCheckExpiration = 10 * 60 * 1000 // check again after 10min
+	private readonly updateCacheDirectory
+	private readonly updateCacheFile
+	private readonly updateCheckExpiration
 	
-	constructor(private app: App<X>) {}
+	constructor(private app: App<X>) {
+		this.updateCacheDirectory = this.app.dataDir
+		this.updateCacheFile = path.join(this.updateCacheDirectory, "updateCache.json")
+		this.updateCheckExpiration = 10 * 60 * 1000 // check again after
+	}
 
 	/**
 	 * Check for updates and prompt the user on whether to update.

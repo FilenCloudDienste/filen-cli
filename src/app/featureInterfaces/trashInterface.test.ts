@@ -1,10 +1,11 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { afterAll, beforeAll, describe, expect, it } from "bun:test"
 import { authenticatedFilenSDK, ResourceLock, runMockApp } from "../../test/tests"
 import { prepareCloudFs } from "../../test/fsTests"
 import { CloudPath } from "../util/cloudPath"
 import { waitForAsyncEndpoint } from "./fs.test"
 
-describe.sequential("trash", async () => {
+describe("trash", async () => {
+    // needs to run sequentially
 
     const lock = new ResourceLock("trash")
     beforeAll(async () => await lock.acquire())

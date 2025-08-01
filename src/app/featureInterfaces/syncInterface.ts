@@ -1,10 +1,10 @@
 import FilenSDK from "@filen/sdk"
-import SyncWorker, { SerializedError } from "@filen/sync"
+import { SerializedError, SyncWorker } from "@filen/sync"
 import pathModule from "path"
 import { SyncMessage, SyncMode, SyncPair } from "@filen/sync/dist/types"
 import fsModule, { PathLike } from "node:fs"
 import { displayTransferProgressBar, exists } from "../util/util"
-import getUuidByString from "uuid-by-string"
+import { v5 as uuidModule } from "uuid"
 import os from "os"
 import { f, X } from "../f"
 import dedent from "dedent"
@@ -39,7 +39,7 @@ export const syncCommand = f.feature({
 		disableLocalTrash: f.flag({ name: "--disable-local-trash", description: "disable local trash" }),
 	},
 	invoke: async ({ app, filen, args, quiet }) => {
-		new SyncInterface(app, filen, quiet).invoke(args.locations, args.continuous, args.disableLocalTrash)
+		await new SyncInterface(app, filen, quiet).invoke(args.locations, args.continuous, args.disableLocalTrash)
 	},
 })
 
@@ -74,9 +74,11 @@ const syncModeMappings = new Map<string, SyncMode>([
 ])
 
 class SyncInterface {
-	private readonly defaultSyncPairsRegistry = pathModule.join(this.app.dataDir, "syncPairs.json")
+	private readonly defaultSyncPairsRegistry
 
-	constructor(private app: App<X>, private filen: FilenSDK, private quiet: boolean) {}
+	constructor(private app: App<X>, private filen: FilenSDK, private quiet: boolean) {
+		this.defaultSyncPairsRegistry = pathModule.join(this.app.dataDir, "syncPairs.json")
+	}
 
 	public invoke(locationsStr: string[], continuous: boolean, disableLocalTrashFlag: boolean) {
 		// eslint-disable-next-line no-async-promise-executor
@@ -102,7 +104,7 @@ class SyncInterface {
 						}
 					})()
 					if (remoteParentStat === undefined) continue
-					const uuid = getUuidByString(`${syncPair.local}:${syncPair.remote}`, getUuidByString("filen-cli"), 3)
+					const uuid = getUuidBasedOnString(`${syncPair.local}:${syncPair.remote}`)
 					fullSyncPairs.push({
 						name: `${syncPair.local}:${syncPair.remote}`,
 						uuid,
@@ -342,4 +344,8 @@ class SyncInterface {
 		}
 		this.app.out(JSON.stringify(msg, null, 2))
 	}
+}
+
+function getUuidBasedOnString(str: string): string {
+	return uuidModule(str, "00000000-0000-0000-0000-000000000000")
 }

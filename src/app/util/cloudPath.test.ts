@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest"
+import { describe, expect, test } from "bun:test"
 import FilenSDK from "@filen/sdk"
 import { CloudPath } from "./cloudPath"
 

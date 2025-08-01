@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from "vitest"
+import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { authenticatedFilenSDK, ResourceLock, runMockApp } from "../../test/tests"
 import fs from "fs/promises"
 import path from "path"

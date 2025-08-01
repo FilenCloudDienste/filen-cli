@@ -1,4 +1,4 @@
-name: Run Vitest tests
+name: Run tests
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  vitest:
+  test:
     runs-on: ubuntu-latest
     env:
       FILEN_CLI_TESTING_EMAIL: ${{ secrets.V2_TEST_ACC_EMAIL }}
@@ -14,10 +14,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-      - run: npm ci
-      - name: Run Vitest
-        run: npm run test
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: bun run test
