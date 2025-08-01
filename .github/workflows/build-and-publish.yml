@@ -10,30 +10,31 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: windows-latest
-            target: win
-          - os: ubuntu-latest
-            target: linux
-          - os: macos-latest
-            target: macos
+          - name: win-x64
+            target: windows-x64 --windows-icon=.github/workflows/filen-icon.ico
+            os: windows-latest
+          - name: linux-x64
+            target: linux-x64
+            os: ubuntu-latest
+          - name: linux-arm64
+            target: linux-arm64
+            os: ubuntu-latest
+          - name: macos-x64
+            target: macos-x64
+            os: macos-latest
+          - name: macos-arm64
+            target: macos-arm64
+            os: macos-latest
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Inject version
-        uses: richardrigutins/replace-in-files@v2
-        with:
-          files: "package.json"
-          search-text: "\"version\": \"0.0.0\""
-          replacement-text: "\"version\": \"${{ github.event.release.tag_name }}\""
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-      - run: npm ci
-      - run: npm run package-${{ matrix.target }}
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: bun run compile --target ${{ matrix.target }} --define "FILEN_CLI_VERSION=${{ github.event.release.tag_name }}" --outfile dist/filen-cli-${{ github.event.release.tag_name }}-${{ matrix.name }}
       - name: Codesign and notarize on macOS
         if: ${{ matrix.target == 'macos' }}
         env: 
@@ -62,12 +63,10 @@ jobs:
           # cleanup certificate
           security delete-keychain build.keychain
           rm -f certificate.p12
-      - name: Rename binaries to include release number
-        run: node -e "['win-x64.exe', 'win-arm64.exe', 'linux-x64', 'linux-arm64', 'macos-x64', 'macos-arm64'].forEach(suffix => { if (fs.existsSync('dist/filen-cli-'+suffix)) { fs.renameSync('dist/filen-cli-'+suffix, 'dist/filen-cli-${{ github.event.release.tag_name }}-'+suffix) } })"
       - name: Attach binaries to release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/filen-cli-${{ github.event.release.tag_name }}-*
+          files: dist/filen-cli-*
 
   build-and-publish-npm:
     name: Build and publish to npm
@@ -82,15 +81,12 @@ jobs:
           files: "package.json"
           search-text: "\"version\": \"0.0.0\""
           replacement-text: "\"version\": \"${{ github.event.release.tag_name }}\""
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-          registry-url: "https://registry.npmjs.org"
-      - run: npm ci
-      - run: npm publish --access public  # includes build
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: bun build --target=node --sourcemap --define VERSION="${{ github.event.release.tag_name }}" --define IS_RUNNING_AS_NPM_PACKAGE=true src/index.ts --outdir build
+      - run: bun publish --access public
         env:
-          FILEN_IS_NPM_PACKAGE: true
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
 
   build-and-publish-docker:
@@ -98,13 +94,8 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.release.prerelease == false }}
     steps:
-      - uses: actions/checkout@v3
-      - name: Inject version
-        uses: richardrigutins/replace-in-files@v2
-        with:
-          files: "package.json"
-          search-text: "\"version\": \"0.0.0\""
-          replacement-text: "\"version\": \"${{ github.event.release.tag_name }}\""
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:

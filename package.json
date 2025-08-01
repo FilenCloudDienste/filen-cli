@@ -4,13 +4,12 @@
   "description": "Filen CLI",
   "main": "build/index.js",
   "scripts": {
-    "start-dev": "tsc && node build/index.js",
+    "start": "bun run src/index.ts",
     "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --ext .js,.jsx,.ts,.tsx",
     "lint-ci": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --ext .js,.jsx,.ts,.tsx --format=@microsoft/eslint-formatter-sarif --output-file=eslint-report.sarif",
     "test": "bun test --preload ./src/test/setup.ts --timeout 30_000",
-    "prepublishOnly": "node -e \"if (process.env.FILEN_IS_NPM_PACKAGE !== 'true') process.exit(1)\" && npm run build",
-    "compile": "bun build --compile --target=bun --sourcemap src/index.ts --outfile filen-cli",
-    "bump-filen-dependencies": "npm i @filen/sdk@latest @filen/sync@latest @filen/webdav@latest @filen/s3@latest @filen/network-drive@latest"
+    "compile": "bun build --compile --target=bun --minify --sourcemap src/index.ts --outfile filen-cli",
+    "bump-filen-dependencies": "bun i @filen/sdk@latest @filen/sync@latest @filen/webdav@latest @filen/s3@latest @filen/network-drive@latest"
   },
   "bin": {
     "filen": "build/index.js"
@@ -67,6 +66,5 @@
     "typescript": "^5.5.4",
     "vitest": "^3.1.2",
     "@types/bun": "latest"
-  },
-  "private": true
+  }
 }
