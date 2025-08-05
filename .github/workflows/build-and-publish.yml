@@ -13,6 +13,9 @@ jobs:
           - name: win-x64
             target: windows-x64 --windows-icon=.github/workflows/filen-icon.ico
             os: windows-latest
+          - name: win-arm64
+            target: windows-arm64 --windows-icon=.github/workflows/filen-icon.ico
+            os: windows-11-arm
           - name: linux-x64
             target: linux-x64
             os: ubuntu-latest
