@@ -132,13 +132,11 @@ jobs:
           files: "package.json"
           search-text: "\"version\": \"0.0.0\""
           replacement-text: "\"version\": \"${{ github.event.release.tag_name }}\""
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+      - run: bun install
       - name: Setup Node
         uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-      - run: npm ci
-      - name: Build filen-cli
-        run: npm run build
       - name: Build docs
         run: chmod +x build-docs.sh && ./build-docs.sh && mv filen-cli-docs.html filen-cli-${{ github.event.release.tag_name }}-docs.html
       - name: Attach HTML file to release

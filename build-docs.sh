@@ -1,6 +1,6 @@
 #!/bin/bash
 
-node build/index.js internal-export-docs-json
+bun start internal-export-docs-json
 
 cp ./filen-cli-docs.json ./filen-cli-docs/src/filen-cli-docs.json
 
