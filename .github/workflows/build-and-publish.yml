@@ -63,6 +63,7 @@ jobs:
           # cleanup certificate
           security delete-keychain build.keychain
           rm -f certificate.p12
+          rm filen-cli-macos.zip
       - name: Execute binary
         if: ${{ matrix.target != 'macos-x64' }}
         run: dist/filen-cli-${{ github.event.release.tag_name }}-${{ matrix.name }} --help
