@@ -93,7 +93,7 @@ export const app = (argv: string[], adapter: InterfaceAdapter) => f.app({
 			await runUpdater(ctx, args)
 
 			// authentication
-			const selectedFeature = cmd === undefined ? undefined : app.features.findFeature(cmd + argv.join(" "))?.feature
+			const selectedFeature = cmd === undefined ? undefined : app.features.findFeature(argv.join(" "))?.feature
 			if (!selectedFeature?.skipAuthentication && !selectedFeature?.builtin) {
 				await authenticate(ctx, args)
 			}
