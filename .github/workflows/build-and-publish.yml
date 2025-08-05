@@ -18,7 +18,7 @@ jobs:
             os: ubuntu-latest
           - name: linux-arm64
             target: linux-arm64
-            os: ubuntu-latest
+            os: ubuntu-24.04-arm
           - name: macos-x64
             target: macos-x64
             os: macos-latest
