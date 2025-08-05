@@ -6,7 +6,7 @@ on:
 
 jobs:
   build-and-publish-binaries:
-    name: Build binaries (${{ matrix.target }})
+    name: Build binaries (${{ matrix.name }})
     strategy:
       matrix:
         include:
@@ -63,6 +63,8 @@ jobs:
           # cleanup certificate
           security delete-keychain build.keychain
           rm -f certificate.p12
+      - name: Execute binary
+        run: dist/filen-cli-${{ github.event.release.tag_name }}-${{ matrix.name }} --help
       - name: Attach binaries to release
         uses: softprops/action-gh-release@v2
         with:
