@@ -46,6 +46,10 @@
       },
     },
   },
+  "patchedDependencies": {
+    "@parcel/watcher@2.5.1": "patches/@parcel%2Fwatcher@2.5.1.patch",
+    "@jupiterpi/node-keyring@0.1.1": "patches/@jupiterpi%2Fnode-keyring@0.1.1.patch",
+  },
   "packages": {
     "@babel/generator": ["@babel/generator@7.28.0", "", { "dependencies": { "@babel/parser": "^7.28.0", "@babel/types": "^7.28.0", "@jridgewell/gen-mapping": "^0.3.12", "@jridgewell/trace-mapping": "^0.3.28", "jsesc": "^3.0.2" } }, "sha512-lJjzvrbEeWrhB4P3QBsH7tey117PjLZnDbLiQEKjQ/fNJTjuq4HSqgFA+UNSwZT8D7dxxbnuSBMsa1lrWzKlQg=="],
 

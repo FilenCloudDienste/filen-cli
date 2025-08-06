@@ -66,5 +66,9 @@
     "typescript": "^5.5.4",
     "vitest": "^3.1.2",
     "@types/bun": "latest"
+  },
+  "patchedDependencies": {
+    "@jupiterpi/node-keyring@0.1.1": "patches/@jupiterpi%2Fnode-keyring@0.1.1.patch",
+    "@parcel/watcher@2.5.1": "patches/@parcel%2Fwatcher@2.5.1.patch"
   }
 }
