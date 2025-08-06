@@ -39,9 +39,12 @@ jobs:
         uses: oven-sh/setup-bun@v2
       - name: Install bun (Windows)
         if: ${{ matrix.os == 'windows-11-arm' }}
-        run: |
-          powershell -c "irm bun.sh/install.ps1|iex"
-          $env:Path += ';C:\Users\runneradmin\.bun\bin'
+        run: powershell -c "irm bun.sh/install.ps1|iex"
+      - name: Add bun to path (Windows)
+        if: ${{ matrix.os == 'windows-11-arm' }}
+        uses: actions/github-script@v7
+        with:
+          script: core.addPath('C:\\Users\\runneradmin\\.bun\\bin');
       - run: bun install
       - run: bun run compile --target=bun-${{ matrix.target }} --define "FILEN_CLI_VERSION=${{ github.event.release.tag_name }}" --outfile dist/filen-cli-${{ github.event.release.tag_name }}-${{ matrix.name }}
       - name: Codesign and notarize on macOS
