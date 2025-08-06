@@ -12,7 +12,10 @@ jobs:
         include:
           - name: win-x64
             target: windows-x64 --windows-icon=.github/workflows/filen-icon.ico
-            os: windows-latest
+            os: windows-11-arm
+          - name: win-arm64
+            target: windows-arm64 --windows-icon=.github/workflows/filen-icon.ico
+            os: windows-11-arm
           - name: linux-x64
             target: linux-x64
             os: ubuntu-latest
@@ -32,7 +35,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install bun
+        if: ${{ matrix.os != 'windows-latest' }}
         uses: oven-sh/setup-bun@v2
+      - name: Install bun (Windows)
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: powershell -c "irm bun.sh/install.ps1|iex"
       - run: bun install
       - run: bun run compile --target=bun-${{ matrix.target }} --define "FILEN_CLI_VERSION=${{ github.event.release.tag_name }}" --outfile dist/filen-cli-${{ github.event.release.tag_name }}-${{ matrix.name }}
       - name: Codesign and notarize on macOS
