@@ -1,4 +1,4 @@
-import { isRunningAsContainer, isRunningAsNPMPackage, version } from "../buildInfo"
+import { isRunningAsBinary, isRunningAsContainer, isRunningAsNPMPackage, version } from "../buildInfo"
 import path from "path"
 import { spawn } from "node:child_process"
 import { downloadFile, exists } from "./util/util"
@@ -96,7 +96,7 @@ class Updater {
 			return
 		}
 
-		if ((process.pkg === undefined ? __filename : process.argv[0]!).endsWith(".js")) {
+		if (!isRunningAsBinary) {
 			this.app.outVerbose("Skipping updates for non-binary installation")
 			return
 		}
@@ -342,8 +342,8 @@ class Updater {
 	}
 
 	private async installVersion(currentVersionName: string, publishedVersionName: string, downloadUrl: string) {
-		const selfApplicationFile = process.pkg === undefined ? __filename : process.argv[0]!
-		if (selfApplicationFile.endsWith(".js")) this.app.errExit("Updater only supported for CLI binaries")
+		const selfApplicationFile = process.execPath
+		if (!isRunningAsBinary) this.app.errExit("Updater only supported for CLI binaries")
 		const downloadedFile = path.join(path.dirname(selfApplicationFile), `filen_update_${publishedVersionName}`)
 
 		this.app.out("Downloading update...")

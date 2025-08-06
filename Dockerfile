@@ -1,13 +1,28 @@
-FROM node:23-alpine AS build
+FROM oven/bun:1 AS base
 WORKDIR /filen-cli
-COPY . .
-ENV FILEN_IS_CONTAINER=true
-RUN npm ci && npm run build
 
-FROM node:23-alpine
-WORKDIR /filen-cli
-COPY --from=build /filen-cli/dist/bundle.js /filen-cli/filen.js
-ARG TARGETARCH
-RUN if [ "$TARGETARCH" = "amd64" ] ; then npm install @parcel/watcher-linux-x64-musl ; else npm install @parcel/watcher-linux-arm64-musl ; fi
+FROM base AS install
+
+RUN mkdir -p /temp/dev
+COPY package.json bun.lock /temp/dev/
+COPY patches/*.patch /temp/dev/patches/
+RUN cd /temp/dev && bun install --frozen-lockfile
+
+RUN mkdir -p /temp/prod
+COPY package.json bun.lock /temp/prod/
+COPY patches/*.patch /temp/prod/patches/
+RUN cd /temp/prod && bun install --frozen-lockfile --production
+
+FROM base AS prerelease
+COPY --from=install /temp/dev/node_modules node_modules
+COPY . .
+RUN bun build --target=bun --sourcemap --define IS_RUNNING_AS_CONTAINER=true src/index.ts --outdir build
+
+FROM base AS release
+COPY --from=install /temp/prod/node_modules node_modules
+COPY --from=prerelease /filen-cli/build build
+COPY --from=prerelease /filen-cli/package.json package.json
+
+USER bun
 EXPOSE 80
-ENTRYPOINT ["node", "filen.js"]
+ENTRYPOINT [ "bun", "run", "build/index.js" ]

@@ -3,12 +3,13 @@
   "version": "0.0.0",
   "description": "Filen CLI",
   "main": "build/index.js",
+  "type": "module",
   "scripts": {
     "start": "bun run src/index.ts",
     "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --ext .js,.jsx,.ts,.tsx",
     "lint-ci": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --ext .js,.jsx,.ts,.tsx --format=@microsoft/eslint-formatter-sarif --output-file=eslint-report.sarif",
     "test": "bun test --preload ./src/test/setup.ts --timeout 30_000",
-    "compile": "bun build --compile --target=bun --minify --sourcemap src/index.ts --outfile filen-cli",
+    "compile": "bun build --compile --target=bun --minify --sourcemap src/index.ts --outfile filen-cli --define IS_RUNNING_AS_BINARY=true",
     "bump-filen-dependencies": "bun i @filen/sdk@latest @filen/sync@latest @filen/webdav@latest @filen/s3@latest @filen/network-drive@latest"
   },
   "bin": {

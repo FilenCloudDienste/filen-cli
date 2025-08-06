@@ -12,7 +12,7 @@ jobs:
         include:
           - name: win-x64
             target: windows-x64 --windows-icon=.github/workflows/filen-icon.ico
-            os: windows-11-arm
+            os: windows-11-arm  # see note below
           - name: linux-x64
             target: linux-x64
             os: ubuntu-latest
@@ -34,6 +34,10 @@ jobs:
       - name: Install bun
         if: ${{ matrix.os != 'windows-11-arm' }}
         uses: oven-sh/setup-bun@v2
+        # Installing Bun on Windows is a bit different:
+        # Bun doesn't support Windows ARM64 (yet?), so we're installing the x64 version, which can be run on Windows arm64 machines via emulation.
+        # However, it seems that the x64 binary built on x64 can't be run on arm64, so we need to build the x64 binary on an arm64 machine.
+        # The oven-sh/setup-bun action doesn't support installing x64 Bun on arm64, so we do it manually using the install script (and then add it to the PATH).
       - name: Install bun (Windows)
         if: ${{ matrix.os == 'windows-11-arm' }}
         run: powershell -c "irm bun.sh/install.ps1|iex"
@@ -97,8 +101,10 @@ jobs:
       - name: Install bun
         uses: oven-sh/setup-bun@v2
       - run: bun install
-      - run: bun build --target=node --sourcemap --define VERSION="${{ github.event.release.tag_name }}" --define IS_RUNNING_AS_NPM_PACKAGE=true src/index.ts --outdir build
-      - run: bun publish --access public
+      - run: bun build --target=node --sourcemap --define VERSION="${{ github.event.release.tag_name }}" --define IS_RUNNING_AS_NPM_PACKAGE=true src/index.ts --outdir build --external "@jupiterpi/node-keyring" --external "@parcel/watcher"
+      - name: Setup Node
+        uses: actions/setup-node@v4
+      - run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
 
