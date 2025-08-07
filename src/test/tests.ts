@@ -145,6 +145,7 @@ export async function authenticatedFilenSDK() {
         await writeAuthConfigToDotenvFile("FILEN_CLI_TESTING_AUTHCONFIG", Buffer.from(JSON.stringify(filen.config)).toString("base64"))
     }
     _authenticatedFilenSDK = filen
+    console.log(`Logged in as: ${filen.config.email}`)
     return filen
 }
 
