@@ -177,8 +177,8 @@ describe("fs commands", async () => {
 })
 
 /**
- * Waits for 15s to allow async operations to complete.
+ * Waits for 10s to allow async operations to complete.
  */
 export async function waitForAsyncEndpoint() {
-    return new Promise(resolve => setTimeout(resolve, 15_000))
+    return new Promise(resolve => setTimeout(resolve, 10_000))
 }

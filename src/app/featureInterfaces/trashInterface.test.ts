@@ -16,17 +16,16 @@ describe("trash", async () => {
 
     beforeAll(async () => {
         await filen.cloud().emptyTrash()
-        root = (await prepareCloudFs([ "file1.txt", "file2.txt" ])).root
-        await filen.fs().rm({ path: root.navigate("file1.txt").toString(), permanent: false })
-        await filen.fs().rm({ path: root.navigate("file2.txt").toString(), permanent: false })
+        root = (await prepareCloudFs([ "trashtest_file1.txt", "trashtest_file2.txt" ])).root
+        await filen.fs().rm({ path: root.navigate("trashtest_file1.txt").toString(), permanent: false })
+        await filen.fs().rm({ path: root.navigate("trashtest_file2.txt").toString(), permanent: false })
     })
 
     it("should list trash items", async () => {
         await waitForAsyncEndpoint()
-        await waitForAsyncEndpoint()
         const { output } = await runMockApp({ cmd: "trash list" })
-        expect(output()).toContain("file1.txt")
-        expect(output()).toContain("file2.txt")
+        expect(output()).toContain("trashtest_file1.txt")
+        expect(output()).toContain("trashtest_file2.txt")
     })
 
     it("should delete trash item", async () => {
@@ -43,7 +42,9 @@ describe("trash", async () => {
     it("should list empty trash", async () => {
         await waitForAsyncEndpoint()
         const { output } = await runMockApp({ cmd: "trash list" })
-        expect(output()).toContain("empty")
+        expect(output()).not.toContain("trashtest_file1.txt")
+        expect(output()).not.toContain("trashtest_file2.txt")
+        // there might be other test suites running concurrently, so we can't check that it's completely empty
     })
 
 })

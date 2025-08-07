@@ -192,13 +192,13 @@ export class ResourceLock {
  * We cannot simply use the credentials every time (or even every run) because of rate limiting.
  */
 async function readFromDotenvFile(key: string) {
-    const dotenvFile = Bun.file(".env");
+    const dotenvFile = Bun.file(".env")
     if (!(await dotenvFile.exists())) return undefined
 
     const content = await dotenvFile.text()
     let value = ""
     for (let i = 0;; i++) {
-        const chunk = content.match(new RegExp(`^${key}_${i}="([^"]+)"`))
+        const chunk = content.match(new RegExp(`^${key}_${i}="([^"]+)"`, "gm"))
         if (!chunk) break
         value += chunk[1]
     }
@@ -208,7 +208,7 @@ async function writeAuthConfigToDotenvFile(key: string, str: string) {
     const dotenvFile = Bun.file(".env");
     if (!(await dotenvFile.exists())) return
 
-    const CHUNK_LENGTH = 4096
+    const CHUNK_LENGTH = 4096 - 100
     const chunks: string[] = []
     let i = 0
     while (i < str.length) {
