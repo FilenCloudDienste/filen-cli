@@ -80,6 +80,10 @@ jobs:
       - name: Execute binary
         if: ${{ matrix.target != 'macos-x64' }}
         run: dist/filen-cli-${{ github.event.release.tag_name }}-${{ matrix.name }} --help
+      - name: Copy win-x64 binary as win-arm64 binary
+        # so the updater won't be confused
+        if: ${{ matrix.os == 'windows-11-arm' }}
+        run: cp dist/filen-cli-${{ github.event.release.tag_name }}-win-x64.exe dist/filen-cli-${{ github.event.release.tag_name }}-win-arm64.exe
       - name: Attach binaries to release
         uses: softprops/action-gh-release@v2
         with:
