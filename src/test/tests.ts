@@ -198,7 +198,7 @@ async function readFromDotenvFile(key: string) {
     const content = await dotenvFile.text()
     let value = ""
     for (let i = 0;; i++) {
-        const chunk = content.match(new RegExp(`${key}_${i}="([^"]+)"`))
+        const chunk = content.match(new RegExp(`^${key}_${i}="([^"]+)"`))
         if (!chunk) break
         value += chunk[1]
     }
@@ -223,4 +223,6 @@ async function writeAuthConfigToDotenvFile(key: string, str: string) {
     let content = await dotenvFile.text()
     content += `\n# written by src/test/tests.ts after loggin in using credentials\n${chunks.map((chunk, index) => `${key}_${index}="${chunk}"`).join("\n")}\n`
     await dotenvFile.write(content)
+
+    console.log("Wrote auth config for testing to .env file")
 }
