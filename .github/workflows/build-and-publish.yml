@@ -160,9 +160,8 @@ jobs:
         uses: actions/setup-node@v4
       - name: Build docs
         run: chmod +x build-docs.sh && ./build-docs.sh && mv filen-cli-docs.html filen-cli-${{ github.event.release.tag_name }}-docs.html
-        with:
-          env:
-            FILEN_CLI_EXPORT_DOCS_JSON_VERSION: ${{ github.event.release.tag_name }}
+        env:
+          FILEN_CLI_EXPORT_DOCS_JSON_VERSION: ${{ github.event.release.tag_name }}
       - name: Attach HTML file to release
         uses: softprops/action-gh-release@v2
         with:
