@@ -1,8 +1,9 @@
 node_modules/**/*
-build
-dist
 .DS_Store
 tmp
 .idea
 .env
 testing
+filen-cli.exe
+filen-cli
+build

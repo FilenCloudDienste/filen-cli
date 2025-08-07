@@ -6,36 +6,50 @@ on:
 
 jobs:
   build-and-publish-binaries:
-    name: Build binaries (${{ matrix.target }})
+    name: Build binaries (${{ matrix.name }})
     strategy:
       matrix:
         include:
-          - os: windows-latest
-            target: win
-          - os: ubuntu-latest
-            target: linux
-          - os: macos-latest
-            target: macos
+          - name: win-x64
+            target: windows-x64 --windows-icon=.github/workflows/filen-icon.ico
+            os: windows-11-arm  # see note below
+          - name: linux-x64
+            target: linux-x64
+            os: ubuntu-latest
+          - name: linux-arm64
+            target: linux-arm64
+            os: ubuntu-24.04-arm
+          - name: macos-x64
+            target: macos-x64
+            os: macos-latest
+          - name: macos-arm64
+            target: macos-arm64
+            os: macos-latest
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Inject version
-        uses: richardrigutins/replace-in-files@v2
+      - name: Install bun
+        if: ${{ matrix.os != 'windows-11-arm' }}
+        uses: oven-sh/setup-bun@v2
+        # Installing Bun on Windows is a bit different:
+        # Bun doesn't support Windows ARM64 (yet?), so we're installing the x64 version, which can be run on Windows arm64 machines via emulation.
+        # However, it seems that the x64 binary built on x64 can't be run on arm64, so we need to build the x64 binary on an arm64 machine.
+        # The oven-sh/setup-bun action doesn't support installing x64 Bun on arm64, so we do it manually using the install script (and then add it to the PATH).
+      - name: Install bun (Windows)
+        if: ${{ matrix.os == 'windows-11-arm' }}
+        run: powershell -c "irm bun.sh/install.ps1|iex"
+      - name: Add bun to path (Windows)
+        if: ${{ matrix.os == 'windows-11-arm' }}
+        uses: actions/github-script@v7
         with:
-          files: "package.json"
-          search-text: "\"version\": \"0.0.0\""
-          replacement-text: "\"version\": \"${{ github.event.release.tag_name }}\""
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-      - run: npm ci
-      - run: npm run package-${{ matrix.target }}
+          script: core.addPath('C:\\Users\\runneradmin\\.bun\\bin');
+      - run: bun install
+      - run: bun run compile --target=bun-${{ matrix.target }} --define "FILEN_CLI_VERSION=${{ github.event.release.tag_name }}" --outfile dist/filen-cli-${{ github.event.release.tag_name }}-${{ matrix.name }}
       - name: Codesign and notarize on macOS
-        if: ${{ matrix.target == 'macos' }}
+        if: ${{ matrix.os == 'macos-latest' }}
         env: 
           APPLE_DEVELOPER_ID_CERT: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
           APPLE_DEVELOPER_ID_CERT_PASS: ${{ secrets.APPLE_DEVELOPER_ID_CERT_PASS }}
@@ -53,21 +67,27 @@ jobs:
           security unlock-keychain -p actions ~/Library/Keychains/build.keychain
           security set-key-partition-list -S apple-tool:,apple: -s -k actions ~/Library/Keychains/build.keychain
           # codesign
-          codesign --sign "Developer ID Application: Filen Cloud Dienste UG (haftungsbeschraenkt)" --options runtime --force --deep --keychain ~/Library/Keychains/build.keychain --entitlements=../.github/workflows/entitlements.plist filen-cli-macos-x64 filen-cli-macos-arm64
+          codesign --sign "Developer ID Application: Filen Cloud Dienste UG (haftungsbeschraenkt)" --options runtime --force --deep --keychain ~/Library/Keychains/build.keychain --entitlements=../.github/workflows/entitlements.plist filen-cli-${{ github.event.release.tag_name }}-${{ matrix.name }}
           # notarize
-          zip filen-cli-macos.zip filen-cli-macos-x64 filen-cli-macos-arm64
+          zip filen-cli-macos.zip filen-cli-${{ github.event.release.tag_name }}-${{ matrix.name }}
           xcrun notarytool submit filen-cli-macos.zip --apple-id $APPLE_NOTARIZE_ID --password $APPLE_NOTARIZE_PASS --team-id $APPLE_NOTARIZE_TEAM_ID --output-format json --wait 2>&1 | tee notarization_info.json
           id=$(cat notarization_info.json | jq -r '.id')
           xcrun notarytool log $id --apple-id $APPLE_NOTARIZE_ID --password $APPLE_NOTARIZE_PASS --team-id $APPLE_NOTARIZE_TEAM_ID
           # cleanup certificate
           security delete-keychain build.keychain
           rm -f certificate.p12
-      - name: Rename binaries to include release number
-        run: node -e "['win-x64.exe', 'win-arm64.exe', 'linux-x64', 'linux-arm64', 'macos-x64', 'macos-arm64'].forEach(suffix => { if (fs.existsSync('dist/filen-cli-'+suffix)) { fs.renameSync('dist/filen-cli-'+suffix, 'dist/filen-cli-${{ github.event.release.tag_name }}-'+suffix) } })"
+          rm filen-cli-macos.zip
+      - name: Execute binary
+        if: ${{ matrix.target != 'macos-x64' }}
+        run: dist/filen-cli-${{ github.event.release.tag_name }}-${{ matrix.name }} --help
+      - name: Copy win-x64 binary as win-arm64 binary
+        # so the updater won't be confused
+        if: ${{ matrix.os == 'windows-11-arm' }}
+        run: cp dist/filen-cli-${{ github.event.release.tag_name }}-win-x64.exe dist/filen-cli-${{ github.event.release.tag_name }}-win-arm64.exe
       - name: Attach binaries to release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/filen-cli-${{ github.event.release.tag_name }}-*
+          files: dist/filen-cli-*
 
   build-and-publish-npm:
     name: Build and publish to npm
@@ -82,15 +102,14 @@ jobs:
           files: "package.json"
           search-text: "\"version\": \"0.0.0\""
           replacement-text: "\"version\": \"${{ github.event.release.tag_name }}\""
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: bun build --target=node --sourcemap --define VERSION="${{ github.event.release.tag_name }}" --define IS_RUNNING_AS_NPM_PACKAGE=true src/index.ts --outdir build --external "@jupiterpi/node-keyring" --external "@parcel/watcher"
       - name: Setup Node
         uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-          registry-url: "https://registry.npmjs.org"
-      - run: npm ci
-      - run: npm publish --access public  # includes build
+      - run: npm publish --access public
         env:
-          FILEN_IS_NPM_PACKAGE: true
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
 
   build-and-publish-docker:
@@ -98,13 +117,8 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.release.prerelease == false }}
     steps:
-      - uses: actions/checkout@v3
-      - name: Inject version
-        uses: richardrigutins/replace-in-files@v2
-        with:
-          files: "package.json"
-          search-text: "\"version\": \"0.0.0\""
-          replacement-text: "\"version\": \"${{ github.event.release.tag_name }}\""
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -139,13 +153,11 @@ jobs:
           files: "package.json"
           search-text: "\"version\": \"0.0.0\""
           replacement-text: "\"version\": \"${{ github.event.release.tag_name }}\""
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+      - run: bun install
       - name: Setup Node
         uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-      - run: npm ci
-      - name: Build filen-cli
-        run: npm run build
       - name: Build docs
         run: chmod +x build-docs.sh && ./build-docs.sh && mv filen-cli-docs.html filen-cli-${{ github.event.release.tag_name }}-docs.html
       - name: Attach HTML file to release

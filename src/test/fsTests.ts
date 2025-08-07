@@ -2,8 +2,8 @@ import * as path from "node:path"
 import * as fs from "node:fs/promises"
 import { authenticatedFilenSDK, testDir } from "./tests"
 import { randomUUID } from "node:crypto"
-import { inject } from "vitest"
-import { prepareCloudFsRoot } from "./constants"
+import { testRunId } from "./setup"
+import { CloudPath } from "../app/util/cloudPath"
 
 // file tree
 
@@ -53,7 +53,7 @@ function normalizeTree(tree: Tree): NormalizedTree {
     })
     const items = normalizeItems(tree)
     // sort and deduplicate
-    const files = items.filter(i => i.type === "file").map(i => ({ path: i.path, content: (i as NormalizedFile).content }))
+    const files = items.filter(i => i.type === "file").map(i => ({ path: i.path, content: (i as NormalizedFile).content })).sort((a, b) => a.path.localeCompare(b.path))
     const directoryPaths = new Set<string>(items.filter(i => i.type === "directory").map(i => i.path))
     return { files, directories: Array.from(directoryPaths).sort().map(path => ({ path })) }
 }
@@ -94,7 +94,7 @@ export async function prepareLocalFs(tree: Tree) {
                     files.push({ path: relativePath, content: content === UNDEFINED_FILE_CONTENT_PLACEHOLDER ? undefined : content })
                 }
             }
-            return { files, directories }
+            return { files: files.sort((a, b) => a.path.localeCompare(b.path)), directories: directories.sort((a, b) => a.path.localeCompare(b.path)) }
         }
         return readDirectory(root)
     }
@@ -107,11 +107,14 @@ export async function prepareLocalFs(tree: Tree) {
 
 // cloud fs
 
+export const cloudTestingRoot = new CloudPath(["filen-cli-testing"])
+export const prepareCloudFsRoot = (testRunId: string) => cloudTestingRoot.navigate(`prepareCloudFs_${testRunId}`)
+
 export async function prepareCloudFs(tree: Tree) {
     const filen = await authenticatedFilenSDK()
 
     // create directory
-    const root = prepareCloudFsRoot(inject("testRunId")).navigate(randomUUID())
+    const root = prepareCloudFsRoot(testRunId).navigate(randomUUID())
     await filen.fs().mkdir({ path: root.toString() })
 
     // create files and directories from tree
@@ -142,7 +145,7 @@ export async function prepareCloudFs(tree: Tree) {
                     files.push({ path: relativePath, content: content === UNDEFINED_FILE_CONTENT_PLACEHOLDER ? undefined : content })
                 }
             }
-            return { files, directories }
+            return { files: files.sort((a, b) => a.path.localeCompare(b.path)), directories: directories.sort((a, b) => a.path.localeCompare(b.path)) }
         }
         return readDirectory(root.toString())
     }
@@ -150,5 +153,25 @@ export async function prepareCloudFs(tree: Tree) {
         root,
         actualTree: () => readCloudFsToNormalizedTree(),
         normalizeTree,
+    }
+}
+
+// prepareCloudFs leaves behind many files that should be cleaned up after testing,
+// but should also be accessible immediately after the test run for debugging
+// this deletes all but the last 5 directories in the cloud testing root
+// will be called in test preload
+export async function cleanupCloudFs() {
+    const filen = await authenticatedFilenSDK()
+    const fsRoots = await filen.fs().ls({ path: cloudTestingRoot.toString() })
+    if (fsRoots.length > 5) {
+        const sortedFsRoots = fsRoots.sort()
+        const toDelete = sortedFsRoots.slice(0, sortedFsRoots.length - 5)
+        for (const dir of toDelete) {
+            const path = cloudTestingRoot.navigate(dir).toString()
+            await filen.fs().rm({ path })
+            console.log("Cleaned up prepareCloudFs directory:", path)
+        }
+    } else {
+        console.log("No prepareCloudFs directories to clean up")
     }
 }

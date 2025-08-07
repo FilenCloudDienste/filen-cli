@@ -1,0 +1,79 @@
+diff --git a/index.js b/index.js
+index 8afb2b1126dcc687b7ff9b631589da252c1f9c22..fe0572494e6aea2c9c478999d8ad01d45e580214 100644
+--- a/index.js
++++ b/index.js
+@@ -1,37 +1,54 @@
+ const {createWrapper} = require('./wrapper');
+ 
+-let name = `@parcel/watcher-${process.platform}-${process.arch}`;
++let isMusl;
+ if (process.platform === 'linux') {
+   const { MUSL, family } = require('detect-libc');
+   if (family === MUSL) {
+-    name += '-musl';
++    isMusl = true;
+   } else {
+-    name += '-glibc';
++    isMusl = false;
+   }
+ }
+ 
+ let binding;
+ try {
+-  binding = require(name);
+-} catch (err) {
+-  handleError(err);
+-  try {
+-    binding = require('./build/Release/watcher.node');
+-  } catch (err) {
+-    handleError(err);
+-    try {
+-      binding = require('./build/Debug/watcher.node');
+-    } catch (err) {
+-      handleError(err);
+-      throw new Error(`No prebuild or local build of @parcel/watcher found. Tried ${name}. Please ensure it is installed (don't use --no-optional when installing with npm). Otherwise it is possible we don't support your platform yet. If this is the case, please report an issue to https://github.com/parcel-bundler/watcher.`);
++  if (process.platform === "win32") {
++    if (process.arch === "x64") {
++      binding = require("@parcel/watcher-win32-x64");
++    }
++    if (process.arch === "arm64") {
++      binding = require("@parcel/watcher-win32-arm64");
+     }
+   }
+-}
+-
+-function handleError(err) {
+-  if (err?.code !== 'MODULE_NOT_FOUND') {
+-    throw err;
++  if (process.platform === "linux" && isMusl) {
++    if (process.arch === "x64") {
++      binding = require("@parcel/watcher-linux-x64-musl");
++    }
++    if (process.arch === "arm64") {
++      binding = require("@parcel/watcher-linux-arm64-musl");
++    }
++  }
++  if (process.platform === "linux" && !isMusl) {
++    if (process.arch === "x64") {
++      binding = require("@parcel/watcher-linux-x64-glibc");
++    }
++    if (process.arch === "arm64") {
++      binding = require("@parcel/watcher-linux-arm64-glibc");
++    }
+   }
++  if (process.platform === "darwin") {
++    if (process.arch === "x64") {
++      binding = require("@parcel/watcher-darwin-x64");
++    }
++    if (process.arch === "arm64") {
++      binding = require("@parcel/watcher-darwin-arm64");
++    }
++  }
++  if (!binding) {
++    throw new Error("Unknown platform for @parcel/watcher: " + process.platform + " " + process.arch);
++  }
++} catch (err) {
++  throw err
+ }
+ 
+ const wrapper = createWrapper(binding);

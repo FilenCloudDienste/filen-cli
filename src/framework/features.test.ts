@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect } from "bun:test"
 import { Extra, FeatureContext, FeatureRegistry } from "./features"
 
 describe("findFeature", () => {

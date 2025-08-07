@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest"
+import { describe, expect, test } from "bun:test"
 import { getCredentials, mockApp, runMockApp } from "../test/tests"
 import fs from "fs/promises"
 import path from "path"
@@ -54,7 +54,7 @@ describe("ways to authenticate", () => {
         expect(isAuthenticated(ctx)).toBe(true)
     })
 
-    test.todo("log in from .filen-cli-keep-me-logged-in file")
+    // TODO: login from .filen-cli-keep-me-logged-in file
 
     test("get credentials from prompt", async () => {
         const { ctx, isInputEmpty } = await mockApp({ unauthenticated: true, input: [email, password, "N"] })

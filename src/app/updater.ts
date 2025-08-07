@@ -1,4 +1,4 @@
-import { isRunningAsContainer, isRunningAsNPMPackage, version } from "../buildInfo"
+import { isRunningAsBinary, isRunningAsContainer, isRunningAsNPMPackage, version } from "../buildInfo"
 import path from "path"
 import { spawn } from "node:child_process"
 import { downloadFile, exists } from "./util/util"
@@ -75,11 +75,15 @@ type ReleaseInfo = {
  * Manages updates.
  */
 class Updater {
-	private readonly updateCacheDirectory = this.app.dataDir
-	private readonly updateCacheFile = path.join(this.updateCacheDirectory, "updateCache.json")
-	private readonly updateCheckExpiration = 10 * 60 * 1000 // check again after 10min
+	private readonly updateCacheDirectory
+	private readonly updateCacheFile
+	private readonly updateCheckExpiration
 	
-	constructor(private app: App<X>) {}
+	constructor(private app: App<X>) {
+		this.updateCacheDirectory = this.app.dataDir
+		this.updateCacheFile = path.join(this.updateCacheDirectory, "updateCache.json")
+		this.updateCheckExpiration = 10 * 60 * 1000 // check again after
+	}
 
 	/**
 	 * Check for updates and prompt the user on whether to update.
@@ -92,7 +96,7 @@ class Updater {
 			return
 		}
 
-		if ((process.pkg === undefined ? __filename : process.argv[0]!).endsWith(".js")) {
+		if (!isRunningAsBinary) {
 			this.app.outVerbose("Skipping updates for non-binary installation")
 			return
 		}
@@ -338,8 +342,8 @@ class Updater {
 	}
 
 	private async installVersion(currentVersionName: string, publishedVersionName: string, downloadUrl: string) {
-		const selfApplicationFile = process.pkg === undefined ? __filename : process.argv[0]!
-		if (selfApplicationFile.endsWith(".js")) this.app.errExit("Updater only supported for CLI binaries")
+		const selfApplicationFile = process.execPath
+		if (!isRunningAsBinary) this.app.errExit("Updater only supported for CLI binaries")
 		const downloadedFile = path.join(path.dirname(selfApplicationFile), `filen_update_${publishedVersionName}`)
 
 		this.app.out("Downloading update...")

@@ -1,5 +1,5 @@
 import { InterfaceAdapter } from "../framework/app"
-import FilenSDK, { FilenSDKConfig } from "@filen/sdk"
+import { FilenSDK, FilenSDKConfig } from "@filen/sdk"
 import path from "path"
 import os from "os"
 import { isRunningAsContainer, isRunningAsNPMPackage, version } from "../buildInfo"
@@ -90,10 +90,10 @@ export const app = (argv: string[], adapter: InterfaceAdapter) => f.app({
 			app.outVerbose(environment)
 
 			// check for updates
-			runUpdater(ctx, args)
+			await runUpdater(ctx, args)
 
 			// authentication
-			const selectedFeature = cmd === undefined ? undefined : app.features.findFeature(cmd + argv.join(" "))?.feature
+			const selectedFeature = cmd === undefined ? undefined : app.features.findFeature(argv.join(" "))?.feature
 			if (!selectedFeature?.skipAuthentication && !selectedFeature?.builtin) {
 				await authenticate(ctx, args)
 			}
