@@ -23,6 +23,7 @@ describe("trash", async () => {
 
     it("should list trash items", async () => {
         await waitForAsyncEndpoint()
+        await waitForAsyncEndpoint()
         const { output } = await runMockApp({ cmd: "trash list" })
         expect(output()).toContain("file1.txt")
         expect(output()).toContain("file2.txt")
