@@ -23,6 +23,5 @@ COPY --from=install /temp/prod/node_modules node_modules
 COPY --from=prerelease /filen-cli/build build
 COPY --from=prerelease /filen-cli/package.json package.json
 
-USER bun
 EXPOSE 80
 ENTRYPOINT [ "bun", "run", "build/index.js" ]
