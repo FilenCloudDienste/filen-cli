@@ -79,7 +79,7 @@ jobs:
           rm filen-cli-macos.zip
       - name: Execute binary
         if: ${{ matrix.target != 'macos-x64' }}
-        run: dist/filen-cli-${{ github.event.release.tag_name }}-${{ matrix.name }} --help
+        run: dist/filen-cli-${{ github.event.release.tag_name }}-${{ matrix.name }} --skip-update --help
       - name: Copy win-x64 binary as win-arm64 binary
         # so the updater won't be confused
         if: ${{ matrix.os == 'windows-11-arm' }}
