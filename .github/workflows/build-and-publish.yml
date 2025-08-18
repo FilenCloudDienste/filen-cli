@@ -47,7 +47,7 @@ jobs:
         with:
           script: core.addPath('C:\\Users\\runneradmin\\.bun\\bin');
       - run: bun install
-      - run: bun run compile --target=bun-${{ matrix.target }} --define "FILEN_CLI_VERSION=${{ github.event.release.tag_name }}" --outfile dist/filen-cli-${{ github.event.release.tag_name }}-${{ matrix.name }}
+      - run: bun run compile --target=bun-${{ matrix.target }} --define "VERSION=${{ github.event.release.tag_name }}" --outfile dist/filen-cli-${{ github.event.release.tag_name }}-${{ matrix.name }}
       - name: Codesign and notarize on macOS
         if: ${{ matrix.os == 'macos-latest' }}
         env: 

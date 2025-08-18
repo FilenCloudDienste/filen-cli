@@ -144,17 +144,24 @@ export class App<X extends Extra> {
 
 	// logs
 
+	private allLogsWrittenToDisk = true
 	private writeLogsToDisk: () => void = () => {}
 
 	private setupLogs(logsFile: string | undefined = undefined) {
 		if (logsFile === undefined) return
 		this.writeLogsToDisk = () => {
+			if (this.allLogsWrittenToDisk) return
+			this.allLogsWrittenToDisk = true
 			try {
 				if (fs.readFileSync(logsFile).length > 1) this.logs = "\n\n" + this.logs
 			} catch {
 				// do nothing
 			}
-			fs.appendFileSync(logsFile, this.logs)
+			try {
+				fs.appendFileSync(logsFile, this.logs)
+			} catch (e) {
+				this.errExit(`write logs to ${logsFile}`, e)
+			}
 		}
 		process.on("exit", () => this.writeLogsToDisk!())
 		this.writeLog(`> ${process.argv.join(" ")}`, "log")
@@ -164,6 +171,7 @@ export class App<X extends Extra> {
 	private logsMutex = new Mutex()
 	private writeLog(message: string, type: "log" | "input" | "error") {
 		this.logsMutex.acquire().then(() => {
+			this.allLogsWrittenToDisk = false
 			this.logs += message.split("\n").map(line => `${formatTimestamp(new Date().getTime())} ${type === "log" ? "[LOG]" : type === "error" ? "[ERR]" : "[IN ]"} ${line}\n`).join("")
 			if (buffer.constants.MAX_STRING_LENGTH - this.logs.length < 10_000) {
 				// the in-memory log file is too large, flush it to disk
