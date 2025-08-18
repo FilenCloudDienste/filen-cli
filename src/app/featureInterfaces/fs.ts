@@ -102,9 +102,10 @@ const unixStyleCommands: FeatureGroup<X> = {
 			args: {
 				path: f.cloudPath({}, f.arg({ name: "path", description: "file or directory to delete" })),
 				noTrash: f.flag({ name: "--no-trash", description: "permanently delete the file or directory" }),
+				yes: f.flag({ name: "-y", description: "skip confirmation prompt" })
 			},
 			invoke: async ({ app, filen, args }) => {
-				if (!await app.promptConfirm(`${args.noTrash ? "permanently delete" : "delete"} ${args.path.toString()}`)) return
+				if (!args.yes && !await app.promptConfirm(`${args.noTrash ? "permanently delete" : "delete"} ${args.path.toString()}`)) return
 				if (args.noTrash) if (!await app.promptConfirm(undefined)) return
 				try {
 					await filen.fs().rm({ path: args.path.toString(), permanent: args.noTrash })
