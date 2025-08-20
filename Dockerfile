@@ -1,4 +1,5 @@
-FROM oven/bun:1 AS base
+FROM oven/bun:alpine AS base
+# we use alpine because the default oven/bun:1 image is glibc, which doesn't do well with @jupiterpi/node-keyring
 WORKDIR /filen-cli
 
 FROM base AS install
