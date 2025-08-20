@@ -70,23 +70,6 @@ export const authenticationCommandGroup: FeatureGroup<X> = {
 				app.out(`API Key for ${filen.config.email}: ${filen.config.apiKey}`)
 			},
 		}),
-		f.helpText({
-			name: "libsecret",
-			text: dedent`
-				On Linux, the Filen CLI uses libsecret to store the credentials crypto key in the system Secret Service.
-				
-				If you experience issues with saving credentials, you can try installing libsecret via:
-					Debain/Ubuntu:  sudo apt-get install libsecret-1-dev
-					Red Hat based:  sudo yum install libsecret-devel
-					Arch:           sudo pacman -S libsecret
-
-				A collection of issues and possible solutions can be found at: https://github.com/FilenCloudDienste/filen-cli/issues/288
-				
-				Alternatively, you can export an auth config containing your credentials using \`filen export-auth-config\`.
-				Exporting this file to the data directory will make it visible to the CLI.
-			`,
-			visibility: "hide"
-		}),
 	],
 }
 
@@ -252,7 +235,7 @@ export async function authenticate(ctx: FeatureContext<X>, args: { email?: strin
 							app.errExit("save credentials", e)
 						}
 					} catch (e) {
-						app.outErr("save credentials crypto key in keychain", e, process.platform === "linux" ? "You seem to be running Linux, is libsecret installed? Please see `filen help libsecret` for more information" : undefined)
+						app.outErr("save credentials crypto key in keychain", e)
 						if (await app.promptYesNo("Use less secure unencrypted local credential storage instead?", { defaultAnswer: false })) {
 							await exportAuthConfig(ctx, true)
 						}
