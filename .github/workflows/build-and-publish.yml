@@ -90,7 +90,7 @@ jobs:
           files: dist/filen-cli-*
 
   build-and-publish-npm:
-    name: Build and publish to npm
+    name: Build and publish to NPM
     runs-on: ubuntu-latest
     if: ${{ github.event.release.prerelease == false }}
     steps:
@@ -108,9 +108,13 @@ jobs:
       - run: bun build --target=node --sourcemap --define VERSION="${{ github.event.release.tag_name }}" --define IS_RUNNING_AS_NPM_PACKAGE=true src/index.ts --outdir build --external "@jupiterpi/node-keyring" --external "@parcel/watcher"
       - name: Setup Node
         uses: actions/setup-node@v4
+      - name: Configure NPM for publishing
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_PUBLISH_TOKEN }}" > ~/.npmrc
       - run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+      - name: Post Configure NPM for publishing
+        run: rm ~/.npmrc
 
   build-and-publish-docker:
     name: Build Docker image
