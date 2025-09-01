@@ -1,5 +1,11 @@
+diff --git a/node_modules/@jupiterpi/node-keyring/.bun-tag-c61f57550c14dd1a b/.bun-tag-c61f57550c14dd1a
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/@jupiterpi/node-keyring/.bun-tag-f0f67af54c151497 b/.bun-tag-f0f67af54c151497
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/index.js b/index.js
-index 1264f099078ad88271355471c585977d4ea5a666..14c3d584dffe3b5e366836d29ba50092a66033bd 100644
+index 1264f099078ad88271355471c585977d4ea5a666..a1d508ca8569ee72cbf190de17ca4f3064f697fd 100644
 --- a/index.js
 +++ b/index.js
 @@ -3,9 +3,6 @@
@@ -12,3 +18,18 @@ index 1264f099078ad88271355471c585977d4ea5a666..14c3d584dffe3b5e366836d29ba50092
  const { readFileSync } = require('node:fs')
  let nativeBinding = null
  const loadErrors = []
+@@ -382,11 +379,9 @@ if (!nativeBinding || process.env.NAPI_RS_FORCE_WASI) {
+ 
+ if (!nativeBinding) {
+   if (loadErrors.length > 0) {
+-    throw new Error(
+-      `Cannot find native binding. ` +
+-        `npm has a bug related to optional dependencies (https://github.com/npm/cli/issues/4828). ` +
+-        'Please try `npm i` again after removing both package-lock.json and node_modules directory.',
+-      { cause: loadErrors }
++    throw new Error("Cannot find native binding in @jupiterpi/node-keyring. " + 
++      `OS: ${process.platform}, architecture: ${process.arch}. ` + 
++      `Errors while loading: ${loadErrors.join(", ")}`
+     )
+   }
+   throw new Error(`Failed to load native binding`)
