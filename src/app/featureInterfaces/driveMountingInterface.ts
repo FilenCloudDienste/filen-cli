@@ -1,4 +1,4 @@
-import VirtualDrive, { isFUSE3InstalledOnLinux, isWinFSPInstalled, isMacFUSEInstalled, isFUSETInstalledOnMacOS } from "@filen/network-drive"
+import { NetworkDrive, isFUSE3InstalledOnLinux, isWinFSPInstalled, isMacFUSEInstalled, isFUSETInstalledOnMacOS } from "@filen/network-drive"
 import dedent from "dedent"
 import { f } from "../f"
 
@@ -30,7 +30,8 @@ export const driveMountingCommand = f.feature({
 					if (!await isMacFUSEInstalled() && !await isFUSETInstalledOnMacOS()) app.errExit("macFUSE or FUSE-T is needed on macOS for network drive mounting, but neither could be found.")
 				}
 
-				const virtualDrive = new VirtualDrive({
+				const virtualDrive = new NetworkDrive({
+					// @ts-expect-error somehow outdated signature
 					sdk: filen,
 					mountPoint: args.mountPoint
 				})
