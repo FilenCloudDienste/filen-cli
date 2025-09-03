@@ -98,7 +98,16 @@ class SyncInterface {
 						} catch (e) {
 							if (e instanceof Error && e.name === "FileNotFoundError") {
 								this.app.outErr(`No such cloud file or directory: ${syncPair.remote}`)
-								return undefined
+								if (await this.app.promptYesNo("Do you want to create it?", { defaultAnswer: true })) {
+									try {
+										await this.filen.fs().mkdir({ path: syncPair.remote })
+										return await this.filen.fs().stat({ path: syncPair.remote })
+									} catch (e) {
+										this.app.outErr(`create cloud directory ${syncPair.remote}`, e)
+									}
+								} else {
+									return undefined
+								}
 							}
 							else throw e
 						}
