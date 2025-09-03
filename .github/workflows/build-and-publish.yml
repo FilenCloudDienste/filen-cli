@@ -139,7 +139,9 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: filen/cli:latest,filen/cli:${{ github.event.release.tag_name }}
-  
+          build-args: |
+            FILEN_CLI_VERSION=${{ github.event.release.tag_name }}
+
   build-html-docs:
     name: Build HTML docs
     runs-on: ubuntu-latest

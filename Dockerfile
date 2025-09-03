@@ -17,7 +17,8 @@ RUN cd /temp/prod && bun install --frozen-lockfile --production
 FROM base AS prerelease
 COPY --from=install /temp/dev/node_modules node_modules
 COPY . .
-RUN bun build --target=bun --sourcemap --define IS_RUNNING_AS_CONTAINER=true src/index.ts --outdir build
+ARG FILEN_CLI_VERSION
+RUN bun build --target=bun --sourcemap --define VERSION=${FILEN_CLI_VERSION} --define IS_RUNNING_AS_CONTAINER=true src/index.ts --outdir build
 
 FROM base AS release
 COPY --from=install /temp/prod/node_modules node_modules
