@@ -51,7 +51,7 @@
     "@microsoft/eslint-formatter-sarif": "^3.1.0",
     "@types/cli-progress": "^3.11.6",
     "@types/dateformat": "^5.0.3",
-    "@types/node": "^22.9.0",
+    "@types/node": "^24.7.2",
     "@types/semver": "^7.7.0",
     "@typescript-eslint/eslint-plugin": "^8.31.0",
     "@typescript-eslint/parser": "^8.31.0",
