@@ -2,6 +2,9 @@
 
 ![Contributors](https://img.shields.io/github/contributors/FilenCloudDienste/filen-cli?color=dark-green) ![Forks](https://img.shields.io/github/forks/FilenCloudDienste/filen-cli?style=social) ![Stargazers](https://img.shields.io/github/stars/FilenCloudDienste/filen-cli?style=social) ![Issues](https://img.shields.io/github/issues/FilenCloudDienste/filen-cli) ![License](https://img.shields.io/github/license/FilenCloudDienste/filen-cli)
 
+> [!Warning]
+> Read [Sunsetting Filen CLI](#sunsetting-filen-cli) below
+
 The Filen CLI provides a set of useful tools for interacting with the cloud:
 - Accessing your Filen Drive in a stateless environment or interactive mode
 - Syncing locations with the cloud (just like the Desktop app)
@@ -31,3 +34,8 @@ The Filen CLI includes an automatic updater, for which you can enable canary rel
 ## Documentation
 
 You can find exhaustive but concise documentation from within the CLI using the `filen --help <cmd or topic>` command and at [docs.cli.filen.io](https://docs.cli.filen.io/). Longer-form documentation is at [docs.filen.io](https://docs.filen.io/docs/cli).
+
+
+## Sunsetting Filen CLI
+
+We're sunsetting the Filen CLI in order to focus development effort on its Rust rewrite (in development [here](https://github.com/FilenCloudDienste/filen-rs/tree/main/filen-cli)). It will bring improved overall and especially startup performance as well as a dramatic reduction in download size down to ~5MB, and simplify further development. For now, please use Filen CLI `v0.0.36`, which is marked as latest (you might need to explicitly specify this version depending on your installation method). Thank you for your support
