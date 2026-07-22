@@ -67,6 +67,7 @@
   },
   "patchedDependencies": {
     "@jupiterpi/node-keyring@0.1.1": "patches/@jupiterpi%2Fnode-keyring@0.1.1.patch",
-    "@parcel/watcher@2.5.1": "patches/@parcel%2Fwatcher@2.5.1.patch"
+    "@parcel/watcher@2.5.1": "patches/@parcel%2Fwatcher@2.5.1.patch",
+    "@filen/sync@0.2.1": "patches/@filen%2Fsync@0.2.1.patch"
   }
 }
